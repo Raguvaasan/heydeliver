@@ -1,0 +1,153 @@
+{
+  "type": "module",
+  "name": "admin-portal",
+  "version": "1.0.0",
+  "descrption": "admin dashboard",
+  "author": "heyDeliver",
+  "homepage": "/admin",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite --host",
+    "format": "prettier --write .",
+    "lint": "eslint --ignore-path .gitignore .",
+    "preview": "vite preview --host",
+    "typecheck": "tsc"
+  },
+  "engines": {
+    "node": ">= 16",
+    "npm": ">= 8",
+    "yarn": ">= 1"
+  },
+  "dependencies": {
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
+    "@headlessui/react": "^2.2.0",
+    "@marsidev/react-turnstile": "^1.1.0",
+    "@react-google-maps/api": "^2.20.7",
+    "@tiptap/extension-bullet-list": "^2.14.0",
+    "@tiptap/extension-color": "^2.14.0",
+    "@tiptap/extension-font-family": "^2.14.0",
+    "@tiptap/extension-heading": "^2.14.0",
+    "@tiptap/extension-highlight": "^2.14.0",
+    "@tiptap/extension-list-item": "^2.14.0",
+    "@tiptap/extension-ordered-list": "^2.14.0",
+    "@tiptap/extension-text-align": "^2.14.0",
+    "@tiptap/extension-text-style": "^2.14.0",
+    "@tiptap/react": "^2.14.0",
+    "@tiptap/starter-kit": "^2.14.0",
+    "apexcharts": "^3.36.3",
+    "axios": "^1.7.9",
+    "chart.js": "^4.4.8",
+    "classnames": "^2.3.2",
+    "file-saver": "^2.0.5",
+    "flowbite": "^1.5.5",
+    "flowbite-react": "^0.3.7",
+    "formik": "^2.4.6",
+    "framer-motion": "^12.6.3",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.1",
+    "lodash": "^4.17.21",
+    "lucide-react": "^0.474.0",
+    "moment": "^2.30.1",
+    "papaparse": "^5.5.2",
+    "react-apexcharts": "^1.4.0",
+    "react-chartjs-2": "^5.3.0",
+    "react-feather": "^2.0.10",
+    "react-google-recaptcha": "^3.1.0",
+    "react-hot-toast": "^2.5.2",
+    "react-icons": "^4.7.1",
+    "react-quill": "^2.0.0",
+    "react-svg": "^16.3.0",
+    "react-switch": "^7.1.0",
+    "react-toastify": "^11.0.3",
+    "react-turnstile": "^1.1.4",
+    "recharts": "^2.15.1",
+    "uuid": "^11.0.5",
+    "vite-plugin-dts": "^4.5.0",
+    "vite-plugin-svgr": "^4.3.0",
+    "yarn": "^1.22.22",
+    "yup": "^1.6.1",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/file-saver": "^2.0.7",
+    "@types/lodash": "^4.17.15",
+    "@types/papaparse": "^5.3.15",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.0.9",
+    "@types/react-google-recaptcha": "^2.1.9",
+    "@types/sortablejs": "^1.15.0",
+    "@typescript-eslint/eslint-plugin": "^5.46.0",
+    "@typescript-eslint/parser": "^5.46.0",
+    "@vitejs/plugin-react": "^2.2.0",
+    "autoprefixer": "^10.4.13",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^8.29.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-jsx-a11y": "^6.6.1",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.31.11",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-tailwindcss": "^3.7.1",
+    "postcss": "^8.4.19",
+    "prettier": "^2.8.8",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router": "^6.4.5",
+    "react-router-dom": "^6.4.5",
+    "tailwindcss": "^3.2.4",
+    "typescript": "^4.9.4",
+    "vite": "^3.2.5",
+    "vitest": "^0.25.6"
+  },
+  "private": true,
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  },
+  "eslintConfig": {
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/strict",
+      "plugin:jsx-a11y/recommended",
+      "plugin:prettier/recommended",
+      "plugin:react/recommended",
+      "plugin:react-hooks/recommended",
+      "plugin:tailwindcss/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "ecmaFeatures": {
+        "jsx": true
+      },
+      "project": "./tsconfig.json"
+    },
+    "root": true,
+    "rules": {
+      "@typescript-eslint/consistent-type-imports": "error",
+      "react/react-in-jsx-scope": "off",
+      "react/no-unescaped-entities": "off",
+      "tailwindcss/classnames-order": [
+        "error",
+        {
+          "callees": [
+            "classnames"
+          ],
+          "config": "tailwind.config.cjs"
+        }
+      ],
+      "tailwindcss/no-custom-classname": [
+        "error",
+        {
+          "config": "tailwind.config.cjs"
+        }
+      ]
+    },
+    "settings": {
+      "react": {
+        "version": "detect"
+      }
+    }
+  }
+}
