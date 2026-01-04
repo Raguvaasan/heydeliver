@@ -30,7 +30,7 @@ const LoginPage: FC = function () {
       console.log("Login response:", result) // Debug log
 
       // Check both possible response structures
-      const token = result.data?.token || result.data?.data?.token
+      const token = result.data?.token || result.data?.["data"]?.token
       const userData = result.data
 
       if (token) {

@@ -14,10 +14,11 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
     agencyOwner: "",
     phone: "",
     email: "",
-    assignedHub: "",
     address: "",
+    gstNumber: "",
     status: "Active" as "Active" | "Inactive",
   })
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   useEffect(() => {
     if (selectedAgency) {
@@ -26,10 +27,11 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
         agencyOwner: selectedAgency.agencyOwner || "",
         phone: selectedAgency.phone || "",
         email: selectedAgency.email || "",
-        assignedHub: selectedAgency.assignedHub || "",
         address: selectedAgency.address || "",
+        gstNumber: selectedAgency.gstNumber ||"",
         status: selectedAgency.status || "Active",
       })
+      setImageFile(null)
     }
   }, [selectedAgency])
 
@@ -46,7 +48,10 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
     e.preventDefault()
     if (selectedAgency) {
       try {
-        await updateAgency(selectedAgency.id, formData)
+        await updateAgency(selectedAgency.id, {
+          ...formData,
+          image: imageFile ?? undefined,
+        })
         onClose()
       } catch (error) {
         console.error("Update agency failed:", error)
@@ -58,7 +63,7 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
     <Modal show={isOpen} onClose={onClose} size="xl">
       <Modal.Header>
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Edit Agency
+          Edit Franchise
         </h3>
       </Modal.Header>
       <Modal.Body>
@@ -66,12 +71,15 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Agency Name */}
             <div>
-              <Label htmlFor="agencyName" value="Agency Name" className="mb-2" />
+              <div className="flex items-center gap-1 mb-2">
+                <Label htmlFor="agencyName" value="Franchise Name" />
+                <span className="text-red-500">*</span>
+              </div>
               <TextInput
                 id="agencyName"
                 name="agencyName"
                 type="text"
-                placeholder="Enter agency name"
+                placeholder="Enter franchise name"
                 value={formData.agencyName}
                 onChange={handleChange}
                 required
@@ -80,7 +88,10 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
 
             {/* Agency Owner */}
             <div>
-              <Label htmlFor="agencyOwner" value="Agency Owner" className="mb-2" />
+              <div className="flex items-center gap-1 mb-2">
+                <Label htmlFor="agencyOwner" value="Franchise Owner" />
+                <span className="text-red-500">*</span>
+              </div>
               <TextInput
                 id="agencyOwner"
                 name="agencyOwner"
@@ -94,7 +105,10 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
 
             {/* Phone */}
             <div>
-              <Label htmlFor="phone" value="Phone Number" className="mb-2" />
+              <div className="flex items-center gap-1 mb-2">
+                <Label htmlFor="phone" value="Phone Number" />
+                <span className="text-red-500">*</span>
+              </div>
               <TextInput
                 id="phone"
                 name="phone"
@@ -119,28 +133,41 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
               />
             </div>
 
-            {/* Assigned Hub */}
+            {/* GST */}
             <div>
-              <Label htmlFor="assignedHub" value="Assigned Hub" className="mb-2" />
-              <Select
-                id="assignedHub"
-                name="assignedHub"
-                value={formData.assignedHub}
+              <Label htmlFor="gstNumber" value="GST" className="mb-2" />
+              <TextInput
+                id="gstNumber"
+                name="gstNumber"
+                type="text"
+                placeholder="Enter GST number"
+                value={formData.gstNumber}
                 onChange={handleChange}
-                required
-              >
-                <option value="">Select Hub</option>
-                <option value="Chennai Central Hub">Chennai Central Hub</option>
-                <option value="Coimbatore Hub">Coimbatore Hub</option>
-                <option value="Delhi North Hub">Delhi North Hub</option>
-                <option value="Mumbai West Hub">Mumbai West Hub</option>
-                <option value="Bangalore South Hub">Bangalore South Hub</option>
-              </Select>
+              />
+            </div>
+
+            {/* Image */}
+            <div>
+              <Label htmlFor="image" value="Franchise Image" className="mb-2" />
+              <input
+                id="image"
+                name="image"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+                className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
+              />
+              {imageFile && (
+                <p className="text-xs text-gray-500 mt-1">{imageFile.name}</p>
+              )}
             </div>
 
             {/* Status */}
             <div>
-              <Label htmlFor="status" value="Status" className="mb-2" />
+              <div className="flex items-center gap-1 mb-2">
+                <Label htmlFor="status" value="Status" />
+                <span className="text-red-500">*</span>
+              </div>
               <Select
                 id="status"
                 name="status"
@@ -177,7 +204,7 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
               disabled={loading}
               className="bg-orange-500 hover:bg-orange-600"
             >
-              {loading ? "Updating..." : "Update Agency"}
+              {loading ? "Updating..." : "Update Franchise"}
             </Button>
           </div>
         </form>

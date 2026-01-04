@@ -6,7 +6,8 @@ export const loginAdminUser = (
   password: string,
   captchaToken?: string
 ) => {
-  return http.post("admin/auth/login", { email, password, captchaToken })
+  // Leading slash ensures axios joins with baseURL correctly (e.g., /api + /admin/...)
+  return http.post("/admin/auth/login", { email, password, captchaToken })
 }
 
 interface Profile {

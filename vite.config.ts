@@ -4,15 +4,15 @@ import svgr from "vite-plugin-svgr"
 import dts from "vite-plugin-dts"
 
 export default defineConfig({
-  plugins: [svgr(), dts(), react()],
+  plugins: [svgr(), react()],
   base: "/admin/",
   server: {
     proxy: {
       '/api': {
-        target: 'http://3.27.77.241:3000',
+        target: 'https://freightrekapi.vercel.app',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
-        secure: false,
+        secure: true,
       }
     }
   }

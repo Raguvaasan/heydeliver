@@ -7,11 +7,24 @@ interface Agency {
   agencyName: string
   agencyOwner: string
   phone: string
-  assignedHub: string
   status: "Active" | "Inactive"
   email?: string
   address?: string
   createdAt?: string
+  updatedAt?: string
+  image?: string
+  gstNumber?: string
+}
+
+interface Pagination {
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
+type AgencyPayload = Omit<Agency, "id" | "createdAt" | "updatedAt" | "image"> & {
+  image?: File | null
 }
 
 interface AgencyState {
@@ -19,86 +32,149 @@ interface AgencyState {
   loading: boolean
   error: string | null
   selectedAgency: Agency | null
+  pagination: Pagination | null
   
   // Actions
-  fetchAgencies: () => Promise<void>
-  addAgency: (agency: Omit<Agency, "id">) => Promise<void>
-  updateAgency: (id: string, agency: Partial<Agency>) => Promise<void>
+  fetchAgencies: (page?: number, limit?: number) => Promise<void>
+  addAgency: (agency: AgencyPayload) => Promise<void>
+  updateAgency: (id: string, agency: Partial<AgencyPayload>) => Promise<void>
   deleteAgency: (id: string) => Promise<void>
   setSelectedAgency: (agency: Agency | null) => void
 }
 
 export const useAgencyStore = create<AgencyState>((set, get) => ({
-  agencies: [
-    {
-      id: "1",
-      agencyName: "SpeedX Express",
-      agencyOwner: "David",
-      phone: "918564785231",
-      assignedHub: "Chennai Central Hub",
-      status: "Active",
-      email: "david@speedx.com",
-      address: "123 Main Street, Chennai",
-      createdAt: "2025-01-01",
-    },
-    {
-      id: "2",
-      agencyName: "Metro Parcel",
-      agencyOwner: "Krish",
-      phone: "918564785231",
-      assignedHub: "Coimbatore Hub",
-      status: "Active",
-      email: "krish@metro.com",
-      address: "456 Park Avenue, Coimbatore",
-      createdAt: "2025-01-02",
-    },
-  ],
+  agencies: [],
   loading: false,
   error: null,
   selectedAgency: null,
+  pagination: null,
 
-  fetchAgencies: async () => {
+  fetchAgencies: async (page = 1, limit = 10) => {
     set({ loading: true, error: null })
     try {
-      const response = await http.get("/agencies")
-      set({ agencies: response.data.data || [], loading: false })
+      const response = await http.get("/admin/agency", {
+        params: { page, limit },
+      })
+
+      const agencies = (response.data?.data?.agencies || []).map((item: any) => ({
+        id: item._id || item.id,
+        agencyName: item.agencyName,
+        agencyOwner: item.agencyOwner,
+        phone: item.phone,
+        status: item.status,
+        email: item.email,
+        address: item.address,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        image: item.image,
+        gstNumber: item.gstNumber || item.gst,
+      }))
+
+      const pagination = response.data?.data?.pagination ?? null
+
+      set({ agencies, pagination, loading: false })
     } catch (error: any) {
-      // If API fails, keep the sample data
-      console.log("Using sample data - API not available")
-      set({ loading: false })
+      set({
+        loading: false,
+        error: error?.response?.data?.message || error?.message || "Failed to fetch agencies",
+      })
     }
   },
 
   addAgency: async (agency) => {
     set({ loading: true, error: null })
     try {
-      const response = await http.post("/agencies", agency)
-      const newAgency = response.data.data
+      const hasImage = agency.image instanceof File
+
+      const response = hasImage
+        ? await (() => {
+            const formData = new FormData()
+            Object.entries(agency).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                if (key === "image" && value instanceof File) {
+                  formData.append("image", value)
+                } else {
+                  formData.append(key, String(value))
+                }
+              }
+            })
+            return http.post("/admin/agency", formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            })
+          })()
+        : await http.post("/admin/agency", agency)
+
+      const payload = response.data?.data
+      const newAgency: Agency = {
+        id: payload?._id || payload?.id,
+        agencyName: payload?.agencyName,
+        agencyOwner: payload?.agencyOwner,
+        phone: payload?.phone,
+        status: payload?.status,
+        email: payload?.email,
+        address: payload?.address,
+        createdAt: payload?.createdAt,
+        updatedAt: payload?.updatedAt,
+        image: payload?.image,
+        gstNumber: payload?.gstNumber || payload?.gst,
+      }
       set((state) => ({
         agencies: [...state.agencies, newAgency],
         loading: false
       }))
       toast.success("Agency added successfully!")
     } catch (error: any) {
-      // If API fails, add to local state with generated ID
-      const newAgency = {
-        ...agency,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-      }
-      set((state) => ({
-        agencies: [...state.agencies, newAgency],
-        loading: false
-      }))
-      toast.success("Agency added successfully! (Demo mode)")
+      const apiMessage = error?.response?.data?.message
+      const detailMessages = Array.isArray(error?.response?.data?.errors)
+        ? error.response.data.errors.map((e: any) => e?.message).filter(Boolean)
+        : []
+      const message = detailMessages.length
+        ? detailMessages.join("; ")
+        : apiMessage || error?.message || "Failed to add agency"
+
+      set({ loading: false, error: message })
+      toast.error(message)
+      throw new Error(message)
     }
   },
 
   updateAgency: async (id, agency) => {
     set({ loading: true, error: null })
     try {
-      const response = await http.put(`/agencies/${id}`, agency)
-      const updatedAgency = response.data.data
+      const hasImage = agency.image instanceof File
+
+      const response = hasImage
+        ? await (() => {
+            const formData = new FormData()
+            Object.entries(agency).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                if (key === "image" && value instanceof File) {
+                  formData.append("image", value)
+                } else {
+                  formData.append(key, String(value))
+                }
+              }
+            })
+            return http.put(`/admin/agency/${id}`, formData, {
+              headers: { "Content-Type": "multipart/form-data" },
+            })
+          })()
+        : await http.put(`/admin/agency/${id}`, agency)
+
+      const payload = response.data?.data
+      const updatedAgency: Partial<Agency> = {
+        id: payload?._id || id,
+        agencyName: payload?.agencyName,
+        agencyOwner: payload?.agencyOwner,
+        phone: payload?.phone,
+        status: payload?.status,
+        email: payload?.email,
+        address: payload?.address,
+        createdAt: payload?.createdAt,
+        updatedAt: payload?.updatedAt,
+        image: payload?.image,
+        gstNumber: payload?.gstNumber || payload?.gst,
+      }
       set((state) => ({
         agencies: state.agencies.map((a) => 
           a.id === id ? { ...a, ...updatedAgency } : a
@@ -107,33 +183,32 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
       }))
       toast.success("Agency updated successfully!")
     } catch (error: any) {
-      // If API fails, update local state
-      set((state) => ({
-        agencies: state.agencies.map((a) => 
-          a.id === id ? { ...a, ...agency } : a
-        ),
-        loading: false
-      }))
-      toast.success("Agency updated successfully! (Demo mode)")
+      const apiMessage = error?.response?.data?.message
+      const detailMessages = Array.isArray(error?.response?.data?.errors)
+        ? error.response.data.errors.map((e: any) => e?.message).filter(Boolean)
+        : []
+      const message = detailMessages.length
+        ? detailMessages.join("; ")
+        : apiMessage || error?.message || "Failed to update agency"
+
+      set({ loading: false, error: message })
+      toast.error(message)
+      throw new Error(message)
     }
   },
 
   deleteAgency: async (id) => {
     set({ loading: true, error: null })
     try {
-      await http.delete(`/agencies/${id}`)
+      await http.delete(`/admin/agency/${id}`)
       set((state) => ({
         agencies: state.agencies.filter((a) => a.id !== id),
         loading: false
       }))
       toast.success("Agency deleted successfully!")
     } catch (error: any) {
-      // If API fails, delete from local state
-      set((state) => ({
-        agencies: state.agencies.filter((a) => a.id !== id),
-        loading: false
-      }))
-      toast.success("Agency deleted successfully! (Demo mode)")
+      set({ loading: false, error: error?.response?.data?.message || error?.message || "Failed to delete agency" })
+      toast.error("Agency delete failed")
     }
   },
 

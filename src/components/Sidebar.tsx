@@ -1,5 +1,5 @@
 import { FC } from "react"
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   HiHome,
   HiOfficeBuilding,
@@ -8,6 +8,7 @@ import {
   HiUserGroup,
   HiCog,
   HiChevronDown,
+  HiLogout,
 } from "react-icons/hi"
 
 interface SidebarProps {
@@ -32,6 +33,7 @@ const Sidebar: FC<SidebarProps> = ({
   setIsMobileOpen,
 }) => {
   const location = useLocation()
+  const navigate = useNavigate()
 
   const menuItems: MenuItem[] = [
     {
@@ -40,14 +42,9 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/dashboard",
     },
     {
-      title: "Agency Management",
+      title: "Franchise Management",
       icon: <HiOfficeBuilding className="h-5 w-5" />,
       path: "/agencies",
-      submenu: [
-        { title: "All Agencies", path: "/agencies" },
-        { title: "Add Agency", path: "/agencies/add" },
-        { title: "Agency Types", path: "/agencies/types" },
-      ],
     },
     {
       title: "Hub Management",
@@ -92,6 +89,12 @@ const Sidebar: FC<SidebarProps> = ({
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + "/")
+  }
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("authToken")
+    sessionStorage.removeItem("profileData")
+    navigate("/", { replace: true })
   }
 
   return (
@@ -181,6 +184,13 @@ const Sidebar: FC<SidebarProps> = ({
                 <p className="text-sm font-medium text-white">Robert Allen</p>
                 <p className="text-xs text-gray-400">Admin</p>
               </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1 px-2 py-1 text-sm text-gray-200 hover:text-white hover:bg-gray-600 rounded"
+              >
+                <HiLogout className="h-4 w-4" />
+                <span>Logout</span>
+              </button>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@
   "author": "heyDeliver",
   "homepage": "/admin",
   "scripts": {
+    "postinstall": "node ./fix-flowbite.js",
     "build": "vite build",
     "dev": "vite --host",
     "format": "prettier --write .",
