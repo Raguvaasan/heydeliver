@@ -110,12 +110,7 @@ const AgencyManagementPage: FC = () => {
               <table className="w-full text-left text-sm">
                 <thead className="bg-gray-800 text-white text-xs uppercase">
                   <tr>
-                    <th className="px-4 py-3 w-12">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-600"
-                      />
-                    </th>
+                    <th className="px-4 py-3 w-16">S.No</th>
                     <th className="px-4 py-3">Franchise Name</th>
                     <th className="px-4 py-3">Franchise Owner</th>
                     <th className="px-4 py-3">Phone</th>
@@ -131,11 +126,8 @@ const AgencyManagementPage: FC = () => {
                         key={agency.id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-700"
                       >
-                        <td className="px-4 py-3">
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300"
-                          />
+                        <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">
+                          {index + 1}
                         </td>
                         <td className="px-4 py-3">
                           <span

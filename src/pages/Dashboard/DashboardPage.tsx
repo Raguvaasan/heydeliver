@@ -89,13 +89,13 @@ const DashboardPage: FC = () => {
       subtitle: "Monthly ₹6,99,250",
       iconBgColor: "bg-yellow-500",
     },
-    {
-      icon: <HiLocationMarker className="h-5 w-5" />,
-      title: "Active Hubs",
-      value: "15",
-      subtitle: "Inactive 2",
-      iconBgColor: "bg-pink-500",
-    },
+    // {
+    //   icon: <HiLocationMarker className="h-5 w-5" />,
+    //   title: "Active Hubs",
+    //   value: "15",
+    //   subtitle: "Inactive 2",
+    //   iconBgColor: "bg-pink-500",
+    // },
     {
       icon: <HiOfficeBuilding className="h-5 w-5" />,
       title: "Active Agencies",
@@ -172,10 +172,9 @@ const DashboardPage: FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Revenue
               </h3>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-                ₹45,350
+              <p className="text-2xl font-bold text-green-600 mt-2">
+                ₹58,642
               </p>
-              <p className="text-sm text-green-600">+2.4% from last week</p>
             </div>
             <div className="flex gap-2 mb-4">
               <button className="px-3 py-1 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
@@ -191,10 +190,69 @@ const DashboardPage: FC = () => {
                 Year
               </button>
             </div>
-            <div className="h-64 flex items-end justify-center">
-              <div className="text-gray-400 text-sm">
-                Chart visualization will be rendered here
-              </div>
+            {/* Revenue Area Chart */}
+            <div className="relative h-64">
+              <svg
+                viewBox="0 0 600 200"
+                className="w-full h-full"
+                preserveAspectRatio="none"
+              >
+                {/* Grid lines */}
+                <line x1="0" y1="40" x2="600" y2="40" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4" />
+                <line x1="0" y1="80" x2="600" y2="80" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4" />
+                <line x1="0" y1="120" x2="600" y2="120" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4" />
+                <line x1="0" y1="160" x2="600" y2="160" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4" />
+                
+                {/* Y-axis labels */}
+                <text x="5" y="15" fontSize="10" fill="#9ca3af">₹100k</text>
+                <text x="5" y="55" fontSize="10" fill="#9ca3af">₹80k</text>
+                <text x="5" y="95" fontSize="10" fill="#9ca3af">₹60k</text>
+                <text x="5" y="135" fontSize="10" fill="#9ca3af">₹40k</text>
+                <text x="5" y="175" fontSize="10" fill="#9ca3af">₹20k</text>
+                
+                {/* Area gradient */}
+                <defs>
+                  <linearGradient id="revenueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#fb923c" stopOpacity="0.8" />
+                    <stop offset="50%" stopColor="#fb923c" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#fef3c7" stopOpacity="0.1" />
+                  </linearGradient>
+                </defs>
+                
+                {/* Area path */}
+                <path
+                  d="M 50,150 L 135,140 L 220,100 L 305,60 L 390,90 L 475,70 L 560,50 L 560,200 L 50,200 Z"
+                  fill="url(#revenueGradient)"
+                  stroke="none"
+                />
+                
+                {/* Line */}
+                <path
+                  d="M 50,150 L 135,140 L 220,100 L 305,60 L 390,90 L 475,70 L 560,50"
+                  fill="none"
+                  stroke="#fb923c"
+                  strokeWidth="2"
+                />
+                
+                {/* Data point on Thursday */}
+                <circle cx="305" cy="60" r="5" fill="#fb923c" stroke="white" strokeWidth="2" />
+                
+                {/* Tooltip on Thursday */}
+                <g>
+                  <rect x="295" y="30" width="80" height="25" fill="white" stroke="#e5e7eb" strokeWidth="1" rx="4" />
+                  <text x="300" y="42" fontSize="9" fill="#6b7280">Revenue</text>
+                  <text x="300" y="52" fontSize="11" fontWeight="bold" fill="#16a34a">₹58,642</text>
+                </g>
+                
+                {/* X-axis labels */}
+                <text x="50" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Mon</text>
+                <text x="135" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Tue</text>
+                <text x="220" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Wed</text>
+                <text x="305" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Thu</text>
+                <text x="390" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Fri</text>
+                <text x="475" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Sat</text>
+                <text x="560" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Sun</text>
+              </svg>
             </div>
           </Card>
 

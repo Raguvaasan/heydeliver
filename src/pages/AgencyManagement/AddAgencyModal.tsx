@@ -1,6 +1,7 @@
 import { FC, useState } from "react"
-import { Modal, Button, Label, TextInput, Select } from "flowbite-react"
+import { Modal, Button, Label, TextInput, Select, ToggleSwitch } from "flowbite-react"
 import { useAgencyStore } from "../../store/agencyStore"
+import { HiX } from "react-icons/hi"
 
 interface AddAgencyModalProps {
   isOpen: boolean
@@ -16,7 +17,12 @@ const AddAgencyModal: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
     email: "",
     gstNumber: "",
     address: "",
-    status: "Active" as "Active" | "Inactive",
+    city: "",
+    state: "",
+    pincode: "",
+    username: "",
+    password: "",
+    status: true,
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
 
@@ -32,7 +38,11 @@ const AddAgencyModal: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await addAgency({ ...formData, image: imageFile })
+      await addAgency({ 
+        ...formData, 
+        status: formData.status ? "Active" : "Inactive",
+        image: imageFile 
+      })
       setFormData({
         agencyName: "",
         agencyOwner: "",
@@ -40,7 +50,12 @@ const AddAgencyModal: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
         email: "",
         gstNumber: "",
         address: "",
-        status: "Active",
+        city: "",
+        state: "",
+        pincode: "",
+        username: "",
+        password: "",
+        status: true,
       })
       setImageFile(null)
       onClose()
@@ -50,157 +65,260 @@ const AddAgencyModal: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
   }
 
   return (
-    <Modal show={isOpen} onClose={onClose} size="xl">
-      <Modal.Header>
-        <div className="flex items-center justify-between w-full">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Add New Franchise
-          </h3>
+    <Modal show={isOpen} onClose={onClose} size="lg" position="center">
+      <div className="relative bg-white rounded-lg shadow-2xl max-h-screen overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Add</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg p-1.5"
+          >
+            <HiX className="w-5 h-5" />
+          </button>
         </div>
-      </Modal.Header>
-      <Modal.Body>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Agency Name */}
-            <div>
-              <div className="flex items-center gap-1 mb-2">
-                <Label htmlFor="agencyName" value="Franchise Name" />
-                <span className="text-red-500">*</span>
+
+        <form onSubmit={handleSubmit} className="p-6">
+          {/* Basic Details Section */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-900 mb-4">Basic Details</h4>
+            
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              {/* Franchise Name */}
+              <div>
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  Franchise Name<span className="text-red-500">*</span>
+                </Label>
+                <TextInput
+                  name="agencyName"
+                  type="text"
+                  placeholder="Enter name"
+                  value={formData.agencyName}
+                  onChange={handleChange}
+                  required
+                  sizing="sm"
+                />
               </div>
+
+              {/* Franchise Owner Name */}
+              <div>
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  Franchise Owner Name<span className="text-red-500">*</span>
+                </Label>
+                <TextInput
+                  name="agencyOwner"
+                  type="text"
+                  placeholder="Enter manager name"
+                  value={formData.agencyOwner}
+                  onChange={handleChange}
+                  required
+                  sizing="sm"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              {/* Mobile Number */}
+              <div>
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  Mobile Number<span className="text-red-500">*</span>
+                </Label>
+                <TextInput
+                  name="phone"
+                  type="tel"
+                  placeholder="Enter mobile number"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  required
+                  sizing="sm"
+                />
+              </div>
+
+              {/* Email Address */}
+              <div>
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  Email Address<span className="text-red-500">*</span>
+                </Label>
+                <TextInput
+                  name="email"
+                  type="email"
+                  placeholder="Enter email address"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  sizing="sm"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              {/* GST No */}
+              <div>
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  GST No.<span className="text-red-500">*</span>
+                </Label>
+                <TextInput
+                  name="gstNumber"
+                  type="text"
+                  placeholder="Enter your GST number"
+                  value={formData.gstNumber}
+                  onChange={handleChange}
+                  required
+                  sizing="sm"
+                />
+              </div>
+
+              {/* Status Toggle */}
+              <div>
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  Status<span className="text-red-500">*</span>
+                </Label>
+                <ToggleSwitch
+                  checked={formData.status}
+                  onChange={(checked) => setFormData({ ...formData, status: checked })}
+                  color="success"
+                />
+              </div>
+            </div>
+
+          </div>
+
+          {/* Location Section */}
+          <div className="mb-6 border-2 border-blue-400 rounded-lg p-4">
+            <h4 className="text-sm font-semibold text-gray-900 mb-4">Location</h4>
+            
+            {/* Address */}
+            <div className="mb-4">
+              <Label className="block text-xs font-medium text-gray-700 mb-1">
+                Address<span className="text-red-500">*</span>
+              </Label>
               <TextInput
-                id="agencyName"
-                name="agencyName"
+                name="address"
                 type="text"
-                placeholder="Enter franchise name"
-                value={formData.agencyName}
+                placeholder="Enter full address"
+                value={formData.address}
                 onChange={handleChange}
                 required
+                sizing="sm"
               />
             </div>
 
-            {/* Agency Owner */}
-            <div>
-              <div className="flex items-center gap-1 mb-2">
-                <Label htmlFor="agencyOwner" value="Franchise Owner" />
-                <span className="text-red-500">*</span>
-              </div>
+            {/* City */}
+            <div className="mb-4">
+              <Label className="block text-xs font-medium text-gray-700 mb-1">
+                City<span className="text-red-500">*</span>
+              </Label>
               <TextInput
-                id="agencyOwner"
-                name="agencyOwner"
+                name="city"
                 type="text"
-                placeholder="Enter owner name"
-                value={formData.agencyOwner}
+                placeholder="Enter city name"
+                value={formData.city}
                 onChange={handleChange}
                 required
+                sizing="sm"
               />
             </div>
 
-            {/* Phone */}
-            <div>
-              <div className="flex items-center gap-1 mb-2">
-                <Label htmlFor="phone" value="Phone Number" />
-                <span className="text-red-500">*</span>
+            <div className="grid grid-cols-2 gap-4">
+              {/* State */}
+              <div>
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  State<span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  required
+                  sizing="sm"
+                >
+                  <option value="">Select</option>
+                  <option value="Tamil Nadu">Tamil Nadu</option>
+                  <option value="Karnataka">Karnataka</option>
+                  <option value="Kerala">Kerala</option>
+                  <option value="Andhra Pradesh">Andhra Pradesh</option>
+                  <option value="Telangana">Telangana</option>
+                  <option value="Maharashtra">Maharashtra</option>
+                </Select>
               </div>
-              <TextInput
-                id="phone"
-                name="phone"
-                type="tel"
-                placeholder="Enter phone number"
-                value={formData.phone}
-                onChange={handleChange}
-                required
-              />
-            </div>
 
-            {/* Email */}
-            <div>
-              <Label htmlFor="email" value="Email Address" className="mb-2" />
-              <TextInput
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Enter email address"
-                value={formData.email}
-                onChange={handleChange}
-              />
-            </div>
-
-            {/* GST */}
-            <div>
-              <Label htmlFor="gstNumber" value="GST" className="mb-2" />
-              <TextInput
-                id="gstNumber"
-                name="gstNumber"
-                type="text"
-                placeholder="Enter GST number"
-                value={formData.gstNumber}
-                onChange={handleChange}
-              />
-            </div>
-
-            {/* Status */}
-            <div>
-              <div className="flex items-center gap-1 mb-2">
-                <Label htmlFor="status" value="Status" />
-                <span className="text-red-500">*</span>
+              {/* Pincode */}
+              <div>
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  Pincode<span className="text-red-500">*</span>
+                </Label>
+                <TextInput
+                  name="pincode"
+                  type="text"
+                  placeholder="Enter pincode"
+                  value={formData.pincode}
+                  onChange={handleChange}
+                  required
+                  sizing="sm"
+                />
               </div>
-              <Select
-                id="status"
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                required
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </Select>
             </div>
           </div>
 
-          {/* Address */}
-          <div>
-            <Label htmlFor="address" value="Address" className="mb-2" />
-            <TextInput
-              id="address"
-              name="address"
-              type="text"
-              placeholder="Enter full address"
-              value={formData.address}
-              onChange={handleChange}
-            />
+          {/* Login Credentials Section */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-900 mb-4">Login Credentials</h4>
+            
+            <div className="grid grid-cols-2 gap-4">
+              {/* Username */}
+              <div>
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  Username<span className="text-red-500">*</span>
+                </Label>
+                <TextInput
+                  name="username"
+                  type="text"
+                  placeholder="Enter username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                  sizing="sm"
+                />
+              </div>
+
+              {/* Set Password */}
+              <div>
+                <Label className="block text-xs font-medium text-gray-700 mb-1">
+                  Set Password<span className="text-red-500">*</span>
+                </Label>
+                <TextInput
+                  name="password"
+                  type="password"
+                  placeholder="Enter password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  sizing="sm"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Image */}
-          <div>
-            <Label htmlFor="image" value="Franchise Image" className="mb-2" />
-            <input
-              id="image"
-              name="image"
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-              className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
-            />
-            {imageFile && (
-              <p className="text-xs text-gray-500 mt-1">{imageFile.name}</p>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-3 mt-6">
-            <Button color="gray" onClick={onClose} disabled={loading}>
+          {/* Buttons */}
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              color="gray"
+              onClick={onClose}
+              disabled={loading}
+              className="w-full"
+            >
               Cancel
             </Button>
             <Button
               type="submit"
-              color="warning"
               disabled={loading}
-              className="bg-orange-500 hover:bg-orange-600"
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white"
             >
-              {loading ? "Adding..." : "Add Franchise"}
+              {loading ? "Submitting..." : "Submit"}
             </Button>
           </div>
         </form>
-      </Modal.Body>
+      </div>
     </Modal>
   )
 }

@@ -1,164 +1,216 @@
-import { Button, Modal, Table, ToggleSwitch } from "flowbite-react"
-import { FC, useEffect, useState } from "react"
-import { AiOutlineEdit } from "react-icons/ai"
-import { RiDeleteBin5Line } from "react-icons/ri"
+import { Button, Label, TextInput, Card } from "flowbite-react"
+import { FC, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
-import { useRoleStore } from "../../store/roleAndPermission"
-import { HiOutlineExclamationCircle } from "react-icons/hi"
+
+const modules = [
+  "Franchise Management",
+  "Orders Management",
+  "Payment Management",
+]
+
+interface Permission {
+  module: string
+  view: boolean
+  add: boolean
+  edit: boolean
+  delete: boolean
+}
 
 const RoleAndPermissionPage: FC = () => {
-  const { fetchRoles, deleteRole, updateRole, roles, loading, error } = useRoleStore()
   const navigate = useNavigate()
+  const [roleType, setRoleType] = useState("")
 
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetchRoles()
-  }, [])
-
-  // Ensure roles is always an array
-  const safeRoles = Array.isArray(roles) ? roles : []
-
-  const handleStatusToggle = (id: string, status: boolean) => {
-    // Optimistically update the local state
-    useRoleStore.setState((state) => ({
-      roles: state.roles.map((role) =>
-        role._id === id ? { ...role, status } : role
-      ),
+  const [permissions, setPermissions] = useState<Permission[]>(() =>
+    modules.map((module) => ({
+      module,
+      view: false,
+      add: false,
+      edit: false,
+      delete: false,
     }))
+  )
 
-    // Call API
-    updateRole(id, { status })
+  const handleCheckboxChange = (index: number, key: keyof Permission) => {
+    setPermissions((prevPermissions) => {
+      const updatedPermissions = [...prevPermissions]
+      const currentPermission = updatedPermissions[index]
+      if (currentPermission && key !== 'module') {
+        updatedPermissions[index] = {
+          ...currentPermission,
+          [key]: !currentPermission[key],
+        }
+      }
+      return updatedPermissions
+    })
   }
 
-  const openDeleteModal = (id: string) => {
-    setSelectedRoleId(id)
-    setIsModalOpen(true)
+  const handleSelectAll = () => {
+    const allChecked = permissions.every(
+      (perm) => perm.view && perm.add && perm.edit && perm.delete
+    )
+    setPermissions((prevPermissions) =>
+      prevPermissions.map((perm) => ({
+        ...perm,
+        view: !allChecked,
+        add: !allChecked,
+        edit: !allChecked,
+        delete: !allChecked,
+      }))
+    )
   }
 
-  const handleConfirmDelete = () => {
-    if (selectedRoleId) {
-      deleteRole(selectedRoleId)
-      setSelectedRoleId(null)
-      setIsModalOpen(false)
+  const handleRowSelectAll = (index: number) => {
+    setPermissions((prevPermissions) => {
+      const updatedPermissions = [...prevPermissions]
+      const currentPermission = updatedPermissions[index]
+      if (currentPermission) {
+        const allChecked =
+          currentPermission.view &&
+          currentPermission.add &&
+          currentPermission.edit &&
+          currentPermission.delete
+        updatedPermissions[index] = {
+          ...currentPermission,
+          view: !allChecked,
+          add: !allChecked,
+          edit: !allChecked,
+          delete: !allChecked,
+        }
+      }
+      return updatedPermissions
+    })
+  }
+
+  const handleSubmit = () => {
+    const roleData = {
+      roleType,
+      permissions,
     }
-  }
-
-  const handleCancelDelete = () => {
-    setSelectedRoleId(null)
-    setIsModalOpen(false)
+    console.log("Submitted Role Data:", roleData)
   }
 
   return (
     <NavbarSidebarLayout isFooter={false}>
-      <div className="flex justify-between items-center border-b border-gray-200 p-4 dark:border-gray-700 dark:bg-gray-800">
-        <h1 className="text-xl font-semibold dark:text-white">
-          Role & Permissions
-        </h1>
-        <Button
-          className="bg-[#272727]"
-          onClick={() => navigate("/role/roleform")}
-        >
-          Add Role
-        </Button>
-      </div>
-
-      {loading && (
-        <div className="p-4 text-center">
-          <p>Loading roles...</p>
+      <div className="px-4 pt-6 pb-6">
+        {/* Page Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Access Management
+          </h1>
         </div>
-      )}
 
-      {error && (
-        <div className="p-4 text-center text-red-600">
-          <p>Error: {error}</p>
-        </div>
-      )}
+        <Card>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Role & Permission
+          </h2>
 
-      {!loading && !error && (
-        <Table className="mt-4 divide-y dark:divide-gray-700">
-          <Table.Head className="bg-[#272727] text-white">
-            <Table.HeadCell>Role</Table.HeadCell>
-            <Table.HeadCell>Status</Table.HeadCell>
-            <Table.HeadCell>Action</Table.HeadCell>
-          </Table.Head>
-          <Table.Body className="divide-y dark:divide-gray-700 dark:bg-gray-800">
-            {safeRoles.length === 0 ? (
-              <Table.Row>
-                <Table.Cell colSpan={3} className="text-center">
-                  No roles found
-                </Table.Cell>
-              </Table.Row>
-            ) : (
-              safeRoles.map((role) => (
-            <Table.Row key={role._id}>
-              <Table.Cell>{role.roleType}</Table.Cell>
-              <Table.Cell>
-                <ToggleSwitch
-                  checked={role.status}
-                  label=""
-                  onChange={(checked) => handleStatusToggle(role._id, checked)}
-                />
-              </Table.Cell>
-              <Table.Cell className="flex gap-3 items-center">
-                <AiOutlineEdit
-                  className="text-2xl cursor-pointer"
-                  onClick={() => navigate(`/role/editrole/${role._id}`)}
-                />
-                <RiDeleteBin5Line
-                  className="text-2xl text-red-600 cursor-pointer"
-                  onClick={() => openDeleteModal(role._id)}
-                />
-              </Table.Cell>
-              </Table.Row>
-            ))
-            )}
-          </Table.Body>
-        </Table>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {/* <Modal show={isModalOpen} onClose={handleCancelDelete}>
-        <Modal.Header>Delete Role</Modal.Header>
-        <Modal.Body>
-          <p className="text-gray-700 dark:text-gray-300">
-            Are you sure you want to delete this role? This action cannot be
-            undone.
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button color="failure" onClick={handleConfirmDelete}>
-            Yes, Delete
-          </Button>
-          <Button color="gray" onClick={handleCancelDelete}>
-            Cancel
-          </Button>
-        </Modal.Footer>
-      </Modal> */}
-
-      <Modal show={isModalOpen} onClose={handleCancelDelete} size="md">
-        <Modal.Header className="px-3 pt-3 pb-0">
-          <span className="sr-only">block</span>
-        </Modal.Header>
-        <Modal.Body className="px-6 pb-6 pt-0">
-          <div className="flex flex-col items-center gap-y-6 text-center">
-            <HiOutlineExclamationCircle className="text-7xl text-red-600" />
-            <p className="text-lg text-gray-500 dark:text-gray-300">
-              Are you sure you want to delete this reward?
-            </p>
-            <div className="flex items-center gap-x-3">
-              <Button color="gray" onClick={handleCancelDelete}>
-                No, cancel
-              </Button>
-              <Button color="failure" onClick={handleConfirmDelete}>
-                Yes, I'm sure
-              </Button>
-            </div>
+          {/* Role Name Input */}
+          <div className="mb-6">
+            <Label htmlFor="roleName" className="mb-2 block">
+              Role Name
+            </Label>
+            <TextInput
+              id="roleName"
+              placeholder="Enter role name"
+              value={roleType}
+              onChange={(e) => setRoleType(e.target.value)}
+              required
+            />
           </div>
-        </Modal.Body>
-      </Modal>
+
+          {/* Permissions Table */}
+          <div className="overflow-x-auto mb-6">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-800 text-white text-xs uppercase">
+                <tr>
+                  <th className="px-4 py-3">ASSIGN ROLE</th>
+                  <th className="px-4 py-3 text-center">VIEW</th>
+                  <th className="px-4 py-3 text-center">ADD</th>
+                  <th className="px-4 py-3 text-center">EDIT</th>
+                  <th className="px-4 py-3 text-center">DELETE</th>
+                  <th className="px-4 py-3 text-center">
+                    <button
+                      onClick={handleSelectAll}
+                      className="text-white hover:text-orange-400 font-semibold"
+                    >
+                      SELECT ALL
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {permissions.map((perm, index) => (
+                  <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                      {perm.module}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
+                        checked={perm.view}
+                        onChange={() => handleCheckboxChange(index, "view")}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
+                        checked={perm.add}
+                        onChange={() => handleCheckboxChange(index, "add")}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
+                        checked={perm.edit}
+                        onChange={() => handleCheckboxChange(index, "edit")}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
+                        checked={perm.delete}
+                        onChange={() => handleCheckboxChange(index, "delete")}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
+                        checked={
+                          perm.view && perm.add && perm.edit && perm.delete
+                        }
+                        onChange={() => handleRowSelectAll(index)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3">
+            <Button
+              color="gray"
+              onClick={() => navigate(-1)}
+              className="border border-gray-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              Submit
+            </Button>
+          </div>
+        </Card>
+      </div>
     </NavbarSidebarLayout>
   )
 }

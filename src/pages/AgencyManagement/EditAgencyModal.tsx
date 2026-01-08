@@ -15,7 +15,12 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
     phone: "",
     email: "",
     address: "",
+    city: "",
+    state: "",
+    pincode: "",
     gstNumber: "",
+    username: "",
+    password: "",
     status: "Active" as "Active" | "Inactive",
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -28,7 +33,12 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
         phone: selectedAgency.phone || "",
         email: selectedAgency.email || "",
         address: selectedAgency.address || "",
-        gstNumber: selectedAgency.gstNumber ||"",
+        city: (selectedAgency as any).city || "",
+        state: (selectedAgency as any).state || "",
+        pincode: (selectedAgency as any).pincode || "",
+        gstNumber: selectedAgency.gstNumber || "",
+        username: (selectedAgency as any).username || "",
+        password: "",
         status: selectedAgency.status || "Active",
       })
       setImageFile(null)
@@ -122,7 +132,10 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
 
             {/* Email */}
             <div>
-              <Label htmlFor="email" value="Email Address" className="mb-2" />
+              <div className="flex items-center gap-1 mb-2">
+                <Label htmlFor="email" value="Email Address" />
+                <span className="text-red-500">*</span>
+              </div>
               <TextInput
                 id="email"
                 name="email"
@@ -130,18 +143,110 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
                 placeholder="Enter email address"
                 value={formData.email}
                 onChange={handleChange}
+                required
               />
             </div>
 
             {/* GST */}
             <div>
-              <Label htmlFor="gstNumber" value="GST" className="mb-2" />
+              <div className="flex items-center gap-1 mb-2">
+                <Label htmlFor="gstNumber" value="GST Number" />
+                <span className="text-red-500">*</span>
+              </div>
               <TextInput
                 id="gstNumber"
                 name="gstNumber"
                 type="text"
                 placeholder="Enter GST number"
                 value={formData.gstNumber}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            {/* City */}
+            <div>
+              <div className="flex items-center gap-1 mb-2">
+                <Label htmlFor="city" value="City" />
+                <span className="text-red-500">*</span>
+              </div>
+              <TextInput
+                id="city"
+                name="city"
+                type="text"
+                placeholder="Enter city name"
+                value={formData.city}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            {/* State */}
+            <div>
+              <div className="flex items-center gap-1 mb-2">
+                <Label htmlFor="state" value="State" />
+                <span className="text-red-500">*</span>
+              </div>
+              <Select
+                id="state"
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select</option>
+                <option value="Tamil Nadu">Tamil Nadu</option>
+                <option value="Karnataka">Karnataka</option>
+                <option value="Kerala">Kerala</option>
+                <option value="Andhra Pradesh">Andhra Pradesh</option>
+                <option value="Telangana">Telangana</option>
+                <option value="Maharashtra">Maharashtra</option>
+              </Select>
+            </div>
+
+            {/* Pincode */}
+            <div>
+              <div className="flex items-center gap-1 mb-2">
+                <Label htmlFor="pincode" value="Pincode" />
+                <span className="text-red-500">*</span>
+              </div>
+              <TextInput
+                id="pincode"
+                name="pincode"
+                type="text"
+                placeholder="Enter pincode"
+                value={formData.pincode}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            {/* Username */}
+            <div>
+              <div className="flex items-center gap-1 mb-2">
+                <Label htmlFor="username" value="Username" />
+                <span className="text-red-500">*</span>
+              </div>
+              <TextInput
+                id="username"
+                name="username"
+                type="text"
+                placeholder="Enter username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <Label htmlFor="password" value="Password (leave blank to keep current)" className="mb-2" />
+              <TextInput
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Enter new password"
+                value={formData.password}
                 onChange={handleChange}
               />
             </div>

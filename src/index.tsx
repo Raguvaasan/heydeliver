@@ -14,6 +14,8 @@ import AddRolePage from "./pages/AccessManagement/AddRolePage"
 import EditRolePage from "./pages/AccessManagement/EditRolePage"
 import DashboardPage from "./pages/Dashboard/DashboardPage"
 import AgencyManagementPage from "./pages/AgencyManagement/AgencyManagementPage"
+import SubadminAndSupport from "./pages/AccessManagement/SubadminAndSupport"
+import StaffPage from "./pages/AccessManagement/StaffPage"
 import { ThemeProvider } from "./context/ThemeContext"
 import { Toaster } from "react-hot-toast"
 import RegisterPage from "./pages/authentication/RegisterPage"
@@ -88,6 +90,24 @@ root.render(
             element={
               <ProtectedRoute>
                 <EditRolePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/staff"
+            element={
+              <ProtectedRoute>
+                <SubadminAndSupport />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/staff/:id"
+            element={
+              <ProtectedRoute>
+                <StaffPage />
               </ProtectedRoute>
             }
           />

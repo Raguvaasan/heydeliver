@@ -1,4 +1,4 @@
-import { FC } from "react"
+import { FC, useMemo } from "react"
 import { HiMenu, HiSearch, HiBell, HiChevronDown } from "react-icons/hi"
 
 interface NavbarProps {
@@ -44,13 +44,12 @@ const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
           {/* User Profile */}
           <div className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
-              RA
+              A
             </div>
             <div className="hidden md:block">
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                Robert Allen
+                Admin
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Admin</p>
             </div>
             <HiChevronDown className="h-4 w-4 text-gray-600 dark:text-gray-300" />
           </div>

@@ -10,6 +10,11 @@ interface Agency {
   status: "Active" | "Inactive"
   email?: string
   address?: string
+  city?: string
+  state?: string
+  pincode?: string
+  username?: string
+  password?: string
   createdAt?: string
   updatedAt?: string
   image?: string
@@ -64,6 +69,10 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
         status: item.status,
         email: item.email,
         address: item.address,
+        city: item.city,
+        state: item.state,
+        pincode: item.pincode,
+        username: item.username,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
         image: item.image,
@@ -113,6 +122,10 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
         status: payload?.status,
         email: payload?.email,
         address: payload?.address,
+        city: payload?.city,
+        state: payload?.state,
+        pincode: payload?.pincode,
+        username: payload?.username,
         createdAt: payload?.createdAt,
         updatedAt: payload?.updatedAt,
         image: payload?.image,
@@ -170,6 +183,10 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
         status: payload?.status,
         email: payload?.email,
         address: payload?.address,
+        city: payload?.city,
+        state: payload?.state,
+        pincode: payload?.pincode,
+        username: payload?.username,
         createdAt: payload?.createdAt,
         updatedAt: payload?.updatedAt,
         image: payload?.image,
@@ -200,15 +217,22 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
   deleteAgency: async (id) => {
     set({ loading: true, error: null })
     try {
-      await http.delete(`/admin/agency/${id}`)
+      if (!id) {
+        throw new Error("Agency ID is required")
+      }
+      console.log("Deleting agency with ID:", id) // Debug log
+      await http.delete(`/admin/agency/${encodeURIComponent(id)}`)
       set((state) => ({
         agencies: state.agencies.filter((a) => a.id !== id),
         loading: false
       }))
       toast.success("Agency deleted successfully!")
     } catch (error: any) {
-      set({ loading: false, error: error?.response?.data?.message || error?.message || "Failed to delete agency" })
-      toast.error("Agency delete failed")
+      console.error("Delete error:", error.response?.data) // Debug log
+      const message = error?.response?.data?.message || error?.message || "Failed to delete agency"
+      set({ loading: false, error: message })
+      toast.error(message)
+      throw new Error(message)
     }
   },
 

@@ -1,10 +1,12 @@
-import { FC } from "react"
+import { FC, useState, useMemo } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   HiHome,
   HiOfficeBuilding,
+  HiShoppingCart,
+  HiCreditCard,
+  HiChartBar,
   HiLocationMarker,
-  HiCube,
   HiUserGroup,
   HiCog,
   HiChevronDown,
@@ -34,7 +36,7 @@ const Sidebar: FC<SidebarProps> = ({
 }) => {
   const location = useLocation()
   const navigate = useNavigate()
-
+const [openMenus, setOpenMenus] = useState<string[]>([])
   const menuItems: MenuItem[] = [
     {
       title: "Dashboard",
@@ -44,51 +46,82 @@ const Sidebar: FC<SidebarProps> = ({
     {
       title: "Franchise Management",
       icon: <HiOfficeBuilding className="h-5 w-5" />,
-      path: "/agencies",
-    },
-    {
-      title: "Hub Management",
-      icon: <HiLocationMarker className="h-5 w-5" />,
-      path: "/hubs",
+      path: "/franchise",
       submenu: [
-        { title: "All Hubs", path: "/hubs" },
-        { title: "Add Hub", path: "/hubs/add" },
-        { title: "Hub Zones", path: "/hubs/zones" },
+      
+        { title: "Manage Franchise", path: "/agencies", },
       ],
     },
     {
       title: "Access Management",
       icon: <HiUserGroup className="h-5 w-5" />,
-      path: "/role",
+      path: "/access",
       submenu: [
-        { title: "Roles & Permissions", path: "/role" },
-        { title: "Staff Management", path: "/staff" },
+        { title: "Manage Staffs", path: "/staff" },
+        { title: "Role & Permissions", path: "/role" },
       ],
     },
     {
-      title: "Parcel Management",
-      icon: <HiCube className="h-5 w-5" />,
-      path: "/parcels",
+      title: "Orders",
+      icon: <HiShoppingCart className="h-5 w-5" />,
+      path: "/orders",
       submenu: [
-        { title: "All Parcels", path: "/parcels" },
-        { title: "Track Parcel", path: "/parcels/track" },
-        { title: "Bookings", path: "/parcels/bookings" },
+        { title: "Completed Orders", path: "/orders/completed" },
+        { title: "Forward Orders", path: "/orders/forward" },
+        { title: "Pickup Requests", path: "/orders/pickup" },
       ],
+    },
+    {
+      title: "Payments",
+      icon: <HiCreditCard className="h-5 w-5" />,
+      path: "/payments",
+      submenu: [
+        { title: "Wallet Transactions", path: "/payments/wallet" },
+        { title: "Invoices", path: "/payments/invoices" },
+      ],
+    },
+    {
+      title: "Reports",
+      icon: <HiChartBar className="h-5 w-5" />,
+      path: "/reports",
+      submenu: [
+        { title: "Franchise wise", path: "/reports/franchise" },
+        { title: "Total orders", path: "/reports/orders" },
+        { title: "Total Revenue", path: "/reports/revenue" },
+        { title: "Delivery Performance", path: "/reports/delivery" },
+      ],
+    },
+    {
+      title: "Tracking",
+      icon: <HiLocationMarker className="h-5 w-5" />,
+      path: "/tracking",
     },
     {
       title: "Settings",
       icon: <HiCog className="h-5 w-5" />,
       path: "/settings",
       submenu: [
-        { title: "General", path: "/settings/general" },
-        { title: "Profile", path: "/settings/profile" },
-        { title: "Security", path: "/settings/security" },
+        { title: "Rate Calculator Setup", path: "/settings/rate-calculator" },
+        { title: "Pincode Serviceability", path: "/settings/pincode" },
+        { title: "Rate Card", path: "/settings/rate-card" },
       ],
     },
   ]
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + "/")
+  }
+
+  const toggleMenu = (menuTitle: string) => {
+    setOpenMenus((prev) =>
+      prev.includes(menuTitle)
+        ? prev.filter((title) => title !== menuTitle)
+        : [...prev, menuTitle]
+    )
+  }
+
+  const isMenuOpen = (menuTitle: string) => {
+    return openMenus.includes(menuTitle) || isActive(menuItems.find(item => item.title === menuTitle)?.path || "")
   }
 
   const handleLogout = () => {
@@ -129,30 +162,55 @@ const Sidebar: FC<SidebarProps> = ({
             <div className="space-y-1">
               {menuItems.map((item, index) => (
                 <div key={index}>
-                  <Link
-                    to={item.path}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-                      isActive(item.path)
-                        ? "bg-purple-600 text-white"
-                        : "text-gray-300 hover:bg-gray-700 hover:text-white"
-                    }`}
-                  >
-                    <span className="flex-shrink-0">{item.icon}</span>
-                    <span className="flex-1 text-sm font-medium">
-                      {item.title}
-                    </span>
-                    {item.submenu && (
-                      <HiChevronDown className="h-4 w-4 flex-shrink-0" />
-                    )}
-                    {item.badge && (
-                      <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                        {item.badge}
+                  {item.submenu ? (
+                    // Menu item with submenu - use button instead of Link
+                    <button
+                      onClick={() => toggleMenu(item.title)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                        isActive(item.path)
+                          ? "bg-purple-600 text-white"
+                          : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                      }`}
+                    >
+                      <span className="flex-shrink-0">{item.icon}</span>
+                      <span className="flex-1 text-left text-sm font-medium">
+                        {item.title}
                       </span>
-                    )}
-                  </Link>
+                      <HiChevronDown
+                        className={`h-4 w-4 flex-shrink-0 transition-transform ${
+                          isMenuOpen(item.title) ? "rotate-180" : ""
+                        }`}
+                      />
+                      {item.badge && (
+                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  ) : (
+                    // Menu item without submenu - use Link
+                    <Link
+                      to={item.path}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                        isActive(item.path)
+                          ? "bg-purple-600 text-white"
+                          : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                      }`}
+                    >
+                      <span className="flex-shrink-0">{item.icon}</span>
+                      <span className="flex-1 text-sm font-medium">
+                        {item.title}
+                      </span>
+                      {item.badge && (
+                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  )}
 
-                  {/* Submenu - Show when active */}
-                  {item.submenu && isActive(item.path) && (
+                  {/* Submenu - Show when open */}
+                  {item.submenu && isMenuOpen(item.title) && (
                     <div className="ml-11 mt-1 space-y-1">
                       {item.submenu.map((subItem, subIndex) => (
                         <Link
@@ -178,11 +236,11 @@ const Sidebar: FC<SidebarProps> = ({
           <div className="p-4 border-t border-gray-700">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                RA
+                A
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-white">Robert Allen</p>
-                <p className="text-xs text-gray-400">Admin</p>
+                <p className="text-sm font-medium text-white">Admin</p>
+                {/* <p className="text-xs text-gray-400">Admin</p> */}
               </div>
               <button
                 onClick={handleLogout}
