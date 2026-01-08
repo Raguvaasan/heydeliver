@@ -2,7 +2,7 @@
 import { Button, Label, TextInput } from "flowbite-react"
 import { useState, type FC, FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
-import { loginAdminUser } from "../../store/loginStore"
+import { loginAdminUser, loginFranchiseUser, loginStaffUser } from "../../store/loginStore"
 import { ToastContainer, toast } from "react-toastify"
 
 interface LoginResponse {
@@ -16,8 +16,9 @@ interface LoginResponse {
 
 const LoginPage: FC = function () {
   const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
-  const [loginType, setLoginType] = useState<"admin" | "franchise">("admin")
+  const [loginType, setLoginType] = useState<"admin" | "franchise" | "staff">("admin")
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
 
@@ -26,32 +27,51 @@ const LoginPage: FC = function () {
     setIsLoading(true)
 
     try {
-      const result = (await loginAdminUser(email, password)) as LoginResponse
+      let result: LoginResponse
+      
+      if (loginType === "franchise") {
+        result = (await loginFranchiseUser(username, password)) as LoginResponse
+      } else if (loginType === "staff") {
+        result = (await loginStaffUser(username, password)) as LoginResponse
+      } else {
+        result = (await loginAdminUser(email, password)) as LoginResponse
+      }
 
       console.log("Login response:", result) // Debug log
 
-      // Check both possible response structures
-      const token = result.data?.token || result.data?.["data"]?.token
-      const userData = result.data
+      // Check for success in response
+      const isSuccess = result.data?.success
+      
+      if (isSuccess) {
+        // Check both possible response structures for token
+        const token = result.data?.token || result.data?.["data"]?.token
+        const userData = result.data?.data || result.data
 
-      if (token) {
-        console.log("Saving token:", token)
-        sessionStorage.setItem("authToken", token)
+        if (token) {
+          console.log("Saving token:", token)
+          sessionStorage.setItem("authToken", token)
+        } else {
+          // If no token, create a session identifier for franchise/staff login
+          console.log("No token found, creating session identifier")
+          const sessionId = `session_${loginType}_${Date.now()}`
+          sessionStorage.setItem("authToken", sessionId)
+        }
+        
         sessionStorage.setItem(
           "profileData",
           JSON.stringify(userData)
         )
+        sessionStorage.setItem("loginType", loginType)
 
-        // Verify token is saved
-        const savedToken = sessionStorage.getItem("authToken")
-        console.log("Token saved successfully:", savedToken ? "Yes" : "No")
+        // Verify data is saved
+        console.log("Login data saved successfully")
 
         toast.success("Login successful! Redirecting...")
         setTimeout(() => {
           window.location.href = "/admin/dashboard"
         }, 500)
       } else {
-        throw new Error("Invalid response from server")
+        throw new Error(result.data?.message || "Invalid response from server")
       }
     } catch (err: any) {
       console.error("Login error:", err)
@@ -115,7 +135,7 @@ const LoginPage: FC = function () {
                   </span>
                 </label>
 
-                <label className="flex items-center cursor-pointer group opacity-60">
+                <label className="flex items-center cursor-pointer group">
                   <div className="relative">
                     <input
                       type="radio"
@@ -123,32 +143,35 @@ const LoginPage: FC = function () {
                       value="franchise"
                       checked={loginType === "franchise"}
                       onChange={() => setLoginType("franchise")}
-                      disabled
                       className="sr-only peer"
                     />
-                    <div className="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+                    <div className="w-6 h-6 border-2 border-gray-300 rounded-full peer-checked:border-orange-500 transition-all flex items-center justify-center">
+                      {loginType === "franchise" && (
+                        <div className="w-3.5 h-3.5 bg-orange-500 rounded-full"></div>
+                      )}
+                    </div>
                   </div>
-                  <span className="ml-2.5 text-base font-medium text-gray-400">
+                  <span className="ml-2.5 text-base font-medium text-gray-900">
                     Franchise Login
                   </span>
                 </label>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Email Field */}
+                {/* Email/Username Field */}
                 <div>
                   <Label
-                    htmlFor="email"
+                    htmlFor={loginType === "admin" ? "email" : "username"}
                     className="block mb-2.5 text-base font-medium text-gray-700"
                   >
-                    Your Email Address*
+                    {loginType === "admin" ? "Your Email Address*" : "Username*"}
                   </Label>
                   <TextInput
-                    id="email"
-                    type="email"
-                    placeholder="robertallen@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id={loginType === "admin" ? "email" : "username"}
+                    type={loginType === "admin" ? "email" : "text"}
+                    placeholder={loginType === "admin" ? "robertallen@example.com" : "Enter username"}
+                    value={loginType === "admin" ? email : username}
+                    onChange={(e) => loginType === "admin" ? setEmail(e.target.value) : setUsername(e.target.value)}
                     required
                     className="w-full text-base"
                   />

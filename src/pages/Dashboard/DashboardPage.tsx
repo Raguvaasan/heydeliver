@@ -66,8 +66,42 @@ const StatCard: FC<StatCardProps> = ({
 }
 
 const DashboardPage: FC = () => {
-  // Sample data - replace with actual API calls
-  const stats = [
+  const loginType = sessionStorage.getItem("loginType") || "admin"
+  
+  // Franchise-specific stats
+  const franchiseStats = [
+    {
+      icon: <HiTruck className="h-5 w-5" />,
+      title: "Active Shipments",
+      value: "350",
+      subtitle: "In Transit 153 | Out for Delivery 197",
+      iconBgColor: "bg-blue-500",
+    },
+    {
+      icon: <HiCube className="h-5 w-5" />,
+      title: "Total Shipments",
+      value: "2775",
+      subtitle: "↑8.0% this week",
+      iconBgColor: "bg-orange-500",
+    },
+    {
+      icon: <HiCurrencyRupee className="h-5 w-5" />,
+      title: "Wallet",
+      value: "₹5,732",
+      subtitle: "Today ₹900",
+      iconBgColor: "bg-yellow-500",
+    },
+    {
+      icon: <HiOfficeBuilding className="h-5 w-5" />,
+      title: "Active Franchise",
+      value: "65",
+      subtitle: "Inactive 1",
+      iconBgColor: "bg-pink-500",
+    },
+  ]
+  
+  // Admin stats
+  const adminStats = [
     {
       icon: <HiTruck className="h-5 w-5" />,
       title: "Active Shipments",
@@ -104,6 +138,8 @@ const DashboardPage: FC = () => {
       iconBgColor: "bg-blue-500",
     },
   ]
+  
+  const stats = loginType === "franchise" || loginType === "staff" ? franchiseStats : adminStats
 
   const recentBookings = [
     {
@@ -180,7 +216,7 @@ const DashboardPage: FC = () => {
               <button className="px-3 py-1 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                 Day
               </button>
-              <button className="px-3 py-1 text-sm rounded-lg bg-purple-600 text-white">
+              <button className="px-3 py-1 text-sm rounded-lg bg-orange-500 text-white">
                 Week
               </button>
               <button className="px-3 py-1 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
@@ -327,21 +363,20 @@ const DashboardPage: FC = () => {
             </h3>
             <a
               href="/admin/bookings"
-              className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+              className="text-sm text-orange-600 hover:text-orange-700 font-medium"
             >
               View All
             </a>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-700 dark:text-gray-300">
+              <thead className="bg-gray-900 dark:bg-gray-800 text-xs uppercase text-white">
                 <tr>
                   <th className="px-4 py-3">
                     <input type="checkbox" className="rounded" />
                   </th>
                   <th className="px-4 py-3">Booking ID</th>
-                  <th className="px-4 py-3">Agency</th>
-                  <th className="px-4 py-3">Hub</th>
+                  <th className="px-4 py-3">Franchise</th>
                   <th className="px-4 py-3">Amount</th>
                   <th className="px-4 py-3">Status</th>
                 </tr>
@@ -355,14 +390,11 @@ const DashboardPage: FC = () => {
                     <td className="px-4 py-3">
                       <input type="checkbox" className="rounded" />
                     </td>
-                    <td className="px-4 py-3 font-medium text-yellow-600">
+                    <td className="px-4 py-3 font-medium text-orange-600">
                       {booking.id}
                     </td>
                     <td className="px-4 py-3 text-gray-900 dark:text-white">
                       {booking.agency}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                      {booking.hub}
                     </td>
                     <td className="px-4 py-3 text-gray-900 dark:text-white">
                       {booking.amount}

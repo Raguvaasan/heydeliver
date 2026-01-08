@@ -11,6 +11,7 @@ import {
   HiCog,
   HiChevronDown,
   HiLogout,
+  HiCurrencyRupee,
 } from "react-icons/hi"
 
 interface SidebarProps {
@@ -37,7 +38,11 @@ const Sidebar: FC<SidebarProps> = ({
   const location = useLocation()
   const navigate = useNavigate()
 const [openMenus, setOpenMenus] = useState<string[]>([])
-  const menuItems: MenuItem[] = [
+  // Get login type from session storage
+  const loginType = sessionStorage.getItem("loginType") || "admin"
+  
+  // Admin menu items
+  const adminMenuItems: MenuItem[] = [
     {
       title: "Dashboard",
       icon: <HiHome className="h-5 w-5" />,
@@ -48,8 +53,7 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
       icon: <HiOfficeBuilding className="h-5 w-5" />,
       path: "/franchise",
       submenu: [
-      
-        { title: "Manage Franchise", path: "/agencies", },
+        { title: "Manage Franchise", path: "/agencies" },
       ],
     },
     {
@@ -107,6 +111,68 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
       ],
     },
   ]
+
+  // Franchise menu items
+  const franchiseMenuItems: MenuItem[] = [
+    {
+      title: "Dashboard",
+      icon: <HiHome className="h-5 w-5" />,
+      path: "/dashboard",
+    },
+    {
+      title: "Orders",
+      icon: <HiShoppingCart className="h-5 w-5" />,
+      path: "/orders",
+    },
+    {
+      title: "Staff Management",
+      icon: <HiUserGroup className="h-5 w-5" />,
+      path: "/staff",
+    },
+    {
+      title: "Rate Calculator",
+      icon: <HiChartBar className="h-5 w-5" />,
+      path: "/rate-calculator",
+    },
+    {
+      title: "Service Availability",
+      icon: <HiCog className="h-5 w-5" />,
+      path: "/service-availability",
+    },
+    {
+      title: "Tracking",
+      icon: <HiLocationMarker className="h-5 w-5" />,
+      path: "/tracking",
+    },
+    {
+      title: "Wallet",
+      icon: <HiCurrencyRupee className="h-5 w-5" />,
+      path: "/wallet",
+    },
+    {
+      title: "Invoice",
+      icon: <HiCreditCard className="h-5 w-5" />,
+      path: "/invoice",
+    },
+    {
+      title: "Reports",
+      icon: <HiChartBar className="h-5 w-5" />,
+      path: "/reports",
+    },
+    {
+      title: "Profile",
+      icon: <HiUserGroup className="h-5 w-5" />,
+      path: "/profile",
+    },
+  ]
+
+  // Staff menu items (similar to franchise)
+  const staffMenuItems: MenuItem[] = franchiseMenuItems
+
+  // Select menu items based on login type
+  const menuItems = loginType === "franchise" || loginType === "staff" 
+    ? franchiseMenuItems 
+    : adminMenuItems
 
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + "/")
@@ -168,7 +234,7 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
                       onClick={() => toggleMenu(item.title)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                         isActive(item.path)
-                          ? "bg-purple-600 text-white"
+                          ? "bg-orange-500 text-white"
                           : "text-gray-300 hover:bg-gray-700 hover:text-white"
                       }`}
                     >
@@ -193,7 +259,7 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
                       to={item.path}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                         isActive(item.path)
-                          ? "bg-purple-600 text-white"
+                          ? "bg-orange-500 text-white"
                           : "text-gray-300 hover:bg-gray-700 hover:text-white"
                       }`}
                     >
@@ -218,7 +284,7 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
                           to={subItem.path}
                           className={`block px-3 py-2 text-sm rounded-lg transition-all ${
                             location.pathname === subItem.path
-                              ? "text-purple-400 font-medium"
+                              ? "text-orange-400 font-medium"
                               : "text-gray-400 hover:text-white hover:bg-gray-700"
                           }`}
                         >
@@ -235,12 +301,28 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
           {/* User Profile Section */}
           <div className="p-4 border-t border-gray-700">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                A
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-white font-bold text-sm">
+                {(() => {
+                  try {
+                    const profileData = JSON.parse(sessionStorage.getItem("profileData") || "{}")
+                    const name = profileData.data?.name || profileData.data?.agencyName || profileData.name || "User"
+                    return name.charAt(0).toUpperCase()
+                  } catch {
+                    return "U"
+                  }
+                })()}
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-white">Admin</p>
-                {/* <p className="text-xs text-gray-400">Admin</p> */}
+                <p className="text-sm font-medium text-white truncate">
+                  {(() => {
+                    try {
+                      const profileData = JSON.parse(sessionStorage.getItem("profileData") || "{}")
+                      return profileData.data?.name || profileData.data?.agencyName || profileData.name || "User"
+                    } catch {
+                      return "User"
+                    }
+                  })()}
+                </p>
               </div>
               <button
                 onClick={handleLogout}

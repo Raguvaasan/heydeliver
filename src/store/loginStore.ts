@@ -10,6 +10,20 @@ export const loginAdminUser = (
   return http.post("/admin/auth/login", { email, password, captchaToken })
 }
 
+export const loginFranchiseUser = (
+  username: string,
+  password: string
+) => {
+  return http.post("/admin/agency/login", { username, password })
+}
+
+export const loginStaffUser = (
+  username: string,
+  password: string
+) => {
+  return http.post("/admin/staff/login", { username, password })
+}
+
 interface Profile {
   name: string
   email: string
