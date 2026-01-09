@@ -3,7 +3,7 @@ import { Button, Label, TextInput } from "flowbite-react"
 import { useState, type FC, FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { loginAdminUser, loginFranchiseUser, loginStaffUser } from "../../store/loginStore"
-import { ToastContainer, toast } from "react-toastify"
+import toast from "react-hot-toast"
 
 interface LoginResponse {
   data?: {
@@ -28,13 +28,27 @@ const LoginPage: FC = function () {
 
     try {
       let result: LoginResponse
+      let lastError: any = null
       
       if (loginType === "franchise") {
         result = (await loginFranchiseUser(username, password)) as LoginResponse
-      } else if (loginType === "staff") {
-        result = (await loginStaffUser(username, password)) as LoginResponse
       } else {
-        result = (await loginAdminUser(email, password)) as LoginResponse
+        // Admin login - try admin endpoint first, if it fails try staff endpoint
+        try {
+          result = (await loginAdminUser(email, password)) as LoginResponse
+        } catch (adminError: any) {
+          // If admin login fails, try staff login with email as username
+          console.log("Admin login failed, trying staff login...")
+          console.log("Admin error:", adminError.response?.data)
+          lastError = adminError
+          try {
+            result = (await loginStaffUser(email, password)) as LoginResponse
+          } catch (staffError: any) {
+            console.log("Staff login also failed:", staffError.response?.data)
+            // Both failed, throw the most recent error
+            throw staffError
+          }
+        }
       }
 
       console.log("Login response:", result) // Debug log
@@ -69,13 +83,22 @@ const LoginPage: FC = function () {
         toast.success("Login successful! Redirecting...")
         setTimeout(() => {
           window.location.href = "/admin/dashboard"
-        }, 500)
+        }, 1500)
       } else {
         throw new Error(result.data?.message || "Invalid response from server")
       }
     } catch (err: any) {
-      console.error("Login error:", err)
-      toast.error(err.response?.data?.message || "Invalid login credentials")
+      console.error("Login error details:", err)
+      console.error("Error response:", err.response)
+      const errorMessage = err.response?.data?.message || err.message || "Invalid login credentials"
+      console.error("Showing error:", errorMessage)
+      
+      // Show alert as backup in case toast doesn't show
+      alert(`Login Failed: ${errorMessage}`)
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+      })
     } finally {
       setIsLoading(false)
     }
@@ -83,7 +106,6 @@ const LoginPage: FC = function () {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      <ToastContainer position="top-center" autoClose={3000} />
       
       {/* Full Background Image */}
       <div 

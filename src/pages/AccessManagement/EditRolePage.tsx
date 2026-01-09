@@ -3,6 +3,7 @@ import { FC, useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useRoleStore } from "../../store/roleAndPermission"
+import toast from "react-hot-toast"
 
 const EditRolePage: FC = () => {
   const navigate = useNavigate()
@@ -30,23 +31,50 @@ const EditRolePage: FC = () => {
 
   useEffect(() => {
     if (selectedRole) {
-      setRoleType(selectedRole?.roleType || "")
+      setRoleType(selectedRole?.roleName || "")
       setStatus(selectedRole?.status ?? true)
 
+      // Convert API format to UI format
       const formattedPermissions = (selectedRole?.permissions || []).map(
         (perm: any) => ({
-          moduleName: perm.moduleName,
+          moduleName: perm.module,
           permission: {
-            view: perm.permission?.view ?? false,
-            add: perm.permission?.add ?? false,
-            edit: perm.permission?.edit ?? false,
-            delete: perm.permission?.delete ?? false,
+            view: perm?.read ?? false,
+            add: perm?.write ?? false,
+            edit: perm?.update ?? false,
+            delete: perm?.delete ?? false,
           },
         })
       )
       setPermissions(formattedPermissions)
+      
+      console.log("Selected Role:", selectedRole)
+      console.log("Formatted Permissions:", formattedPermissions)
     }
   }, [selectedRole])
+
+  // Use modules from API if available, otherwise use modules from existing permissions
+  // If both are empty, show default modules
+  const defaultModules = [
+    "Dashboard",
+    "Franchise Management", 
+    "Access Management",
+    "Orders Management",
+    "Payment Management",
+    "Reports",
+    "Tracking",
+    "Settings"
+  ]
+  
+  const displayModules = modules.length > 0 
+    ? modules 
+    : permissions.length > 0 
+      ? permissions.map(p => p.moduleName)
+      : defaultModules
+  
+  console.log("Display Modules:", displayModules)
+  console.log("Modules from API:", modules)
+  console.log("Permissions:", permissions)
 
   const handleCheckboxChange = (moduleName: string, key: string) => {
     setPermissions((prevPermissions) => {
@@ -81,15 +109,35 @@ const EditRolePage: FC = () => {
   }
 
   const handleSubmit = async () => {
-    const roleData = {
-      roleType,
-      status,
-      permissions,
+    if (!roleType.trim()) {
+      toast.error("Please enter a role name.")
+      return
     }
-    if (id) {
-      await updateRole(id, roleData)
+
+    try {
+      // Convert UI permissions format to API format
+      const apiPermissions = permissions.map((perm) => ({
+        module: perm.moduleName,
+        read: perm.permission.view || false,
+        write: perm.permission.add || false,
+        update: perm.permission.edit || false,
+        delete: perm.permission.delete || false
+      }))
+
+      const roleData = {
+        roleName: roleType,
+        permissions: apiPermissions,
+        status
+      }
+      
+      console.log("Updating role data:", roleData)
+      if (id) {
+        await updateRole(id, roleData)
+        navigate("/role")
+      }
+    } catch (error) {
+      console.error("Failed to update role:", error)
     }
-    navigate("/role")
   }
 
   // If role data is still loading or not found, show loading state
@@ -134,7 +182,7 @@ const EditRolePage: FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-              {modules.map((moduleName, index) => {
+              {displayModules.map((moduleName, index) => {
                 const currentPerm = permissions.find(
                   (p) => p.moduleName === moduleName
                 )

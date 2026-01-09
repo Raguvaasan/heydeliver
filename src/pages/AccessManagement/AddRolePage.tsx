@@ -3,6 +3,7 @@ import { FC, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useRoleStore } from "../../store/roleAndPermission"
+import toast from "react-hot-toast"
 
 const AddRolePage: FC = () => {
   const navigate = useNavigate()
@@ -16,6 +17,20 @@ const AddRolePage: FC = () => {
   useEffect(() => {
     fetchModules()
   }, [fetchModules])
+
+  // Default modules if API fails
+  const defaultModules = [
+    "Dashboard",
+    "Franchise Management", 
+    "Access Management",
+    "Orders Management",
+    "Payment Management",
+    "Reports",
+    "Tracking",
+    "Settings"
+  ]
+  
+  const displayModules = modules.length > 0 ? modules : defaultModules
 
   const handleCheckboxChange = (moduleName: string, key: string) => {
     setPermissions((prevPermissions) => {
@@ -51,17 +66,32 @@ const AddRolePage: FC = () => {
 
   const handleSubmit = async () => {
     if (!roleType.trim()) {
-      alert("Please enter a role name.")
+      toast.error("Please enter a role name.")
       return
     }
 
-    const roleData = {
-      roleType,
-      status,
-      permissions,
+    try {
+      // Convert UI permissions format to API format
+      const apiPermissions = permissions.map((perm) => ({
+        module: perm.moduleName,
+        read: perm.permission.view || false,
+        write: perm.permission.add || false,
+        update: perm.permission.edit || false,
+        delete: perm.permission.delete || false
+      }))
+
+      const roleData = {
+        roleName: roleType,
+        permissions: apiPermissions,
+        status
+      }
+      
+      console.log("Submitting role data:", roleData)
+      await addRole(roleData)
+      navigate("/role")
+    } catch (error) {
+      console.error("Failed to add role:", error)
     }
-    await addRole(roleData)
-    navigate("/role")
   }
 
   return (
@@ -101,7 +131,7 @@ const AddRolePage: FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-              {modules.map((moduleName, index) => {
+              {displayModules.map((moduleName, index) => {
                 const currentPerm = permissions.find(
                   (p) => p.moduleName === moduleName
                 )

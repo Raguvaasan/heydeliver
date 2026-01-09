@@ -1,25 +1,23 @@
 import { create } from "zustand"
 import http from "../common/httpRequest"
+import toast from "react-hot-toast"
 
 interface ModulePermission {
-  view: boolean
-  add: boolean
-  edit: boolean
+  module: string
+  read: boolean
+  write: boolean
+  update: boolean
   delete: boolean
-  active?: boolean
-}
-
-interface Permission {
-  moduleName: string
-  permission: ModulePermission
 }
 
 interface Role {
   _id: string
-  roleType: string
-  permissions: Permission[]
+  roleName: string
+  permissions: ModulePermission[]
   status: boolean
   isRoot?: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 interface RoleState {
@@ -28,11 +26,17 @@ interface RoleState {
   loading: boolean
   error: string | null
   selectedRole: Role | null
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  } | null
 
-  fetchRoles: () => Promise<void>
+  fetchRoles: (page?: number, limit?: number) => Promise<void>
   getRoleById: (id: string) => Promise<void>
-  addRole: (data: Omit<Role, "_id">) => Promise<void>
-  updateRole: (id: string, data: Partial<Role>) => Promise<void>
+  addRole: (data: { roleName: string; permissions: ModulePermission[]; status?: boolean }) => Promise<void>
+  updateRole: (id: string, data: { roleName?: string; permissions?: ModulePermission[]; status?: boolean }) => Promise<void>
   deleteRole: (id: string) => Promise<void>
   fetchModules: () => Promise<void>
   clearSelectedRole: () => void
@@ -44,36 +48,37 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   loading: false,
   error: null,
   selectedRole: null,
+  pagination: null,
 
-  fetchRoles: async () => {
+  fetchRoles: async (page = 1, limit = 10) => {
     set({ loading: true, error: null })
     try {
-      const res = await http.get("/admin/role")
+      const res = await http.get("/admin/role", {
+        params: { page, limit }
+      })
       console.log("Roles API response:", res.data)
-      const rolesData = res.data?.data || res.data?.roles || []
+      
+      // Handle response structure: { success: true, data: [...] }
+      const rolesData = res.data?.data || []
       const rolesArray = Array.isArray(rolesData) ? rolesData : []
-      set({ roles: rolesArray, loading: false })
+      
+      console.log("Parsed roles:", rolesArray)
+      
+      const pagination = res.data?.pagination || null
+      
+      set({ 
+        roles: rolesArray, 
+        pagination,
+        loading: false 
+      })
     } catch (err: any) {
       console.error("Error fetching roles:", err)
-      // Use dummy data if API fails
       set({ 
-        roles: [
-          {
-            _id: "1",
-            roleType: "Super Admin",
-            status: true,
-            permissions: []
-          },
-          {
-            _id: "2",
-            roleType: "Franchise Manager",
-            status: true,
-            permissions: []
-          }
-        ], 
+        roles: [], 
         loading: false, 
-        error: null 
+        error: err?.response?.data?.message || err?.message || "Failed to fetch roles"
       })
+      toast.error("Failed to fetch roles")
     }
   },
 
@@ -81,14 +86,15 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const res = await http.get(`/admin/role/${id}`)
-      const roleData = res.data?.data
+      const roleData = res.data?.data || res.data
       set({
         selectedRole: roleData || null,
         loading: false,
       })
     } catch (err: any) {
       console.error("Error getting role:", err)
-      set({ loading: false, error: err?.message || "Failed to get role" })
+      set({ loading: false, error: err?.response?.data?.message || err?.message || "Failed to get role" })
+      toast.error("Failed to get role details")
     }
   },
 
@@ -97,9 +103,14 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     try {
       await http.post("/admin/role", data)
       await get().fetchRoles()
+      toast.success("Role added successfully!")
+      set({ loading: false })
     } catch (err: any) {
       console.error("Error adding role:", err)
-      set({ loading: false, error: err?.message || "Failed to add role" })
+      const errorMessage = err?.response?.data?.message || err?.message || "Failed to add role"
+      set({ loading: false, error: errorMessage })
+      toast.error(errorMessage)
+      throw err
     }
   },
 
@@ -107,10 +118,15 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       await http.put(`/admin/role/${id}`, data)
-      // await get().fetchRoles()
+      await get().fetchRoles()
+      toast.success("Role updated successfully!")
+      set({ loading: false })
     } catch (err: any) {
       console.error("Error updating role:", err)
-      set({ loading: false, error: err?.message || "Failed to update role" })
+      const errorMessage = err?.response?.data?.message || err?.message || "Failed to update role"
+      set({ loading: false, error: errorMessage })
+      toast.error(errorMessage)
+      throw err
     }
   },
 
@@ -119,9 +135,12 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     try {
       await http.delete(`/admin/role/${id}`)
       await get().fetchRoles()
+      set({ loading: false })
     } catch (err: any) {
       console.error("Error deleting role:", err)
-      set({ loading: false, error: err?.message || "Failed to delete role" })
+      const errorMessage = err?.response?.data?.message || err?.message || "Failed to delete role"
+      set({ loading: false, error: errorMessage })
+      throw err
     }
   },
 
