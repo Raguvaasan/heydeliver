@@ -1,5 +1,6 @@
 import { FC, useState, useEffect } from "react"
 import { Modal, Button, Label, TextInput, Select } from "flowbite-react"
+import { HiEye, HiEyeOff } from "react-icons/hi"
 import { useAgencyStore } from "../../store/agencyStore"
 
 interface EditAgencyModalProps {
@@ -24,6 +25,7 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
     status: "Active" as "Active" | "Inactive",
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     if (selectedAgency) {
@@ -70,7 +72,7 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
   }
 
   return (
-    <Modal show={isOpen} onClose={onClose} size="xl">
+    <Modal show={isOpen} onClose={onClose} size="3xl">
       <Modal.Header>
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
           Edit Franchise
@@ -241,14 +243,29 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
             {/* Password */}
             <div>
               <Label htmlFor="password" value="Password (leave blank to keep current)" className="mb-2" />
-              <TextInput
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Enter new password"
-                value={formData.password}
-                onChange={handleChange}
-              />
+              <div className="relative">
+                <TextInput
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter new password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <HiEyeOff className="h-5 w-5" />
+                  ) : (
+                    <HiEye className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Image */}

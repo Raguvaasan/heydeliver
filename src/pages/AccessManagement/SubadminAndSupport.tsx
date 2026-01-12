@@ -9,7 +9,7 @@ import {
   Spinner,
 } from "flowbite-react"
 import { ChangeEvent, FC, useEffect, useState } from "react"
-import { HiOutlineExclamationCircle, HiEye, HiPencil, HiTrash } from "react-icons/hi"
+import { HiOutlineExclamationCircle, HiEye, HiPencil, HiTrash, HiEyeOff } from "react-icons/hi"
 import { useStaffStore } from "../../store/staffStore"
 import { useAgencyStore } from "../../store/agencyStore"
 import { useNavigate, useLocation } from "react-router-dom"
@@ -90,6 +90,34 @@ const UserPage: FC = function () {
     staff.phone?.includes(searchTerm)
   )
 
+  // Debug: Log first staff to see structure
+  useEffect(() => {
+    if (staffs.length > 0) {
+      console.log("First staff object:", staffs[0])
+      console.log("First staff role:", staffs[0].role)
+    }
+  }, [staffs])
+
+  // Helper function to get role name
+  const getRoleName = (staff: any) => {
+    if (!staff.role) return "-"
+    
+    // If role is an object with _id, find matching role from roles array
+    if (typeof staff.role === 'object' && staff.role._id) {
+      const matchedRole = roles.find(r => r._id === staff.role._id)
+      return matchedRole?.roleType || "-"
+    }
+    
+    // If role is just an ID string, find from roles array
+    if (typeof staff.role === 'string') {
+      const matchedRole = roles.find(r => r._id === staff.role)
+      return matchedRole?.roleType || "-"
+    }
+    
+    // Fallback to role properties
+    return staff.role.roleName || staff.role.roleType || staff.role.name || "-"
+  }
+
   return (
     <NavbarSidebarLayout isFooter={false}>
       <ToastContainer position="top-right" autoClose={3000} theme="light" />
@@ -163,7 +191,7 @@ const UserPage: FC = function () {
                           {staff.phone}
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                          {staff.role?.roleType || "-"}
+                          {getRoleName(staff)}
                         </td>
                         <td className="px-4 py-3">
                           <Badge color={staff.status === "Active" || staff.status === true ? "success" : "failure"}>
@@ -265,6 +293,7 @@ const AddStaffModal: FC<{
     password: "",
     status: "Active",
   })
+  const [showPasswordAdd, setShowPasswordAdd] = useState(false)
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -437,15 +466,30 @@ const AddStaffModal: FC<{
                 <Label htmlFor="password">
                   Set Password<span className="text-red-500">*</span>
                 </Label>
-                <TextInput
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Enter password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                />
+                <div className="relative">
+                  <TextInput
+                    id="password"
+                    name="password"
+                    type={showPasswordAdd ? "text" : "password"}
+                    placeholder="Enter password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordAdd(!showPasswordAdd)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    aria-label={showPasswordAdd ? "Hide password" : "Show password"}
+                  >
+                    {showPasswordAdd ? (
+                      <HiEyeOff className="h-5 w-5" />
+                    ) : (
+                      <HiEye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -482,6 +526,7 @@ const EditStaffModal: FC<{
     password: "",
     status: "Active",
   })
+  const [showPasswordEdit, setShowPasswordEdit] = useState(false)
 
   useEffect(() => {
     if (userData) {
@@ -669,14 +714,29 @@ const EditStaffModal: FC<{
               </div>
               <div>
                 <Label htmlFor="edit-password">Set Password (optional)</Label>
-                <TextInput
-                  id="edit-password"
-                  name="password"
-                  type="password"
-                  placeholder="Leave blank to keep unchanged"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
+                <div className="relative">
+                  <TextInput
+                    id="edit-password"
+                    name="password"
+                    type={showPasswordEdit ? "text" : "password"}
+                    placeholder="Leave blank to keep unchanged"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordEdit(!showPasswordEdit)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    aria-label={showPasswordEdit ? "Hide password" : "Show password"}
+                  >
+                    {showPasswordEdit ? (
+                      <HiEyeOff className="h-5 w-5" />
+                    ) : (
+                      <HiEye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

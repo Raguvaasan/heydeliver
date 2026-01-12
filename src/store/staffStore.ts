@@ -68,20 +68,26 @@ export const useStaffStore = create<StaffState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const response = await http.get(`/admin/staff`)
+      console.log("Staff API Response:", response.data) // Debug log
       const staffArray = response.data?.data?.staff || []
+      console.log("Staff Array:", staffArray) // Debug log
+      if (staffArray.length > 0) {
+        console.log("First staff from API:", staffArray[0])
+        console.log("First staff roleId:", staffArray[0].roleId)
+      }
       const staffList = staffArray.map((item: any) => ({
         _id: item._id || item.id,
         name: item.name,
         email: item.email,
         phone: item.phone,
         role: item.roleId || item.role,
-        roleId: item.roleId?._id || item.roleId,
-        franchiseId: item.franchiseId?._id || item.franchiseId,
+        roleId: typeof item.roleId === 'object' ? item.roleId?._id : item.roleId,
+        franchiseId: typeof item.franchiseId === 'object' ? item.franchiseId?._id : item.franchiseId,
         status: item.status,
         username: item.username,
-        franchise: item.franchiseId?.agencyName || item.franchise
+        franchise: typeof item.franchiseId === 'object' ? (item.franchiseId?.agencyName || item.franchiseId?.name) : item.franchise
       }))
-      console.log("Fetched staff list:", staffList) // Debug log
+      console.log("Mapped Staff List:", staffList) // Debug log
       set({
         staffs: staffList,
         loading: false,

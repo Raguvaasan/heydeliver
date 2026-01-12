@@ -16,6 +16,12 @@ import DashboardPage from "./pages/Dashboard/DashboardPage"
 import AgencyManagementPage from "./pages/AgencyManagement/AgencyManagementPage"
 import SubadminAndSupport from "./pages/AccessManagement/SubadminAndSupport"
 import StaffPage from "./pages/AccessManagement/StaffPage"
+import OrdersPage from "./pages/Orders/OrdersPage"
+import NewOrderPage from "./pages/Orders/NewOrderPage"
+import OrderDetailsPage from "./pages/Orders/OrderDetailsPage"
+import BulkOrderPage from "./pages/Orders/BulkOrderPage"
+import RateCalculatorPage from "./pages/RateCalculator/RateCalculatorPage"
+import ServiceAvailabilityPage from "./pages/ServiceAvailability/ServiceAvailabilityPage"
 import { ThemeProvider } from "./context/ThemeContext"
 import { Toaster } from "react-hot-toast"
 import RegisterPage from "./pages/authentication/RegisterPage"
@@ -108,6 +114,60 @@ root.render(
             element={
               <ProtectedRoute>
                 <StaffPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <OrdersPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/orders/new"
+            element={
+              <ProtectedRoute>
+                <NewOrderPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/orders/bulk"
+            element={
+              <ProtectedRoute>
+                <BulkOrderPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/orders/:id"
+            element={
+              <ProtectedRoute>
+                <OrderDetailsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/rate-calculator"
+            element={
+              <ProtectedRoute>
+                <RateCalculatorPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/service-availability"
+            element={
+              <ProtectedRoute>
+                <ServiceAvailabilityPage />
               </ProtectedRoute>
             }
           />

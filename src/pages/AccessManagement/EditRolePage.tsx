@@ -53,8 +53,7 @@ const EditRolePage: FC = () => {
     }
   }, [selectedRole])
 
-  // Use modules from API if available, otherwise use modules from existing permissions
-  // If both are empty, show default modules
+  // Default modules as fallback
   const defaultModules = [
     "Dashboard",
     "Franchise Management", 
@@ -66,11 +65,9 @@ const EditRolePage: FC = () => {
     "Settings"
   ]
   
-  const displayModules = modules.length > 0 
-    ? modules 
-    : permissions.length > 0 
-      ? permissions.map(p => p.moduleName)
-      : defaultModules
+  // Always show all modules from API, fallback to default if API fails
+  // This ensures all modules are displayed, not just the ones with permissions
+  const displayModules = modules.length > 0 ? modules : defaultModules
   
   console.log("Display Modules:", displayModules)
   console.log("Modules from API:", modules)
