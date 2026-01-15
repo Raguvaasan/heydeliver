@@ -12,6 +12,8 @@ import {
   HiChevronDown,
   HiLogout,
   HiCurrencyRupee,
+  HiUser,
+  HiDocumentText,
 } from "react-icons/hi"
 
 interface SidebarProps {
@@ -81,7 +83,7 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
       path: "/payments",
       submenu: [
         { title: "Wallet Transactions", path: "/payments/wallet" },
-        { title: "Invoices", path: "/payments/invoices" },
+        { title: "Invoices", path: "/invoice" },
       ],
     },
     {
@@ -89,10 +91,10 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
       icon: <HiChartBar className="h-5 w-5" />,
       path: "/reports",
       submenu: [
-        { title: "Franchise wise", path: "/reports/franchise" },
-        { title: "Total orders", path: "/reports/orders" },
-        { title: "Total Revenue", path: "/reports/revenue" },
-        { title: "Delivery Performance", path: "/reports/delivery" },
+        { title: "Franchise wise", path: "/reports/franchise-wise" },
+        { title: "Total orders", path: "/reports/total-orders" },
+        { title: "Total Revenue", path: "/reports/total-revenue" },
+        { title: "Delivery Performance", path: "/reports/delivery-performance" },
       ],
     },
     {
@@ -105,8 +107,8 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
       icon: <HiCog className="h-5 w-5" />,
       path: "/settings",
       submenu: [
-        { title: "Rate Calculator Setup", path: "/settings/rate-calculator" },
-        { title: "Pincode Serviceability", path: "/settings/pincode" },
+        { title: "Rate Calculator Setup", path: "/rate-calculator" },
+        { title: "Pincode Serviceability", path: "/settings/pincode-serviceability" },
         { title: "Rate Card", path: "/settings/rate-card" },
       ],
     },
@@ -123,11 +125,20 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
       title: "Orders",
       icon: <HiShoppingCart className="h-5 w-5" />,
       path: "/orders",
+      submenu: [
+        { title: "New Order", path: "/orders/new" },
+        { title: "Active Orders", path: "/orders" },
+        { title: "Pending Pickups", path: "/orders/pickup" },
+      ],
     },
     {
-      title: "Staff Management",
+      title: "Staffs",
       icon: <HiUserGroup className="h-5 w-5" />,
-      path: "/staff",
+      path: "/staffs-management",
+      submenu: [
+        { title: "Manage Staffs", path: "/franchise-staff" },
+        { title: "Role & Permissions", path: "/franchise-role" },
+      ],
     },
     {
       title: "Rate Calculator",
@@ -135,7 +146,7 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
       path: "/rate-calculator",
     },
     {
-      title: "Service Availability",
+      title: "Service Availability Check",
       icon: <HiCog className="h-5 w-5" />,
       path: "/service-availability",
     },
@@ -148,20 +159,29 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
       title: "Wallet",
       icon: <HiCurrencyRupee className="h-5 w-5" />,
       path: "/wallet",
+      submenu: [
+        { title: "Add Money", path: "/wallet/add" },
+        { title: "Transaction details", path: "/wallet" },
+      ],
     },
     {
       title: "Invoice",
-      icon: <HiCreditCard className="h-5 w-5" />,
+      icon: <HiDocumentText className="h-5 w-5" />,
       path: "/invoice",
     },
     {
       title: "Reports",
       icon: <HiChartBar className="h-5 w-5" />,
       path: "/reports",
+      submenu: [
+        { title: "Staffs Performance", path: "/reports/staff-performance" },
+        { title: "Orders (Day Wise / Weekly / Custom Date)", path: "/reports/orders" },
+        { title: "Revenue (Day Wise / Weekly / Custom Date)", path: "/reports/revenue" },
+      ],
     },
     {
       title: "Profile",
-      icon: <HiUserGroup className="h-5 w-5" />,
+      icon: <HiUser className="h-5 w-5" />,
       path: "/profile",
     },
   ]
