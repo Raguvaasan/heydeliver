@@ -40,10 +40,14 @@ import FranchiseWiseReportPage from "./pages/Reports/FranchiseWiseReportPage"
 import TotalOrdersReportPage from "./pages/Reports/TotalOrdersReportPage"
 import TotalRevenueReportPage from "./pages/Reports/TotalRevenueReportPage"
 import DeliveryPerformanceReportPage from "./pages/Reports/DeliveryPerformanceReportPage"
+import StaffPerformanceReportPage from "./pages/Reports/StaffPerformanceReportPage"
+import OrdersReportPage from "./pages/Reports/OrdersReportPage"
+import RevenueReportPage from "./pages/Reports/RevenueReportPage"
 import TrackingPage from "./pages/Tracking/TrackingPage"
 import PaymentsPage from "./pages/Payments/PaymentsPage"
 import RateCardPage from "./pages/Settings/RateCardPage"
 import PincodeServiceabilityPage from "./pages/Settings/PincodeServiceabilityPage"
+import ProfilePage from "./pages/Profile/ProfilePage"
 import { ThemeProvider } from "./context/ThemeContext"
 import { Toaster } from "react-hot-toast"
 import RegisterPage from "./pages/authentication/RegisterPage"
@@ -435,6 +439,42 @@ root.render(
             element={
               <ProtectedRoute>
                 <CreatePickupRequestPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/reports/staff-performance"
+            element={
+              <ProtectedRoute>
+                <StaffPerformanceReportPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/reports/orders"
+            element={
+              <ProtectedRoute>
+                <OrdersReportPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/reports/revenue"
+            element={
+              <ProtectedRoute>
+                <RevenueReportPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />

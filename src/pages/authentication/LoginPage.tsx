@@ -61,7 +61,7 @@ const LoginPage: FC = function () {
       if (isSuccess) {
         // Check both possible response structures for token
         const token = result.data?.token || result.data?.["data"]?.token
-        const userData = result.data?.data || result.data
+        const userData = result.data?.["data"] || result.data
 
         if (token) {
           console.log("Saving token:", token)

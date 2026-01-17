@@ -1,4 +1,4 @@
-import { FC, useMemo } from "react"
+import { FC, useMemo, useState, useEffect } from "react"
 import { HiMenu, HiSearch, HiBell, HiChevronDown } from "react-icons/hi"
 
 interface NavbarProps {
@@ -7,6 +7,38 @@ interface NavbarProps {
 }
 
 const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
+  const [userName, setUserName] = useState("Admin")
+  const [userInitial, setUserInitial] = useState("A")
+
+  useEffect(() => {
+    // Get user data from sessionStorage
+    try {
+      const profileDataStr = sessionStorage.getItem("profileData")
+      if (profileDataStr) {
+        const profileData = JSON.parse(profileDataStr)
+        // Try to get full name from different possible fields
+        let name = ""
+        if (profileData.firstName && profileData.lastName) {
+          name = `${profileData.firstName} ${profileData.lastName}`
+        } else if (profileData.firstName) {
+          name = profileData.firstName
+        } else if (profileData.name) {
+          name = profileData.name
+        } else if (profileData.username) {
+          name = profileData.username
+        } else if (profileData.agencyName) {
+          name = profileData.agencyName
+        } else {
+          name = "Admin"
+        }
+        setUserName(name)
+        setUserInitial(name.charAt(0).toUpperCase())
+      }
+    } catch (error) {
+      console.error("Error parsing profile data:", error)
+    }
+  }, [])
+
   return (
     <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-white dark:bg-[#2c2c2c] border-b border-gray-200 dark:border-gray-700">
       <div className="h-full px-4 lg:px-6 flex items-center justify-between lg:ml-64">
@@ -44,11 +76,11 @@ const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
           {/* User Profile */}
           <div className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
-              A
+              {userInitial}
             </div>
             <div className="hidden md:block">
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                Admin
+                {userName}
               </p>
             </div>
             <HiChevronDown className="h-4 w-4 text-gray-600 dark:text-gray-300" />
