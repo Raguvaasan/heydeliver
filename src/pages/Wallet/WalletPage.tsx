@@ -61,16 +61,18 @@ const WalletPage: FC = () => {
             </Button>
           </div>
 
-          <div className="flex gap-8 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Credit</p>
-              <p className="text-lg font-semibold text-green-600">₹{totalCredit.toFixed(2)}</p>
+          {activeTab === 0 && (
+            <div className="flex gap-8 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Total Credit</p>
+                <p className="text-lg font-semibold text-green-600">₹{totalCredit.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Total Debit</p>
+                <p className="text-lg font-semibold text-red-600">₹{totalDebit.toFixed(2)}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Total Debit</p>
-              <p className="text-lg font-semibold text-red-600">₹{totalDebit.toFixed(2)}</p>
-            </div>
-          </div>
+          )}
         </Card>
 
         {/* Tabs for Transactions and Recharges */}
