@@ -89,7 +89,12 @@ const FranchiseAddStaffPage: FC = () => {
     onSubmit: async (values) => {
       setLoading(true)
       try {
-        await http.post("/admin/staff", values)
+        // Add type field for franchise staff
+        const payload = {
+          ...values,
+          type: "franchise"
+        }
+        await http.post("/admin/staff", payload)
         toast.success("Staff added successfully")
         navigate("/franchise-staff")
       } catch (error: any) {

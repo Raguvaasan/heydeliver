@@ -51,12 +51,9 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
       path: "/dashboard",
     },
     {
-      title: "Franchise Management",
+      title: "Franchise",
       icon: <HiOfficeBuilding className="h-5 w-5" />,
-      path: "/franchise",
-      submenu: [
-        { title: "Manage Franchise", path: "/agencies" },
-      ],
+      path: "/agencies",
     },
     {
       title: "Access Management",
@@ -110,6 +107,8 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
         { title: "Rate Calculator Setup", path: "/rate-calculator" },
         { title: "Pincode Serviceability", path: "/settings/pincode-serviceability" },
         { title: "Rate Card", path: "/settings/rate-card" },
+        { title: "Rate Markup", path: "/settings/rate-markup" },
+        { title: "Rate Card Markup", path: "/settings/rate-card-markup" },
       ],
     },
   ]
@@ -325,10 +324,10 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
                 {(() => {
                   try {
                     const profileData = JSON.parse(sessionStorage.getItem("profileData") || "{}")
-                    const name = profileData.data?.name || profileData.data?.agencyName || profileData.name || "User"
+                    const name = profileData.data?.name || profileData.data?.agencyName || profileData.name || "Admin"
                     return name.charAt(0).toUpperCase()
                   } catch {
-                    return "U"
+                    return "A"
                   }
                 })()}
               </div>
@@ -337,9 +336,9 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
                   {(() => {
                     try {
                       const profileData = JSON.parse(sessionStorage.getItem("profileData") || "{}")
-                      return profileData.data?.name || profileData.data?.agencyName || profileData.name || "User"
+                      return profileData.data?.name || profileData.data?.agencyName || profileData.name || "Admin"
                     } catch {
-                      return "User"
+                      return "Admin"
                     }
                   })()}
                 </p>

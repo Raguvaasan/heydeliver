@@ -1,28 +1,17 @@
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar";
-import { Card, Button, TextInput, Badge, Table, Tabs } from "flowbite-react";
-import { HiSearch, HiCheckCircle, HiXCircle, HiDownload, HiUpload } from "react-icons/hi";
+import { Card, Button, TextInput, Badge, Table, Tabs, Spinner } from "flowbite-react";
+import { HiSearch, HiCheckCircle, HiXCircle, HiDownload, HiUpload, HiLocationMarker, HiTruck } from "react-icons/hi";
 import toast from "react-hot-toast";
-
-interface PincodeData {
-  pincode: string;
-  city: string;
-  state: string;
-  serviceable: boolean;
-  deliveryType: string;
-  cod: boolean;
-  prepaid: boolean;
-  estimatedDays: string;
-}
+import { usePincodeStore } from "../../store/pincodeStore";
 
 const PincodeServiceabilityPage: FC = () => {
   const [pincode, setPincode] = useState("");
-  const [searchResult, setSearchResult] = useState<PincodeData | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const { pincodeData, loading, error, fetchPincodeData, clearData } = usePincodeStore();
 
-  // Sample pincode data
-  const samplePincodes: PincodeData[] = [
+  // Sample pincode data for table display
+  const samplePincodes = [
     {
       pincode: "600001",
       city: "Chennai",
@@ -80,30 +69,7 @@ const PincodeServiceabilityPage: FC = () => {
       toast.error("Please enter a valid 6-digit pincode");
       return;
     }
-
-    setIsSearching(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      const found = samplePincodes.find((p) => p.pincode === pincode);
-      if (found) {
-        setSearchResult(found);
-        toast.success("Pincode found!");
-      } else {
-        setSearchResult({
-          pincode: pincode,
-          city: "Unknown",
-          state: "Unknown",
-          serviceable: false,
-          deliveryType: "N/A",
-          cod: false,
-          prepaid: false,
-          estimatedDays: "N/A",
-        });
-        toast.error("Pincode not serviceable");
-      }
-      setIsSearching(false);
-    }, 800);
+    fetchPincodeData(pincode);
   };
 
   const handleDownloadTemplate = () => {
@@ -126,92 +92,19 @@ const PincodeServiceabilityPage: FC = () => {
           </p>
         </div>
 
-        {/* Coverage Stats - Top */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total Pincodes</p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {samplePincodes.length}
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <svg
-                  className="w-6 h-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Serviceable</p>
-                <p className="text-3xl font-bold text-green-600">
-                  {samplePincodes.filter((p) => p.serviceable).length}
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <HiCheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">COD Available</p>
-                <p className="text-3xl font-bold text-purple-600">
-                  {samplePincodes.filter((p) => p.cod).length}
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <svg
-                  className="w-6 h-6 text-purple-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </Card>
-        </div>
-
         {/* Pincode Check Card */}
         <Card className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Check Pincode Serviceability
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Check Pincode Serviceability
+            </h3>
+          </div>
 
           <div className="flex gap-3 mb-6">
             <div className="flex-1">
               <TextInput
                 type="text"
-                placeholder="Enter 6-digit pincode (e.g., 600001)"
+                placeholder="Enter 6-digit pincode (Try: 194103, 600001, 400001)"
                 value={pincode}
                 onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 onKeyPress={(e) => e.key === "Enter" && handleCheckPincode()}
@@ -223,175 +116,233 @@ const PincodeServiceabilityPage: FC = () => {
               color="dark"
               size="lg"
               onClick={handleCheckPincode}
-              isProcessing={isSearching}
+              disabled={loading}
+              className="disabled:opacity-50"
             >
-              <HiSearch className="mr-2 h-5 w-5" />
-              Check
+              {loading ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Checking...
+                </>
+              ) : (
+                <>
+                  <HiSearch className="mr-2 h-5 w-5" />
+                  Check
+                </>
+              )}
             </Button>
           </div>
 
-          {/* Search Result */}
-          {searchResult && (
-            <div className={`p-6 rounded-lg border-2 ${
-              searchResult.serviceable
-                ? "bg-green-50 border-green-200"
-                : "bg-red-50 border-red-200"
-            }`}>
+          {/* Error State */}
+          {error && (
+            <div className="p-6 rounded-lg bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800">
               <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className={`mt-1 ${
-                    searchResult.serviceable ? "text-green-600" : "text-red-600"
-                  }`}>
-                    {searchResult.serviceable ? (
-                      <HiCheckCircle className="h-8 w-8" />
-                    ) : (
-                      <HiXCircle className="h-8 w-8" />
-                    )}
+                <div className="flex items-start gap-4 flex-1">
+                  <div className="text-red-600 dark:text-red-400 mt-1">
+                    <HiXCircle className="h-8 w-8" />
                   </div>
-                  <div>
-                    <h4 className={`text-xl font-bold mb-2 ${
-                      searchResult.serviceable ? "text-green-900" : "text-red-900"
-                    }`}>
-                      {searchResult.serviceable
-                        ? "✓ Serviceable"
-                        : "✗ Not Serviceable"}
+                  <div className="flex-1">
+                    <h4 className="text-lg font-bold text-red-900 dark:text-red-400 mb-2">
+                      ✗ Error
                     </h4>
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <p className="text-sm text-gray-600">Pincode</p>
-                        <p className="font-semibold text-gray-900">
-                          {searchResult.pincode}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">City</p>
-                        <p className="font-semibold text-gray-900">
-                          {searchResult.city}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">State</p>
-                        <p className="font-semibold text-gray-900">
-                          {searchResult.state}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Delivery Type</p>
-                        <p className="font-semibold text-gray-900">
-                          {searchResult.deliveryType}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Estimated Delivery</p>
-                        <p className="font-semibold text-gray-900">
-                          {searchResult.estimatedDays}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600 mb-1">Available Services</p>
-                        <div className="flex gap-2">
-                          {searchResult.cod && (
-                            <Badge color="success">COD</Badge>
-                          )}
-                          {searchResult.prepaid && (
-                            <Badge color="info">Prepaid</Badge>
-                          )}
-                          {!searchResult.cod && !searchResult.prepaid && (
-                            <Badge color="gray">N/A</Badge>
-                          )}
-                        </div>
-                      </div>
+                    <p className="text-red-800 dark:text-red-300 mb-3">{error}</p>
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded border border-yellow-200 dark:border-yellow-700 text-sm">
+                      <p className="font-semibold text-gray-900 dark:text-white mb-2">💡 Currently Using Mock Data</p>
+                      <p className="text-gray-700 dark:text-gray-300 mb-2">Try these pincodes: <code className="bg-white dark:bg-gray-800 px-2 py-1 rounded">194103, 600001, 400001, 560001, 110001, 700001</code></p>
+                      <p className="text-gray-600 dark:text-gray-400 text-xs mt-2">When backend is ready, uncomment the API code in pincodeStore.ts</p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setPincode("")
+                    clearData()
+                  }}
+                  className="ml-4 px-3 py-1 text-sm bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="p-8 flex items-center justify-center">
+              <div className="text-center">
+                <Spinner size="lg" className="mb-4" />
+                <p className="text-gray-600 dark:text-gray-400">Fetching pincode details...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Search Result - API Response Display */}
+          {pincodeData && !loading && (
+            <div className="p-6 rounded-lg bg-green-50 dark:bg-green-900/20 border-2 border-green-200 dark:border-green-800">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="text-green-600 dark:text-green-400 mt-1">
+                  <HiCheckCircle className="h-8 w-8" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-green-900 dark:text-green-400 mb-1">
+                    ✓ Serviceable
+                  </h4>
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    Pincode is available for delivery
+                  </p>
+                </div>
+              </div>
+
+              {/* Main Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">Pincode</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {pincodeData.postal_code.pin}
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">City</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {pincodeData.postal_code.city}
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">District</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {pincodeData.postal_code.district}
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">State</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {pincodeData.postal_code.state_code}
+                  </p>
+                </div>
+              </div>
+
+              {/* Services Available */}
+              <div className="mb-6">
+                <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 uppercase tracking-wider">
+                  Services Available
+                </h5>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      pincodeData.postal_code.cod === "Y"
+                        ? "bg-green-100 text-green-600"
+                        : "bg-gray-100 text-gray-400"
+                    }`}>
+                      <HiTruck className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">COD</p>
+                      <Badge color={pincodeData.postal_code.cod === "Y" ? "success" : "gray"}>
+                        {pincodeData.postal_code.cod === "Y" ? "Yes" : "No"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      pincodeData.postal_code.pre_paid === "Y"
+                        ? "bg-green-100 text-green-600"
+                        : "bg-gray-100 text-gray-400"
+                    }`}>
+                      <HiTruck className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Prepaid</p>
+                      <Badge color={pincodeData.postal_code.pre_paid === "Y" ? "success" : "gray"}>
+                        {pincodeData.postal_code.pre_paid === "Y" ? "Yes" : "No"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      pincodeData.postal_code.pickup === "Y"
+                        ? "bg-blue-100 text-blue-600"
+                        : "bg-gray-100 text-gray-400"
+                    }`}>
+                      <HiLocationMarker className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Pickup</p>
+                      <Badge color={pincodeData.postal_code.pickup === "Y" ? "info" : "gray"}>
+                        {pincodeData.postal_code.pickup === "Y" ? "Yes" : "No"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      pincodeData.postal_code.repl === "Y"
+                        ? "bg-purple-100 text-purple-600"
+                        : "bg-gray-100 text-gray-400"
+                    }`}>
+                      <HiTruck className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">Return</p>
+                      <Badge color={pincodeData.postal_code.repl === "Y" ? "purple" : "gray"}>
+                        {pincodeData.postal_code.repl === "Y" ? "Yes" : "No"}
+                      </Badge>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* Additional Info */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">Max Weight</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {pincodeData.postal_code.max_weight} kg
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">Max Amount (COD)</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    ₹{pincodeData.postal_code.max_amount.toLocaleString()}
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-2">ODA</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {pincodeData.postal_code.is_oda === "Y" ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Centers/Distribution Points */}
+              {pincodeData.postal_code.center && pincodeData.postal_code.center.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">
+                    Distribution Centers
+                  </h5>
+                  <div className="space-y-2">
+                    {pincodeData.postal_code.center.slice(0, 5).map((center, idx) => (
+                      <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{center.cn}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Code: {center.code}</p>
+                        </div>
+                        <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                          {new Date(center.s).toLocaleDateString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
-        </Card>
-
-        {/* Tabs for Serviceable/Non-serviceable */}
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <Tabs.Group
-              aria-label="Pincode tabs"
-              style="underline"
-              onActiveTabChange={(tab) => setActiveTab(tab)}
-            >
-              <Tabs.Item active={activeTab === 0} title="All Pincodes" />
-              <Tabs.Item active={activeTab === 1} title="Serviceable" />
-              <Tabs.Item active={activeTab === 2} title="Non-serviceable" />
-            </Tabs.Group>
-
-            <div className="flex gap-2">
-              <Button color="light" size="sm" onClick={handleDownloadTemplate}>
-                <HiDownload className="mr-2 h-4 w-4" />
-                Download Template
-              </Button>
-              <Button color="dark" size="sm" onClick={handleUploadPincodes}>
-                <HiUpload className="mr-2 h-4 w-4" />
-                Upload Pincodes
-              </Button>
-            </div>
-          </div>
-
-          {/* Pincode Table */}
-          <div className="overflow-x-auto">
-            <Table hoverable>
-              <Table.Head>
-                <Table.HeadCell>Pincode</Table.HeadCell>
-                <Table.HeadCell>City</Table.HeadCell>
-                <Table.HeadCell>State</Table.HeadCell>
-                <Table.HeadCell>Delivery Type</Table.HeadCell>
-                <Table.HeadCell>COD</Table.HeadCell>
-                <Table.HeadCell>Prepaid</Table.HeadCell>
-                <Table.HeadCell>Est. Days</Table.HeadCell>
-                <Table.HeadCell>Status</Table.HeadCell>
-              </Table.Head>
-              <Table.Body className="divide-y">
-                {samplePincodes
-                  .filter((p) => {
-                    if (activeTab === 1) return p.serviceable;
-                    if (activeTab === 2) return !p.serviceable;
-                    return true;
-                  })
-                  .map((pinData, index) => (
-                    <Table.Row
-                      key={index}
-                      className="bg-white dark:border-gray-700 dark:bg-gray-800"
-                    >
-                      <Table.Cell className="font-medium text-gray-900">
-                        {pinData.pincode}
-                      </Table.Cell>
-                      <Table.Cell>{pinData.city}</Table.Cell>
-                      <Table.Cell>{pinData.state}</Table.Cell>
-                      <Table.Cell>{pinData.deliveryType}</Table.Cell>
-                      <Table.Cell>
-                        {pinData.cod ? (
-                          <Badge color="success" size="sm">Yes</Badge>
-                        ) : (
-                          <Badge color="gray" size="sm">No</Badge>
-                        )}
-                      </Table.Cell>
-                      <Table.Cell>
-                        {pinData.prepaid ? (
-                          <Badge color="success" size="sm">Yes</Badge>
-                        ) : (
-                          <Badge color="gray" size="sm">No</Badge>
-                        )}
-                      </Table.Cell>
-                      <Table.Cell>{pinData.estimatedDays}</Table.Cell>
-                      <Table.Cell>
-                        {pinData.serviceable ? (
-                          <Badge color="success">Serviceable</Badge>
-                        ) : (
-                          <Badge color="failure">Not Serviceable</Badge>
-                        )}
-                      </Table.Cell>
-                    </Table.Row>
-                  ))}
-              </Table.Body>
-            </Table>
-          </div>
         </Card>
       </div>
     </NavbarSidebarLayout>

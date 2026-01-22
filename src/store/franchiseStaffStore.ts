@@ -80,7 +80,12 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
   addStaff: async (data: any) => {
     set({ loading: true, error: null })
     try {
-      await http.post("/admin/staff", data)
+      // Ensure type is set to franchise for franchise staff
+      const payload = {
+        ...data,
+        type: "franchise"
+      }
+      await http.post("/admin/staff", payload)
       set({ loading: false })
     } catch (error: any) {
       console.error("Error adding staff:", error)
@@ -92,7 +97,12 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
   updateStaff: async (id: string, data: any) => {
     set({ loading: true, error: null })
     try {
-      await http.put(`/admin/staff/${id}`, data)
+      // Ensure type is set to franchise for franchise staff
+      const payload = {
+        ...data,
+        type: "franchise"
+      }
+      await http.put(`/admin/staff/${id}`, payload)
       set({ loading: false })
     } catch (error: any) {
       console.error("Error updating staff:", error)

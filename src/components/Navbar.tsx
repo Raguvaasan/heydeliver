@@ -1,5 +1,6 @@
-import { FC, useMemo, useState, useEffect } from "react"
-import { HiMenu, HiSearch, HiBell, HiChevronDown } from "react-icons/hi"
+import { FC, useMemo, useState, useEffect, useRef } from "react"
+import { useNavigate } from "react-router-dom"
+import { HiMenu, HiSearch, HiBell, HiChevronDown, HiLogout } from "react-icons/hi"
 
 interface NavbarProps {
   isMobileOpen: boolean
@@ -7,8 +8,11 @@ interface NavbarProps {
 }
 
 const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
+  const navigate = useNavigate()
   const [userName, setUserName] = useState("Admin")
   const [userInitial, setUserInitial] = useState("A")
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     // Get user data from sessionStorage
@@ -38,6 +42,25 @@ const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
       console.error("Error parsing profile data:", error)
     }
   }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("authToken")
+    sessionStorage.removeItem("profileData")
+    navigate("/", { replace: true })
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-white dark:bg-[#2c2c2c] border-b border-gray-200 dark:border-gray-700">
@@ -74,16 +97,41 @@ const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
           </button>
 
           {/* User Profile */}
-          <div className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
-              {userInitial}
-            </div>
-            <div className="hidden md:block">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {userName}
-              </p>
-            </div>
-            <HiChevronDown className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+          <div className="relative" ref={dropdownRef}>
+            <button 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="flex items-center gap-3 px-4 py-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group"
+            >
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm shadow-md group-hover:shadow-lg transition-shadow">
+                {userInitial}
+              </div>
+              <div className="hidden md:flex flex-col items-start">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white leading-none">
+                  {userName}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Admin</p>
+              </div>
+              <HiChevronDown className={`h-5 w-5 text-gray-600 dark:text-gray-300 transition-transform duration-200 ml-2 ${isDropdownOpen ? "rotate-180" : ""}`} />
+            </button>
+            
+            {/* Dropdown Menu */}
+            {isDropdownOpen && (
+              <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                {/* Profile Header */}
+                <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Account</p>
+                </div>
+
+                {/* Logout Button */}
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors duration-150"
+                >
+                  <HiLogout className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

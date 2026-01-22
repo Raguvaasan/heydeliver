@@ -47,6 +47,8 @@ import TrackingPage from "./pages/Tracking/TrackingPage"
 import PaymentsPage from "./pages/Payments/PaymentsPage"
 import RateCardPage from "./pages/Settings/RateCardPage"
 import PincodeServiceabilityPage from "./pages/Settings/PincodeServiceabilityPage"
+import RateMarkupPage from "./pages/Settings/RateMarkupPage"
+import RateCardMarkupPage from "./pages/Settings/RateCardMarkupPage"
 import ProfilePage from "./pages/Profile/ProfilePage"
 import { ThemeProvider } from "./context/ThemeContext"
 import { Toaster } from "react-hot-toast"
@@ -412,6 +414,24 @@ root.render(
             element={
               <ProtectedRoute>
                 <PincodeServiceabilityPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings/rate-markup"
+            element={
+              <ProtectedRoute>
+                <RateMarkupPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings/rate-card-markup"
+            element={
+              <ProtectedRoute>
+                <RateCardMarkupPage />
               </ProtectedRoute>
             }
           />

@@ -143,16 +143,26 @@ export const useStaffStore = create<StaffState>((set, get) => ({
   addStaff: async (data) => {
     set({ loading: true, error: null })
     try {
-      const payload = {
+      const payload: any = {
         name: data.name,
         email: data.email,
         phone: data.phone || data.mobile,
-        roleId: data.roleId,
-        franchiseId: data.franchiseId || data.franchise,
+        type: data.type || "head_quarter", // Default to head_quarter if not specified
         username: data.username,
         password: data.password,
         status: typeof data.status === 'boolean' ? (data.status ? 'Active' : 'Inactive') : data.status
       }
+
+      // Include roleId only for headquarters staff
+      if (data.type === "head_quarter" && data.roleId) {
+        payload.roleId = data.roleId
+      }
+
+      // Include franchiseId only for franchise staff
+      if (data.type === "franchise" && (data.franchiseId || data.franchise)) {
+        payload.franchiseId = data.franchiseId || data.franchise
+      }
+
       await http.post(`/admin/staff`, payload)
       await get().fetchStaffs()
       set({ loading: false })
@@ -171,10 +181,20 @@ export const useStaffStore = create<StaffState>((set, get) => ({
       if (updatedStaff.name) payload.name = updatedStaff.name
       if (updatedStaff.phone || updatedStaff.phone) payload.phone = updatedStaff.phone || updatedStaff.phone
       if (updatedStaff.email) payload.email = updatedStaff.email
-      if (updatedStaff.roleId) payload.roleId = updatedStaff.roleId
-      if (updatedStaff.franchiseId || updatedStaff.franchise) payload.franchiseId = updatedStaff.franchiseId || updatedStaff.franchise
+      if (updatedStaff.type) payload.type = updatedStaff.type
       if (updatedStaff.username) payload.username = updatedStaff.username
       if (updatedStaff.password) payload.password = updatedStaff.password
+      
+      // Include roleId only for headquarters staff
+      if (updatedStaff.type === "head_quarter" && updatedStaff.roleId) {
+        payload.roleId = updatedStaff.roleId
+      }
+      
+      // Include franchiseId only for franchise staff
+      if (updatedStaff.type === "franchise" && (updatedStaff.franchiseId || updatedStaff.franchise)) {
+        payload.franchiseId = updatedStaff.franchiseId || updatedStaff.franchise
+      }
+      
       if (updatedStaff.status !== undefined) {
         payload.status = typeof updatedStaff.status === 'boolean' ? (updatedStaff.status ? 'Active' : 'Inactive') : updatedStaff.status
       }

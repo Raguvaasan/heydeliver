@@ -38,6 +38,7 @@ const UserPage: FC = function () {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [activeTab, setActiveTab] = useState<"headquarters" | "franchise">("headquarters")
 
   useEffect(() => {
     fetchStaffs()
@@ -84,17 +85,24 @@ const UserPage: FC = function () {
     }
   }
 
-  const filteredStaffs = staffs.filter((staff) =>
-    staff.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    staff.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    staff.phone?.includes(searchTerm)
-  )
+  const filteredStaffs = staffs.filter((staff) => {
+    const matchesSearch = staff.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      staff.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      staff.phone?.includes(searchTerm)
+    
+    // Filter by tab - headquarters staff have roles, franchise staff have franchiseId
+    const matchesTab = activeTab === "headquarters" 
+      ? staff.role && !staff.franchiseId  // HQ staff have roles but no franchise
+      : staff.franchiseId  // Franchise staff have franchiseId
+    
+    return matchesSearch && matchesTab
+  })
 
   // Debug: Log first staff to see structure
   useEffect(() => {
     if (staffs.length > 0) {
       console.log("First staff object:", staffs[0])
-      console.log("First staff role:", staffs[0].role)
+      console.log("First staff role:", staffs[0]?.role)
     }
   }, [staffs])
 
@@ -144,6 +152,32 @@ const UserPage: FC = function () {
             </Button>
           </div>
 
+          {/* Tabs */}
+          <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex gap-8">
+              <button
+                onClick={() => setActiveTab("headquarters")}
+                className={`pb-3 px-1 font-medium transition-colors ${
+                  activeTab === "headquarters"
+                    ? "text-orange-500 border-b-2 border-orange-500"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Head Quarters
+              </button>
+              <button
+                onClick={() => setActiveTab("franchise")}
+                className={`pb-3 px-1 font-medium transition-colors ${
+                  activeTab === "franchise"
+                    ? "text-orange-500 border-b-2 border-orange-500"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Franchise
+              </button>
+            </div>
+          </div>
+
           {/* Table */}
           <div className="overflow-x-auto">
             {loading ? (
@@ -157,7 +191,11 @@ const UserPage: FC = function () {
                     <th className="px-4 py-3">NAME</th>
                     <th className="px-4 py-3">EMAIL</th>
                     <th className="px-4 py-3">PHONE</th>
-                    <th className="px-4 py-3">ROLE</th>
+                    {activeTab === "headquarters" ? (
+                      <th className="px-4 py-3">ROLE</th>
+                    ) : (
+                      <th className="px-4 py-3">FRANCHISE</th>
+                    )}
                     <th className="px-4 py-3">STATUS</th>
                     <th className="px-4 py-3 text-center">ACTION</th>
                   </tr>
@@ -191,11 +229,14 @@ const UserPage: FC = function () {
                           {staff.phone}
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                          {getRoleName(staff)}
+                          {activeTab === "headquarters" 
+                            ? getRoleName(staff)
+                            : (typeof staff.franchiseId === 'object' ? (staff.franchiseId as any)?.agencyName : staff.franchise) || "-"
+                          }
                         </td>
                         <td className="px-4 py-3">
-                          <Badge color={staff.status === "Active" || staff.status === true ? "success" : "failure"}>
-                            {staff.status === "Active" || staff.status === true ? "Active" : "Inactive"}
+                          <Badge color={staff.status === "Active" ? "success" : "failure"}>
+                            {staff.status === "Active" ? "Active" : "Inactive"}
                           </Badge>
                         </td>
                         <td className="px-4 py-3">
@@ -287,6 +328,7 @@ const AddStaffModal: FC<{
     name: "",
     email: "",
     phone: "",
+    type: "head_quarter",
     roleId: "",
     franchiseId: "",
     username: "",
@@ -294,6 +336,7 @@ const AddStaffModal: FC<{
     status: "Active",
   })
   const [showPasswordAdd, setShowPasswordAdd] = useState(false)
+  const [modalTab, setModalTab] = useState<"headquarters" | "franchise">("headquarters")
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -303,10 +346,21 @@ const AddStaffModal: FC<{
   }
 
   const handleSubmit = async () => {
-    const { name, email, phone, roleId, username, password } = formData
+    const { name, email, phone, roleId, franchiseId, username, password, type } = formData
 
-    if (!name || !email || !phone || !roleId || !username || !password) {
+    // Validate based on staff type
+    if (!name || !email || !phone || !username || !password) {
       toast.error("All required fields must be filled")
+      return
+    }
+
+    if (type === "head_quarter" && !roleId) {
+      toast.error("Role is required for headquarters staff")
+      return
+    }
+
+    if (type === "franchise" && !franchiseId) {
+      toast.error("Franchise is required for franchise staff")
       return
     }
 
@@ -319,6 +373,7 @@ const AddStaffModal: FC<{
         name: "",
         email: "",
         phone: "",
+        type: "head_quarter",
         roleId: "",
         franchiseId: "",
         username: "",
@@ -334,6 +389,37 @@ const AddStaffModal: FC<{
     <Modal show={isOpen} size="2xl" onClose={onClose}>
       <Modal.Header>Add Staff</Modal.Header>
       <Modal.Body>
+        {/* Tabs */}
+        <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex gap-8">
+            <button
+              onClick={() => {
+                setModalTab("headquarters")
+                setFormData((prev) => ({ ...prev, type: "head_quarter", franchiseId: "" }))
+              }}
+              className={`pb-3 px-1 font-medium transition-colors ${
+                modalTab === "headquarters"
+                  ? "text-orange-500 border-b-2 border-orange-500"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              }`}
+            >
+              Head Quarters
+            </button>
+            <button
+              onClick={() => {
+                setModalTab("franchise")
+                setFormData((prev) => ({ ...prev, type: "franchise", roleId: "" }))
+              }}
+              className={`pb-3 px-1 font-medium transition-colors ${
+                modalTab === "franchise"
+                  ? "text-orange-500 border-b-2 border-orange-500"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              }`}
+            >
+              Franchise
+            </button>
+          </div>
+        </div>
         <div className="space-y-6">
           {/* Basic Details */}
           <div>
@@ -381,25 +467,47 @@ const AddStaffModal: FC<{
                   required
                 />
               </div>
-              <div>
-                <Label htmlFor="roleId">
-                  Role<span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  id="roleId"
-                  name="roleId"
-                  value={formData.roleId}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Select Role</option>
-                  {roles.map((role) => (
-                    <option key={role._id} value={role._id}>
-                      {role.roleType}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+              {modalTab === "headquarters" ? (
+                <div>
+                  <Label htmlFor="roleId">
+                    Role<span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    id="roleId"
+                    name="roleId"
+                    value={formData.roleId}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select Role</option>
+                    {roles.map((role) => (
+                      <option key={role._id} value={role._id}>
+                        {role.roleType}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              ) : (
+                <div>
+                  <Label htmlFor="franchiseId">
+                    Franchise<span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    id="franchiseId"
+                    name="franchiseId"
+                    value={formData.franchiseId}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select Franchise</option>
+                    {agencies.map((agency) => (
+                      <option key={agency.id} value={agency.id}>
+                        {agency.agencyName}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
               <div className="md:col-span-2">
                 <Label htmlFor="status">
                   Status<span className="text-red-500">*</span>
@@ -415,31 +523,6 @@ const AddStaffModal: FC<{
                   <option value="Inactive">Inactive</option>
                 </Select>
               </div>
-            </div>
-          </div>
-
-          {/* Work Details */}
-          <div>
-            <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
-              Work Details
-            </h3>
-            <div>
-              <Label htmlFor="franchiseId">
-                Franchise<span className="text-red-500">*</span>
-              </Label>
-              <Select
-                id="franchiseId"
-                name="franchiseId"
-                value={formData.franchiseId}
-                onChange={handleChange}
-              >
-                <option value="">Select the Franchise</option>
-                {agencies.map((agency) => (
-                  <option key={agency.id} value={agency.id}>
-                    {agency.agencyName}
-                  </option>
-                ))}
-              </Select>
             </div>
           </div>
 
@@ -520,6 +603,7 @@ const EditStaffModal: FC<{
     name: "",
     email: "",
     phone: "",
+    type: "head_quarter",
     roleId: "",
     franchiseId: "",
     username: "",
@@ -527,19 +611,26 @@ const EditStaffModal: FC<{
     status: "Active",
   })
   const [showPasswordEdit, setShowPasswordEdit] = useState(false)
+  const [modalTab, setModalTab] = useState<"headquarters" | "franchise">("headquarters")
 
   useEffect(() => {
     if (userData) {
+      // Determine type based on whether staff has franchiseId or roleId
+      const staffType = userData.franchiseId ? "franchise" : "head_quarter"
+      const tab = userData.franchiseId ? "franchise" : "headquarters"
+      
       setFormData({
         name: userData.name || "",
         email: userData.email || "",
         phone: userData.phone || "",
+        type: staffType,
         roleId: userData.role?._id || userData.roleId || "",
         franchiseId: userData.franchiseId || userData.franchise || "",
         username: userData.username || userData.email || "",
         password: "",
         status: userData.status === "Active" || userData.status === true ? "Active" : "Inactive",
       })
+      setModalTab(tab)
     }
   }, [userData])
 
@@ -551,10 +642,21 @@ const EditStaffModal: FC<{
   }
 
   const handleSubmit = async () => {
-    const { name, email, phone, roleId, username } = formData
+    const { name, email, phone, roleId, franchiseId, username, type } = formData
 
-    if (!name || !email || !phone || !roleId || !username) {
+    // Validate based on staff type
+    if (!name || !email || !phone || !username) {
       toast.error("All fields except password are required")
+      return
+    }
+
+    if (type === "head_quarter" && !roleId) {
+      toast.error("Role is required for headquarters staff")
+      return
+    }
+
+    if (type === "franchise" && !franchiseId) {
+      toast.error("Franchise is required for franchise staff")
       return
     }
 
@@ -562,11 +664,21 @@ const EditStaffModal: FC<{
       name, 
       email, 
       phone, 
-      roleId, 
+      type,
       username, 
-      franchiseId: formData.franchiseId,
       status: formData.status 
     }
+
+    // Include roleId only for headquarters staff
+    if (type === "head_quarter" && roleId) {
+      payload.roleId = roleId
+    }
+
+    // Include franchiseId only for franchise staff
+    if (type === "franchise" && franchiseId) {
+      payload.franchiseId = franchiseId
+    }
+
     if (formData.password) {
       payload.password = formData.password
     }
@@ -584,6 +696,33 @@ const EditStaffModal: FC<{
     <Modal show={isOpen} size="2xl" onClose={onClose}>
       <Modal.Header>Edit Staff</Modal.Header>
       <Modal.Body>
+        {/* Tabs - Only show the tab for the staff type */}
+        <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex gap-8">
+            {formData.type === "head_quarter" && (
+              <button
+                onClick={() => {
+                  setModalTab("headquarters")
+                  setFormData((prev) => ({ ...prev, type: "head_quarter", franchiseId: "" }))
+                }}
+                className="pb-3 px-1 font-medium text-orange-500 border-b-2 border-orange-500"
+              >
+                Head Quarters
+              </button>
+            )}
+            {formData.type === "franchise" && (
+              <button
+                onClick={() => {
+                  setModalTab("franchise")
+                  setFormData((prev) => ({ ...prev, type: "franchise", roleId: "" }))
+                }}
+                className="pb-3 px-1 font-medium text-orange-500 border-b-2 border-orange-500"
+              >
+                Franchise
+              </button>
+            )}
+          </div>
+        </div>
         <div className="space-y-6">
           {/* Basic Details */}
           <div>
@@ -631,25 +770,47 @@ const EditStaffModal: FC<{
                   required
                 />
               </div>
-              <div>
-                <Label htmlFor="edit-roleId">
-                  Role<span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  id="edit-roleId"
-                  name="roleId"
-                  value={formData.roleId}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="">Select Role</option>
-                  {roles.map((role) => (
-                    <option key={role._id} value={role._id}>
-                      {role.roleType}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+              {modalTab === "headquarters" ? (
+                <div>
+                  <Label htmlFor="edit-roleId">
+                    Role<span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    id="edit-roleId"
+                    name="roleId"
+                    value={formData.roleId}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select Role</option>
+                    {roles.map((role) => (
+                      <option key={role._id} value={role._id}>
+                        {role.roleType}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              ) : (
+                <div>
+                  <Label htmlFor="edit-franchiseId-main">
+                    Franchise<span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    id="edit-franchiseId-main"
+                    name="franchiseId"
+                    value={formData.franchiseId}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select Franchise</option>
+                    {agencies.map((agency) => (
+                      <option key={agency.id} value={agency.id}>
+                        {agency.agencyName}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
               <div className="md:col-span-2">
                 <Label htmlFor="edit-status">
                   Status<span className="text-red-500">*</span>
@@ -665,31 +826,6 @@ const EditStaffModal: FC<{
                   <option value="Inactive">Inactive</option>
                 </Select>
               </div>
-            </div>
-          </div>
-
-          {/* Work Details */}
-          <div>
-            <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
-              Work Details
-            </h3>
-            <div>
-              <Label htmlFor="edit-franchiseId">
-                Franchise<span className="text-red-500">*</span>
-              </Label>
-              <Select
-                id="edit-franchiseId"
-                name="franchiseId"
-                value={formData.franchiseId}
-                onChange={handleChange}
-              >
-                <option value="">Select the Franchise</option>
-                {agencies.map((agency) => (
-                  <option key={agency.id} value={agency.id}>
-                    {agency.agencyName}
-                  </option>
-                ))}
-              </Select>
             </div>
           </div>
 

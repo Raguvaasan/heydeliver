@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar";
 import { Card, Tabs, Button, Badge } from "flowbite-react";
 import { HiCalculator } from "react-icons/hi";
@@ -8,6 +8,34 @@ const RateCardPage: FC = () => {
   const navigate = useNavigate();
   const [showGST, setShowGST] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [markupValue, setMarkupValue] = useState(0);
+  const [markupType, setMarkupType] = useState<"percentage" | "fixed">("percentage");
+
+  // Load markup settings from localStorage
+  useEffect(() => {
+    const savedMarkup = localStorage.getItem("rateCardMarkup")
+    const savedType = localStorage.getItem("rateCardMarkupType")
+    
+    if (savedMarkup) {
+      setMarkupValue(parseFloat(savedMarkup));
+    }
+    if (savedType) {
+      setMarkupType(savedType as "percentage" | "fixed");
+    }
+  }, []);
+
+  // Apply markup to rate
+  const applyMarkup = (rate: number): number => {
+    let finalRate = rate;
+    
+    if (markupType === "percentage") {
+      finalRate = rate * (1 + markupValue / 100);
+    } else {
+      finalRate = rate + markupValue;
+    }
+    
+    return Math.round(finalRate);
+  };
 
   // Surface Rate Data
   const surfaceZones = [
@@ -73,7 +101,7 @@ const RateCardPage: FC = () => {
             </td>
             {rates.baseFare.map((rate: number, idx: number) => (
               <td key={idx} className="px-6 py-4 text-center">
-                ₹ {rate.toFixed(2)}
+                ₹ {applyMarkup(rate)}
               </td>
             ))}
           </tr>
@@ -85,7 +113,7 @@ const RateCardPage: FC = () => {
             </td>
             {rates.additional250g.map((rate: number, idx: number) => (
               <td key={idx} className="px-6 py-4 text-center">
-                ₹ {rate.toFixed(2)}
+                ₹ {applyMarkup(rate)}
               </td>
             ))}
           </tr>
@@ -97,7 +125,7 @@ const RateCardPage: FC = () => {
             </td>
             {rates.additional500g.map((rate: number, idx: number) => (
               <td key={idx} className="px-6 py-4 text-center">
-                ₹ {rate.toFixed(2)}
+                ₹ {applyMarkup(rate)}
               </td>
             ))}
           </tr>
@@ -109,7 +137,7 @@ const RateCardPage: FC = () => {
             </td>
             {rates.additional1kg.map((rate: number, idx: number) => (
               <td key={idx} className="px-6 py-4 text-center">
-                ₹ {rate.toFixed(2)}
+                ₹ {applyMarkup(rate)}
               </td>
             ))}
           </tr>
@@ -125,7 +153,7 @@ const RateCardPage: FC = () => {
             <td className="px-6 py-4 font-medium text-gray-900">Base Fare</td>
             {rates.returnRTO.map((rate: number, idx: number) => (
               <td key={idx} className="px-6 py-4 text-center">
-                ₹ {rate.toFixed(2)}
+                ₹ {applyMarkup(rate)}
               </td>
             ))}
           </tr>
@@ -141,7 +169,7 @@ const RateCardPage: FC = () => {
             <td className="px-6 py-4 font-medium text-gray-900">Base Fare</td>
             {rates.reverseDTO.map((rate: number, idx: number) => (
               <td key={idx} className="px-6 py-4 text-center">
-                ₹ {rate.toFixed(2)}
+                ₹ {applyMarkup(rate)}
               </td>
             ))}
           </tr>
@@ -162,14 +190,24 @@ const RateCardPage: FC = () => {
         <Card>
           {/* Tabs and Toggle */}
           <div className="flex items-center justify-between mb-6">
-            <Tabs.Group
-              aria-label="Rate Card Tabs"
-              style="underline"
-              onActiveTabChange={(tab) => setActiveTab(tab)}
-            >
-              <Tabs.Item active={activeTab === 0} title="Surface" />
-              <Tabs.Item active={activeTab === 1} title="Express" />
-            </Tabs.Group>
+            <div className="flex items-center gap-3">
+              <Tabs.Group
+                aria-label="Rate Card Tabs"
+                style="underline"
+                onActiveTabChange={(tab) => setActiveTab(tab)}
+              >
+                <Tabs.Item active={activeTab === 0} title="Surface" />
+                <Tabs.Item active={activeTab === 1} title="Express" />
+              </Tabs.Group>
+              
+              {markupValue > 0 && (
+                <Badge color="success" size="sm">
+                  {markupType === "percentage" 
+                    ? `+${markupValue}% Markup Applied` 
+                    : `+₹${markupValue} Markup Applied`}
+                </Badge>
+              )}
+            </div>
 
             <div className="flex items-center gap-4">
               <div className="flex items-center">

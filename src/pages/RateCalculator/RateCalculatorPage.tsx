@@ -1,26 +1,33 @@
-import { FC, useState } from "react"
-import { Button, Card, Label, Select, TextInput, Radio } from "flowbite-react"
-import { HiInformationCircle } from "react-icons/hi"
+import { FC, useState, useEffect } from "react"
+import { Button, Card, Label, Select, TextInput, Radio, Spinner, Alert } from "flowbite-react"
+import { HiInformationCircle, HiCalculator } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
+import { useRateCalculatorStore } from "../../store/rateCalculatorStore"
+import toast from "react-hot-toast"
 
 interface RateDetails {
   shippingCost: number
   gstCharge: number
   dieselCharge: number
   total: number
+  zone?: string
+  chargedWeight?: number
 }
 
 const RateCalculatorPage: FC = () => {
   const [selectedTab, setSelectedTab] = useState<"domestic" | "international">("domestic")
-  const [pickupPincode, setPickupPincode] = useState("600094")
-  const [deliveryPincode, setDeliveryPincode] = useState("600094")
+  const [pickupPincode, setPickupPincode] = useState("110042")
+  const [deliveryPincode, setDeliveryPincode] = useState("110053")
   const [packageType, setPackageType] = useState("plastic")
   const [packageWeight, setPackageWeight] = useState("500")
-  const [length, setLength] = useState("1")
-  const [breadth, setBreadth] = useState("1")
-  const [height, setHeight] = useState("1")
-  const [paymentMode, setPaymentMode] = useState("prepaid")
+  const [length, setLength] = useState("10")
+  const [breadth, setBreadth] = useState("10")
+  const [height, setHeight] = useState("10")
+  const [paymentMode, setPaymentMode] = useState<"Pre-paid" | "COD">("Pre-paid")
   const [shippingType, setShippingType] = useState<"forward" | "rto" | "reverse">("forward")
+  const [deliveryMode, setDeliveryMode] = useState<"E" | "S">("E") // E = Express, S = Surface
+
+  const { rateData, loading, error, calculateRate, clearData } = useRateCalculatorStore()
 
   const calculateVolumetricWeight = () => {
     const l = parseFloat(length) || 0
@@ -29,24 +36,108 @@ const RateCalculatorPage: FC = () => {
     return ((l * b * h) / 5000).toFixed(2)
   }
 
-  const calculateRates = (type: "express" | "surface"): RateDetails => {
-    const baseRates = {
-      forward: { express: 38.00, surface: 38.00 },
-      rto: { express: 76.00, surface: 76.00 },
-      reverse: { express: 61.00, surface: 61.00 }
-    }
-
-    const shippingCost = baseRates[shippingType][type]
-    const gstPercentage = shippingType === "forward" ? 0.18 : shippingType === "rto" ? 0.18 : 0.18
-    const gstCharge = parseFloat((shippingCost * gstPercentage).toFixed(2))
-    const dieselCharge = shippingType === "forward" ? 0.58 : shippingType === "rto" ? 1.16 : 0.93
-    const total = parseFloat((shippingCost + gstCharge + dieselCharge).toFixed(2))
-
-    return { shippingCost, gstCharge, dieselCharge, total }
+  const getChargedWeight = () => {
+    const actualWeight = parseFloat(packageWeight) || 0
+    const volumetricWeight = parseFloat(calculateVolumetricWeight()) || 0
+    return Math.max(actualWeight, volumetricWeight)
   }
 
-  const expressRates = calculateRates("express")
-  const surfaceRates = calculateRates("surface")
+  // Auto-calculate when parameters change
+  useEffect(() => {
+    if (pickupPincode.length === 6 && deliveryPincode.length === 6 && parseFloat(packageWeight) > 0) {
+      handleCalculateRate()
+    }
+  }, [shippingType, deliveryMode, paymentMode])
+
+  const handleCalculateRate = async () => {
+    // Validation
+    if (!pickupPincode || pickupPincode.length !== 6) {
+      toast.error("Please enter a valid 6-digit pickup pincode")
+      return
+    }
+
+    if (!deliveryPincode || deliveryPincode.length !== 6) {
+      toast.error("Please enter a valid 6-digit delivery pincode")
+      return
+    }
+
+    if (!packageWeight || parseFloat(packageWeight) <= 0) {
+      toast.error("Please enter a valid package weight")
+      return
+    }
+
+    const chargedWeight = getChargedWeight()
+
+    // Map shipping type to status
+    const statusMap = {
+      forward: "Delivered",
+      rto: "RTO",
+      reverse: "DTO" // Direct To Origin (DTO) for reverse shipments
+    }
+
+    await calculateRate({
+      md: deliveryMode, // E or S
+      ss: statusMap[shippingType],
+      d_pin: deliveryPincode,
+      o_pin: pickupPincode,
+      cgm: Math.ceil(chargedWeight), // Convert to grams and round up
+      pt: paymentMode,
+    })
+  }
+
+  const getRateDetails = (): RateDetails | null => {
+    if (!rateData) return null
+
+    const { charge_DL, tax_data, charge_DPH, total_amount, zone, charged_weight } = rateData
+
+    // Get markup settings from localStorage
+    const markupValue = parseFloat(localStorage.getItem("rateMarkup") || "0")
+    const markupType = localStorage.getItem("rateMarkupType") || "percentage"
+
+    let baseTotal = total_amount || 0
+    let finalTotal = baseTotal
+
+    // Apply markup
+    if (markupType === "percentage") {
+      finalTotal = baseTotal * (1 + markupValue / 100)
+    } else {
+      finalTotal = baseTotal + markupValue
+    }
+
+    // Round off to nearest integer
+    finalTotal = Math.round(finalTotal)
+
+    return {
+      shippingCost: charge_DL || 0,
+      gstCharge: (tax_data.CGST || 0) + (tax_data.SGST || 0) + (tax_data.IGST || 0),
+      dieselCharge: charge_DPH || 0,
+      total: finalTotal,
+      zone: zone || "N/A",
+      chargedWeight: charged_weight || 0,
+    }
+  }
+
+  const getBaseTotal = () => {
+    if (!rateData) return 0
+    return Math.round(rateData.total_amount || 0)
+  }
+
+  const getMarkupAmount = () => {
+    const baseTotal = rateData?.total_amount || 0
+    const markupValue = parseFloat(localStorage.getItem("rateMarkup") || "0")
+    const markupType = localStorage.getItem("rateMarkupType") || "percentage"
+
+    let markupAmount = 0
+    if (markupType === "percentage") {
+      markupAmount = baseTotal * (markupValue / 100)
+    } else {
+      markupAmount = markupValue
+    }
+
+    return Math.round(markupAmount)
+  }
+
+  const rateDetails = getRateDetails()
 
   return (
     <NavbarSidebarLayout isFooter={false}>
@@ -255,7 +346,7 @@ const RateCalculatorPage: FC = () => {
               </div>
 
               {/* Payment Mode */}
-              <div>
+              <div className="mb-6">
                 <Label className="mb-3 block font-semibold text-gray-700 dark:text-gray-300">
                   Payment Mode
                 </Label>
@@ -264,9 +355,9 @@ const RateCalculatorPage: FC = () => {
                     <Radio
                       id="prepaid"
                       name="paymentMode"
-                      value="prepaid"
-                      checked={paymentMode === "prepaid"}
-                      onChange={(e) => setPaymentMode(e.target.value)}
+                      value="Pre-paid"
+                      checked={paymentMode === "Pre-paid"}
+                      onChange={(e) => setPaymentMode(e.target.value as "Pre-paid")}
                     />
                     <Label htmlFor="prepaid" className="cursor-pointer">Prepaid</Label>
                   </div>
@@ -274,13 +365,36 @@ const RateCalculatorPage: FC = () => {
                     <Radio
                       id="cod"
                       name="paymentMode"
-                      value="cod"
-                      checked={paymentMode === "cod"}
-                      onChange={(e) => setPaymentMode(e.target.value)}
+                      value="COD"
+                      checked={paymentMode === "COD"}
+                      onChange={(e) => setPaymentMode(e.target.value as "COD")}
                     />
                     <Label htmlFor="cod" className="cursor-pointer">Cash on Delivery (COD)</Label>
                   </div>
                 </div>
+              </div>
+
+              {/* Calculate Button */}
+              <div>
+                <Button
+                  color="dark"
+                  size="lg"
+                  className="w-full"
+                  onClick={handleCalculateRate}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Spinner size="sm" className="mr-2" />
+                      Calculating...
+                    </>
+                  ) : (
+                    <>
+                      <HiCalculator className="mr-2 h-5 w-5" />
+                      Calculate Rate
+                    </>
+                  )}
+                </Button>
               </div>
             </Card>
           </div>
@@ -289,7 +403,7 @@ const RateCalculatorPage: FC = () => {
           <div className="lg:col-span-1">
             <Card>
               {/* Shipping Type Tabs */}
-              <div className="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+              <div className="flex gap-2 mb-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
                 <button
                   onClick={() => setShippingType("forward")}
                   className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
@@ -322,59 +436,105 @@ const RateCalculatorPage: FC = () => {
                 </button>
               </div>
 
-              {/* Express Rate */}
-              <div className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">Express</h3>
-                  </div>
-                  <div className="p-2 bg-white dark:bg-gray-800 rounded-lg">
-                    <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="mb-2">
-                  <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                    ₹{expressRates.total}
-                  </div>
-                </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
-                  <div className="flex items-center gap-1">
-                    <HiInformationCircle className="h-3 w-3" />
-                    <span>
-                      Shipping cost: ₹{expressRates.shippingCost.toFixed(2)} + GST charge: ₹{expressRates.gstCharge.toFixed(2)} + Diesel Price Hike (DPH) charge: ₹{expressRates.dieselCharge.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
+              {/* Delivery Mode Tabs */}
+              <div className="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                <button
+                  onClick={() => setDeliveryMode("E")}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    deliveryMode === "E"
+                      ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                  }`}
+                >
+                  Express
+                </button>
+                <button
+                  onClick={() => setDeliveryMode("S")}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    deliveryMode === "S"
+                      ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                  }`}
+                >
+                  Surface
+                </button>
               </div>
 
-              {/* Surface Rate */}
-              <div className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/30 dark:to-gray-800/20 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">Surface</h3>
+              {/* Error Display */}
+              {error && (
+                <Alert color="failure" className="mb-4">
+                  <span className="font-medium">Error!</span> {error}
+                </Alert>
+              )}
+
+              {/* Rate Display */}
+              {rateDetails ? (
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                        {deliveryMode === "E" ? "Express" : "Surface"} - {shippingType.charAt(0).toUpperCase() + shippingType.slice(1)}
+                      </h3>
+                    </div>
+                    <div className="p-2 bg-white dark:bg-gray-800 rounded-lg">
+                      <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                    </div>
                   </div>
-                  <div className="p-2 bg-white dark:bg-gray-800 rounded-lg">
-                    <svg className="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                    </svg>
+                  
+                  <div className="mb-4">
+                    <div className="text-3xl font-bold text-gray-900 dark:text-white">
+                      ₹{rateDetails.total}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-4">
+                    <div className="flex justify-between">
+                      <span>Shipping Cost:</span>
+                      <span className="font-medium">₹{Math.round(rateDetails.shippingCost)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>GST:</span>
+                      <span className="font-medium">₹{Math.round(rateDetails.gstCharge)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>DPH (Diesel):</span>
+                      <span className="font-medium">₹{Math.round(rateDetails.dieselCharge)}</span>
+                    </div>
+                    <div className="border-t border-blue-300 dark:border-blue-700 pt-2 flex justify-between text-xs text-gray-600 dark:text-gray-400">
+                      <span>Base Total:</span>
+                      <span>₹{getBaseTotal()}</span>
+                    </div>
+                    {getMarkupAmount() > 0 && (
+                      <div className="flex justify-between text-xs text-green-600 dark:text-green-400">
+                        <span>Your Markup:</span>
+                        <span className="font-semibold">+₹{getMarkupAmount()}</span>
+                      </div>
+                    )}
+                    <div className="border-t-2 border-blue-400 dark:border-blue-600 pt-2 mt-2 flex justify-between font-bold text-lg">
+                      <span>Customer Pays:</span>
+                      <span className="text-blue-600">₹{rateDetails.total}</span>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                    <div className="flex items-center gap-1">
+                      <HiInformationCircle className="h-3 w-3" />
+                      <span>Zone: {rateDetails.zone}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <HiInformationCircle className="h-3 w-3" />
+                      <span>Charged Weight: {rateDetails.chargedWeight} grams</span>
+                    </div>
                   </div>
                 </div>
-                <div className="mb-2">
-                  <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                    ₹{surfaceRates.total}
-                  </div>
+              ) : (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  <HiCalculator className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p>Enter shipment details and click "Calculate Rate" to see pricing</p>
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
-                  <div className="flex items-center gap-1">
-                    <HiInformationCircle className="h-3 w-3" />
-                    <span>
-                      Shipping cost: ₹{surfaceRates.shippingCost.toFixed(2)} + GST charge: ₹{surfaceRates.gstCharge.toFixed(2)} + Diesel Price Hike (DPH) charge: ₹{surfaceRates.dieselCharge.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              )}
             </Card>
           </div>
         </div>
