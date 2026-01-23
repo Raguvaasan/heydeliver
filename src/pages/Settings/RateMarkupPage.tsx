@@ -1,37 +1,35 @@
 import { FC, useState, useEffect } from "react"
-import { Card, Label, TextInput, Button, Table, Badge } from "flowbite-react"
-import { HiSave, HiPencil, HiTrash } from "react-icons/hi"
+import { Card, Label, TextInput, Button, Spinner } from "flowbite-react"
+import { HiSave } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import toast from "react-hot-toast"
-
-interface MarkupRule {
-  id: string
-  name: string
-  type: "percentage" | "fixed"
-  value: number
-  applyTo: "all" | "forward" | "rto" | "reverse"
-  deliveryMode: "all" | "express" | "surface"
-  active: boolean
-}
+import { useMarkupStore } from "../../store/markupStore"
 
 const RateMarkupPage: FC = () => {
-  const [globalMarkup, setGlobalMarkup] = useState<number>(10) // Default 10% markup
+  const [globalMarkup, setGlobalMarkup] = useState<number>(0)
   const [markupType, setMarkupType] = useState<"percentage" | "fixed">("percentage")
 
+  const { 
+    rateCalculatorMarkup, 
+    loading, 
+    fetchRateCalculatorMarkup, 
+    saveRateCalculatorMarkup 
+  } = useMarkupStore()
+
   useEffect(() => {
-    // Load saved markup from localStorage
-    const savedMarkup = localStorage.getItem("rateMarkup")
-    const savedType = localStorage.getItem("rateMarkupType")
-    
-    if (savedMarkup) {
-      setGlobalMarkup(parseFloat(savedMarkup))
-    }
-    if (savedType) {
-      setMarkupType(savedType as "percentage" | "fixed")
-    }
+    // Fetch markup from API on component mount
+    fetchRateCalculatorMarkup()
   }, [])
 
-  const handleSaveMarkup = () => {
+  useEffect(() => {
+    // Update local state when API data is fetched
+    if (rateCalculatorMarkup) {
+      setGlobalMarkup(rateCalculatorMarkup.markup_value)
+      setMarkupType(rateCalculatorMarkup.markup_type)
+    }
+  }, [rateCalculatorMarkup])
+
+  const handleSaveMarkup = async () => {
     if (markupType === "percentage" && (globalMarkup < 0 || globalMarkup > 100)) {
       toast.error("Percentage markup must be between 0 and 100")
       return
@@ -42,10 +40,12 @@ const RateMarkupPage: FC = () => {
       return
     }
 
-    localStorage.setItem("rateMarkup", globalMarkup.toString())
-    localStorage.setItem("rateMarkupType", markupType)
-    
-    toast.success("Markup settings saved successfully!")
+    try {
+      await saveRateCalculatorMarkup(markupType, globalMarkup)
+      toast.success("Rate markup saved successfully!")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save markup")
+    }
   }
 
   const calculateExample = () => {
@@ -174,9 +174,19 @@ const RateMarkupPage: FC = () => {
                   <Button
                     color="dark"
                     onClick={handleSaveMarkup}
+                    disabled={loading}
                   >
-                    <HiSave className="mr-2 h-5 w-5" />
-                    Save Markup Settings
+                    {loading ? (
+                      <>
+                        <Spinner size="sm" className="mr-2" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <HiSave className="mr-2 h-5 w-5" />
+                        Save Markup Settings
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>

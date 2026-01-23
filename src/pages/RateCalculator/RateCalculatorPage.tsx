@@ -3,6 +3,7 @@ import { Button, Card, Label, Select, TextInput, Radio, Spinner, Alert } from "f
 import { HiInformationCircle, HiCalculator } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useRateCalculatorStore } from "../../store/rateCalculatorStore"
+import { useMarkupStore } from "../../store/markupStore"
 import toast from "react-hot-toast"
 
 interface RateDetails {
@@ -28,6 +29,12 @@ const RateCalculatorPage: FC = () => {
   const [deliveryMode, setDeliveryMode] = useState<"E" | "S">("E") // E = Express, S = Surface
 
   const { rateData, loading, error, calculateRate, clearData } = useRateCalculatorStore()
+  const { rateCalculatorMarkup, fetchRateCalculatorMarkup } = useMarkupStore()
+
+  // Fetch markup on component mount
+  useEffect(() => {
+    fetchRateCalculatorMarkup()
+  }, [])
 
   const calculateVolumetricWeight = () => {
     const l = parseFloat(length) || 0
@@ -90,9 +97,9 @@ const RateCalculatorPage: FC = () => {
 
     const { charge_DL, tax_data, charge_DPH, total_amount, zone, charged_weight } = rateData
 
-    // Get markup settings from localStorage
-    const markupValue = parseFloat(localStorage.getItem("rateMarkup") || "0")
-    const markupType = localStorage.getItem("rateMarkupType") || "percentage"
+    // Get markup settings from API
+    const markupValue = rateCalculatorMarkup?.markup_value || 0
+    const markupType = rateCalculatorMarkup?.markup_type || "percentage"
 
     let baseTotal = total_amount || 0
     let finalTotal = baseTotal
@@ -124,8 +131,8 @@ const RateCalculatorPage: FC = () => {
 
   const getMarkupAmount = () => {
     const baseTotal = rateData?.total_amount || 0
-    const markupValue = parseFloat(localStorage.getItem("rateMarkup") || "0")
-    const markupType = localStorage.getItem("rateMarkupType") || "percentage"
+    const markupValue = rateCalculatorMarkup?.markup_value || 0
+    const markupType = rateCalculatorMarkup?.markup_type || "percentage"
 
     let markupAmount = 0
     if (markupType === "percentage") {

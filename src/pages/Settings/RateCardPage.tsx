@@ -3,35 +3,30 @@ import NavbarSidebarLayout from "../../layouts/navbar-sidebar";
 import { Card, Tabs, Button, Badge } from "flowbite-react";
 import { HiCalculator } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
+import { useMarkupStore } from "../../store/markupStore";
 
 const RateCardPage: FC = () => {
   const navigate = useNavigate();
   const [showGST, setShowGST] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
-  const [markupValue, setMarkupValue] = useState(0);
-  const [markupType, setMarkupType] = useState<"percentage" | "fixed">("percentage");
+  
+  const { rateCardMarkup, fetchRateCardMarkup } = useMarkupStore();
 
-  // Load markup settings from localStorage
+  // Fetch markup from API on component mount
   useEffect(() => {
-    const savedMarkup = localStorage.getItem("rateCardMarkup")
-    const savedType = localStorage.getItem("rateCardMarkupType")
-    
-    if (savedMarkup) {
-      setMarkupValue(parseFloat(savedMarkup));
-    }
-    if (savedType) {
-      setMarkupType(savedType as "percentage" | "fixed");
-    }
+    fetchRateCardMarkup();
   }, []);
 
   // Apply markup to rate
   const applyMarkup = (rate: number): number => {
+    if (!rateCardMarkup) return Math.round(rate);
+    
     let finalRate = rate;
     
-    if (markupType === "percentage") {
-      finalRate = rate * (1 + markupValue / 100);
+    if (rateCardMarkup.markup_type === "percentage") {
+      finalRate = rate * (1 + rateCardMarkup.markup_value / 100);
     } else {
-      finalRate = rate + markupValue;
+      finalRate = rate + rateCardMarkup.markup_value;
     }
     
     return Math.round(finalRate);
@@ -200,11 +195,11 @@ const RateCardPage: FC = () => {
                 <Tabs.Item active={activeTab === 1} title="Express" />
               </Tabs.Group>
               
-              {markupValue > 0 && (
+              {rateCardMarkup && rateCardMarkup.markup_value > 0 && (
                 <Badge color="success" size="sm">
-                  {markupType === "percentage" 
-                    ? `+${markupValue}% Markup Applied` 
-                    : `+₹${markupValue} Markup Applied`}
+                  {rateCardMarkup.markup_type === "percentage" 
+                    ? `+${rateCardMarkup.markup_value}% Markup Applied` 
+                    : `+₹${rateCardMarkup.markup_value} Markup Applied`}
                 </Badge>
               )}
             </div>

@@ -1,26 +1,35 @@
 import { FC, useState, useEffect } from "react"
-import { Card, Label, TextInput, Button } from "flowbite-react"
+import { Card, Label, TextInput, Button, Spinner } from "flowbite-react"
 import { HiSave } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import toast from "react-hot-toast"
+import { useMarkupStore } from "../../store/markupStore"
 
 const RateCardMarkupPage: FC = () => {
-  const [globalMarkup, setGlobalMarkup] = useState<number>(10)
+  const [globalMarkup, setGlobalMarkup] = useState<number>(0)
   const [markupType, setMarkupType] = useState<"percentage" | "fixed">("percentage")
 
+  const { 
+    rateCardMarkup, 
+    loading, 
+    fetchRateCardMarkup, 
+    saveRateCardMarkup 
+  } = useMarkupStore()
+
   useEffect(() => {
-    const savedMarkup = localStorage.getItem("rateCardMarkup")
-    const savedType = localStorage.getItem("rateCardMarkupType")
-    
-    if (savedMarkup) {
-      setGlobalMarkup(parseFloat(savedMarkup))
-    }
-    if (savedType) {
-      setMarkupType(savedType as "percentage" | "fixed")
-    }
+    // Fetch markup from API on component mount
+    fetchRateCardMarkup()
   }, [])
 
-  const handleSaveMarkup = () => {
+  useEffect(() => {
+    // Update local state when API data is fetched
+    if (rateCardMarkup) {
+      setGlobalMarkup(rateCardMarkup.markup_value)
+      setMarkupType(rateCardMarkup.markup_type)
+    }
+  }, [rateCardMarkup])
+
+  const handleSaveMarkup = async () => {
     if (markupType === "percentage" && (globalMarkup < 0 || globalMarkup > 100)) {
       toast.error("Percentage markup must be between 0 and 100")
       return
@@ -31,10 +40,12 @@ const RateCardMarkupPage: FC = () => {
       return
     }
 
-    localStorage.setItem("rateCardMarkup", globalMarkup.toString())
-    localStorage.setItem("rateCardMarkupType", markupType)
-    
-    toast.success("Rate Card markup settings saved successfully!")
+    try {
+      await saveRateCardMarkup(markupType, globalMarkup)
+      toast.success("Rate card markup saved successfully!")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save markup")
+    }
   }
 
   const calculateExample = () => {
@@ -157,9 +168,18 @@ const RateCardMarkupPage: FC = () => {
 
                 {/* Save Button */}
                 <div className="flex justify-end gap-3">
-                  <Button color="dark" onClick={handleSaveMarkup}>
-                    <HiSave className="mr-2 h-5 w-5" />
-                    Save Rate Card Markup
+                  <Button color="dark" onClick={handleSaveMarkup} disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Spinner size="sm" className="mr-2" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <HiSave className="mr-2 h-5 w-5" />
+                        Save Rate Card Markup
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
