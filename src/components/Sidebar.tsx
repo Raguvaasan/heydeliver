@@ -107,7 +107,6 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
         { title: "Rate Calculator Setup", path: "/rate-calculator" },
         { title: "Pincode Serviceability", path: "/settings/pincode-serviceability" },
         { title: "Rate Card", path: "/settings/rate-card" },
-        { title: "Rate Markup", path: "/settings/rate-markup" },
         { title: "Rate Card Markup", path: "/settings/rate-card-markup" },
       ],
     },
@@ -318,39 +317,42 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
           </nav>
 
           {/* User Profile Section */}
-          <div className="p-4 border-t border-gray-700">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-white font-bold text-sm">
+          <div className="p-3 border-t border-gray-700">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
                 {(() => {
                   try {
                     const profileData = JSON.parse(sessionStorage.getItem("profileData") || "{}")
-                    const name = profileData.data?.name || profileData.data?.agencyName || profileData.name || "Admin"
-                    return name.charAt(0).toUpperCase()
+                    const displayName = profileData.data?.username || profileData.data?.email || profileData.username || profileData.email || profileData.data?.name || profileData.data?.agencyName || profileData.name || "User"
+                    return displayName.charAt(0).toUpperCase()
                   } catch {
-                    return "A"
+                    return "U"
                   }
                 })()}
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-white truncate">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-white truncate">
                   {(() => {
                     try {
                       const profileData = JSON.parse(sessionStorage.getItem("profileData") || "{}")
-                      return profileData.data?.name || profileData.data?.agencyName || profileData.name || "Admin"
+                      return profileData.data?.username || profileData.data?.email || profileData.username || profileData.email || profileData.data?.name || profileData.data?.agencyName || profileData.name || "User"
                     } catch {
-                      return "Admin"
+                      return "User"
                     }
                   })()}
                 </p>
+                <p className="text-[10px] text-gray-400 capitalize">
+                  {loginType}
+                </p>
               </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1 px-2 py-1 text-sm text-gray-200 hover:text-white hover:bg-gray-600 rounded"
-              >
-                <HiLogout className="h-4 w-4" />
-                <span>Logout</span>
-              </button>
             </div>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+            >
+              <HiLogout className="h-3.5 w-3.5" />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
       </aside>

@@ -3,47 +3,18 @@ import { Button, Card, Label, TextInput } from "flowbite-react"
 import { HiDownload, HiSearch } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import toast from "react-hot-toast"
-
-interface ServiceabilityResult {
-  pincode: string
-  city: string
-  state: string
-  serviceable: boolean
-  expressAvailable: boolean
-  surfaceAvailable: boolean
-  codAvailable: boolean
-}
+import { usePincodeStore } from "../../store/pincodeStore"
 
 const ServiceAvailabilityPage: FC = () => {
   const [pincode, setPincode] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<ServiceabilityResult | null>(null)
+  const { pincodeData, loading, error, fetchPincodeData, clearData } = usePincodeStore()
 
-  const handleCheckServiceability = async () => {
-    if (!pincode || pincode.length !== 6) {
+  const handleCheckServiceability = () => {
+    if (!pincode.trim() || pincode.length !== 6) {
       toast.error("Please enter a valid 6-digit pincode")
       return
     }
-
-    setLoading(true)
-    
-    // Simulate API call
-    setTimeout(() => {
-      // Mock data - replace with actual API call
-      const mockResult: ServiceabilityResult = {
-        pincode: pincode,
-        city: "Chennai",
-        state: "Tamil Nadu",
-        serviceable: true,
-        expressAvailable: true,
-        surfaceAvailable: true,
-        codAvailable: true
-      }
-      
-      setResult(mockResult)
-      setLoading(false)
-      toast.success("Serviceability checked successfully")
-    }, 1000)
+    fetchPincodeData(pincode)
   }
 
   const handleExportFile = () => {
@@ -116,7 +87,7 @@ const ServiceAvailabilityPage: FC = () => {
             </div>
 
             {/* Results Section */}
-            {result && (
+            {pincodeData && (
               <div className="mt-8 space-y-6">
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -128,19 +99,19 @@ const ServiceAvailabilityPage: FC = () => {
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Pincode</div>
                       <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {result.pincode}
+                        {pincodeData.postal_code.pin}
                       </div>
                     </div>
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">City</div>
                       <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {result.city}
+                        {pincodeData.postal_code.city}
                       </div>
                     </div>
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg col-span-2">
                       <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">State</div>
                       <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {result.state}
+                        {pincodeData.postal_code.state_code}
                       </div>
                     </div>
                   </div>
@@ -149,41 +120,41 @@ const ServiceAvailabilityPage: FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className={`h-3 w-3 rounded-full ${result.serviceable ? "bg-green-500" : "bg-red-500"}`}></div>
+                        <div className={`h-3 w-3 rounded-full ${pincodeData.postal_code.pre_paid === "Y" || pincodeData.postal_code.cod === "Y" ? "bg-green-500" : "bg-red-500"}`}></div>
                         <span className="font-medium text-gray-900 dark:text-white">Serviceable</span>
                       </div>
-                      <span className={`text-sm font-semibold ${result.serviceable ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                        {result.serviceable ? "Available" : "Not Available"}
+                      <span className={`text-sm font-semibold ${pincodeData.postal_code.pre_paid === "Y" || pincodeData.postal_code.cod === "Y" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                        {pincodeData.postal_code.pre_paid === "Y" || pincodeData.postal_code.cod === "Y" ? "Available" : "Not Available"}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className={`h-3 w-3 rounded-full ${result.expressAvailable ? "bg-green-500" : "bg-red-500"}`}></div>
+                        <div className={`h-3 w-3 rounded-full ${pincodeData.postal_code.pre_paid === "Y" ? "bg-green-500" : "bg-red-500"}`}></div>
                         <span className="font-medium text-gray-900 dark:text-white">Express Delivery</span>
                       </div>
-                      <span className={`text-sm font-semibold ${result.expressAvailable ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                        {result.expressAvailable ? "Available" : "Not Available"}
+                      <span className={`text-sm font-semibold ${pincodeData.postal_code.pre_paid === "Y" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                        {pincodeData.postal_code.pre_paid === "Y" ? "Available" : "Not Available"}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className={`h-3 w-3 rounded-full ${result.surfaceAvailable ? "bg-green-500" : "bg-red-500"}`}></div>
-                        <span className="font-medium text-gray-900 dark:text-white">Surface Delivery</span>
+                        <div className={`h-3 w-3 rounded-full ${pincodeData.postal_code.pickup === "Y" ? "bg-green-500" : "bg-red-500"}`}></div>
+                        <span className="font-medium text-gray-900 dark:text-white">Pickup Service</span>
                       </div>
-                      <span className={`text-sm font-semibold ${result.surfaceAvailable ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                        {result.surfaceAvailable ? "Available" : "Not Available"}
+                      <span className={`text-sm font-semibold ${pincodeData.postal_code.pickup === "Y" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                        {pincodeData.postal_code.pickup === "Y" ? "Available" : "Not Available"}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className={`h-3 w-3 rounded-full ${result.codAvailable ? "bg-green-500" : "bg-red-500"}`}></div>
+                        <div className={`h-3 w-3 rounded-full ${pincodeData.postal_code.cod === "Y" ? "bg-green-500" : "bg-red-500"}`}></div>
                         <span className="font-medium text-gray-900 dark:text-white">Cash on Delivery (COD)</span>
                       </div>
-                      <span className={`text-sm font-semibold ${result.codAvailable ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                        {result.codAvailable ? "Available" : "Not Available"}
+                      <span className={`text-sm font-semibold ${pincodeData.postal_code.cod === "Y" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                        {pincodeData.postal_code.cod === "Y" ? "Available" : "Not Available"}
                       </span>
                     </div>
                   </div>
@@ -192,7 +163,7 @@ const ServiceAvailabilityPage: FC = () => {
             )}
 
             {/* Empty State */}
-            {!result && (
+            {!pincodeData && (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 <svg
                   className="mx-auto h-12 w-12 text-gray-400"

@@ -1,10 +1,10 @@
-import { FC, useState } from "react"
+import { FC, useState, useEffect } from "react"
 import { Button, Card, Label, TextInput, Select } from "flowbite-react"
 import { useNavigate } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useOrderStore } from "../../store/orderStore"
 import toast from "react-hot-toast"
-import { HiPlus, HiTrash } from "react-icons/hi"
+import { HiPlus, HiTrash, HiRefresh } from "react-icons/hi"
 
 interface BoxDetails {
   id: number
@@ -15,13 +15,25 @@ interface BoxDetails {
   weight: string
 }
 
+// Generate unique order ID
+const generateOrderId = () => {
+  const prefix = "ORD"
+  const timestamp = Date.now().toString().slice(-8)
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+  return `${prefix}${timestamp}${random}`
+}
+
 const NewOrderPage: FC = () => {
   const navigate = useNavigate()
-  const { addOrder, loading } = useOrderStore()
+  const { createDelhiveryShipment, loading } = useOrderStore()
+
+  // Get user profile data for franchise
+  const loginType = sessionStorage.getItem("loginType")
+  const profileDataStr = sessionStorage.getItem("profileData")
+  const profileData = profileDataStr ? JSON.parse(profileDataStr) : null
 
   const [formData, setFormData] = useState({
-    channelName: "",
-    orderId: "",
+    // Customer Details
     customerName: "",
     customerPhone: "",
     customerEmail: "",
@@ -29,20 +41,66 @@ const NewOrderPage: FC = () => {
     deliveryCity: "",
     deliveryState: "",
     deliveryPincode: "",
+    deliveryCountry: "India",
+    
+    // Order Details
+    orderId: generateOrderId(),
+    channelName: "",
     paymentMode: "",
-    shippingMode: "SURFACE",
+    codAmount: "",
+    totalAmount: "",
+    orderDate: "",
+    
+    // Seller/Return Details
+    sellerName: "",
+    sellerAddress: "",
+    sellerInvoice: "",
+    returnAddress: "",
+    returnCity: "",
+    returnState: "",
+    returnPincode: "",
+    returnPhone: "",
+    returnCountry: "India",
+    
+    // Product Details
+    productsDesc: "",
+    hsnCode: "",
+    quantity: "",
+    
+    // Shipping
+    shippingMode: "Surface",
+    addressType: "",
+    
+    // Warehouse
+    pickupLocation: "",
   })
+
+  // Auto-populate pickup location for franchise users
+  useEffect(() => {
+    if (loginType === "franchise" && profileData) {
+      const warehouseName = profileData.agencyName || profileData.name || ""
+      if (warehouseName) {
+        setFormData((prev) => ({
+          ...prev,
+          pickupLocation: warehouseName,
+        }))
+      }
+    }
+  }, [loginType, profileData])
 
   const [boxes, setBoxes] = useState<BoxDetails[]>([
     {
       id: 1,
-      packageType: "",
+      packageType: "Box",
       length: "",
       breadth: "",
       height: "",
       weight: "",
     },
   ])
+
+  const [showSellerDetails, setShowSellerDetails] = useState(false)
+  const [showCustomerDetails, setShowCustomerDetails] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
@@ -83,16 +141,85 @@ const NewOrderPage: FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Validation
+    if (!formData.customerName || !formData.customerPhone) {
+      toast.error("Customer name and phone are required")
+      return
+    }
+
+    if (!formData.deliveryAddress || !formData.deliveryPincode) {
+      toast.error("Delivery address and pincode are required")
+      return
+    }
+
+    if (formData.customerPhone.length !== 10) {
+      toast.error("Phone number must be 10 digits")
+      return
+    }
+
+    if (formData.deliveryPincode.length !== 6) {
+      toast.error("Pincode must be 6 digits")
+      return
+    }
+
+    if (boxes.length === 0 || !boxes[0].weight) {
+      toast.error("Please add at least one box with weight")
+      return
+    }
+
+    if (!formData.pickupLocation) {
+      toast.error("Please enter pickup location/warehouse name")
+      return
+    }
+
     try {
-      const orderData = {
-        ...formData,
-        boxes,
-        status: "Pending",
-        amount: 0, // Calculate based on boxes and shipping
+      // Calculate total weight from all boxes
+      const totalWeight = boxes.reduce((sum, box) => sum + (parseFloat(box.weight) || 0), 0)
+
+      // Use first box dimensions (you can calculate volumetric weight if needed)
+      const firstBox = boxes[0]
+
+      const shipmentData = {
+        name: formData.customerName,
+        add: formData.deliveryAddress,
+        pin: formData.deliveryPincode,
+        city: formData.deliveryCity,
+        state: formData.deliveryState,
+        country: formData.deliveryCountry,
+        phone: formData.customerPhone,
+        order: formData.orderId,
+        payment_mode: formData.paymentMode,
+        return_pin: formData.returnPincode || "",
+        return_city: formData.returnCity || "",
+        return_phone: formData.returnPhone || "",
+        return_add: formData.returnAddress || "",
+        return_state: formData.returnState || "",
+        return_country: formData.returnCountry || "",
+        products_desc: formData.productsDesc || "",
+        hsn_code: formData.hsnCode || "",
+        cod_amount: formData.paymentMode === "COD" ? formData.codAmount : "",
+        order_date: formData.orderDate || null,
+        total_amount: formData.totalAmount || "",
+        seller_add: formData.sellerAddress || "",
+        seller_name: formData.sellerName || "",
+        seller_inv: formData.sellerInvoice || "",
+        quantity: formData.quantity || "",
+        waybill: "",
+        shipment_width: firstBox.breadth || "100",
+        shipment_height: firstBox.height || "100",
+        weight: totalWeight.toString(),
+        shipping_mode: formData.shippingMode,
+        address_type: formData.addressType || "",
       }
 
-      await addOrder(orderData)
-      navigate("/orders")
+      const response = await createDelhiveryShipment(shipmentData, formData.pickupLocation)
+      
+      console.log("Shipment created:", response)
+      
+      // Navigate to orders page on success
+      setTimeout(() => {
+        navigate("/orders")
+      }, 1500)
     } catch (error) {
       console.error("Order creation failed:", error)
     }
@@ -152,17 +279,28 @@ const NewOrderPage: FC = () => {
                   <Label htmlFor="orderId">
                     Order ID <span className="text-gray-400">ⓘ</span>
                   </Label>
-                  <TextInput
-                    id="orderId"
-                    name="orderId"
-                    type="text"
-                    placeholder="Enter Order ID/ Reference Number"
-                    value={formData.orderId}
-                    onChange={handleChange}
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <TextInput
+                      id="orderId"
+                      name="orderId"
+                      type="text"
+                      placeholder="Auto-generated Order ID"
+                      value={formData.orderId}
+                      onChange={handleChange}
+                      required
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      color="gray"
+                      onClick={() => setFormData({ ...formData, orderId: generateOrderId() })}
+                      title="Generate new Order ID"
+                    >
+                      <HiRefresh className="h-5 w-5" />
+                    </Button>
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    It is a unique identification number for an order
+                    Auto-generated unique order ID. Click refresh to generate new one.
                   </p>
                 </div>
               </div>
@@ -180,18 +318,152 @@ const NewOrderPage: FC = () => {
                   color="gray"
                   size="sm"
                   className="w-full border-orange-500 text-orange-500"
+                  onClick={() => setShowSellerDetails(!showSellerDetails)}
                 >
-                  📝 Add Seller Details
+                  📝 {showSellerDetails ? "Hide" : "Add"} Seller Details
                 </Button>
+
+                {showSellerDetails && (
+                  <div className="space-y-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                    <div>
+                      <Label htmlFor="sellerName">Seller Name</Label>
+                      <TextInput
+                        id="sellerName"
+                        name="sellerName"
+                        value={formData.sellerName}
+                        onChange={handleChange}
+                        placeholder="Enter seller name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="sellerAddress">Seller Address</Label>
+                      <TextInput
+                        id="sellerAddress"
+                        name="sellerAddress"
+                        value={formData.sellerAddress}
+                        onChange={handleChange}
+                        placeholder="Enter seller address"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="sellerInvoice">Seller Invoice Number</Label>
+                      <TextInput
+                        id="sellerInvoice"
+                        name="sellerInvoice"
+                        value={formData.sellerInvoice}
+                        onChange={handleChange}
+                        placeholder="Enter invoice number"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <Button
                   type="button"
                   color="gray"
                   size="sm"
                   className="w-full border-orange-500 text-orange-500"
+                  onClick={() => setShowCustomerDetails(!showCustomerDetails)}
                 >
-                  👤 Add Customer Details
+                  👤 {showCustomerDetails ? "Hide" : "Add"} Customer Details
                 </Button>
+
+                {showCustomerDetails && (
+                  <div className="space-y-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                    <div>
+                      <Label htmlFor="customerName">Customer Name *</Label>
+                      <TextInput
+                        id="customerName"
+                        name="customerName"
+                        value={formData.customerName}
+                        onChange={handleChange}
+                        placeholder="Enter customer name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="customerPhone">Customer Phone *</Label>
+                      <TextInput
+                        id="customerPhone"
+                        name="customerPhone"
+                        type="tel"
+                        value={formData.customerPhone}
+                        onChange={handleChange}
+                        placeholder="10 digit mobile number"
+                        maxLength={10}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="customerEmail">Customer Email</Label>
+                      <TextInput
+                        id="customerEmail"
+                        name="customerEmail"
+                        type="email"
+                        value={formData.customerEmail}
+                        onChange={handleChange}
+                        placeholder="Enter email address"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="deliveryAddress">Delivery Address *</Label>
+                      <TextInput
+                        id="deliveryAddress"
+                        name="deliveryAddress"
+                        value={formData.deliveryAddress}
+                        onChange={handleChange}
+                        placeholder="Enter complete delivery address"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="deliveryCity">City</Label>
+                        <TextInput
+                          id="deliveryCity"
+                          name="deliveryCity"
+                          value={formData.deliveryCity}
+                          onChange={handleChange}
+                          placeholder="City"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="deliveryState">State</Label>
+                        <TextInput
+                          id="deliveryState"
+                          name="deliveryState"
+                          value={formData.deliveryState}
+                          onChange={handleChange}
+                          placeholder="State"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="deliveryPincode">Pincode *</Label>
+                        <TextInput
+                          id="deliveryPincode"
+                          name="deliveryPincode"
+                          value={formData.deliveryPincode}
+                          onChange={handleChange}
+                          placeholder="6 digit pincode"
+                          maxLength={6}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="deliveryCountry">Country</Label>
+                        <TextInput
+                          id="deliveryCountry"
+                          name="deliveryCountry"
+                          value={formData.deliveryCountry}
+                          onChange={handleChange}
+                          placeholder="Country"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           </div>
@@ -200,31 +472,99 @@ const NewOrderPage: FC = () => {
           <Card>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <span className="text-orange-500">➕</span> Add products to be shipped{" "}
+                <span className="text-orange-500">➕</span> Product Details{" "}
                 <span className="text-gray-400">ⓘ</span>
               </h3>
             </div>
 
-            <div>
-              <Label htmlFor="productSearch">
-                Select Channel Name <span className="text-gray-400">ⓘ</span>
-              </Label>
-              <TextInput
-                id="productSearch"
-                type="text"
-                placeholder="Enter atleast 3 letters to search by product name/ SKU code"
-                className="mb-2"
-              />
-              <p className="text-xs text-gray-500 mb-4">
-                Add products you want to ship. This cannot be modified once the order is created
-              </p>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="productsDesc">Product Description</Label>
+                <TextInput
+                  id="productsDesc"
+                  name="productsDesc"
+                  value={formData.productsDesc}
+                  onChange={handleChange}
+                  placeholder="Enter product description"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Brief description of products being shipped
+                </p>
+              </div>
 
-              <div className="flex items-center justify-center py-12 text-gray-400">
-                <div className="text-center">
-                  <div className="text-6xl mb-2">📦</div>
-                  <p>No products added</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="quantity">Quantity</Label>
+                  <TextInput
+                    id="quantity"
+                    name="quantity"
+                    type="number"
+                    value={formData.quantity}
+                    onChange={handleChange}
+                    placeholder="Enter quantity"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="hsnCode">HSN Code</Label>
+                  <TextInput
+                    id="hsnCode"
+                    name="hsnCode"
+                    value={formData.hsnCode}
+                    onChange={handleChange}
+                    placeholder="Enter HSN code"
+                  />
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="totalAmount">Total Amount (₹)</Label>
+                  <TextInput
+                    id="totalAmount"
+                    name="totalAmount"
+                    type="number"
+                    value={formData.totalAmount}
+                    onChange={handleChange}
+                    placeholder="Enter total amount"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="orderDate">Order Date</Label>
+                  <TextInput
+                    id="orderDate"
+                    name="orderDate"
+                    type="date"
+                    value={formData.orderDate}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Pickup Location */}
+          <Card>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <span className="text-orange-500">🏭</span> Pickup Location *
+            </h3>
+            <div>
+              <Label htmlFor="pickupLocation">Warehouse/Pickup Location Name</Label>
+              <TextInput
+                id="pickupLocation"
+                name="pickupLocation"
+                value={formData.pickupLocation}
+                onChange={handleChange}
+                placeholder={loginType === "franchise" ? "Auto-filled from your profile" : "Enter warehouse or pickup location name"}
+                required
+                disabled={loginType === "franchise"}
+                className={loginType === "franchise" ? "bg-gray-100 dark:bg-gray-700" : ""}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {loginType === "franchise" 
+                  ? "Auto-filled from your registered franchise location"
+                  : "This must match your registered warehouse name in Delhivery"
+                }
+              </p>
             </div>
           </Card>
 
@@ -343,84 +683,80 @@ const NewOrderPage: FC = () => {
           {/* Shipping Mode */}
           <Card>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Choose shipping mode
+              Choose shipping mode *
             </h3>
 
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, shippingMode: "SURFACE" })}
+                onClick={() => setFormData({ ...formData, shippingMode: "Surface" })}
                 className={`p-6 rounded-lg border-2 transition-colors ${
-                  formData.shippingMode === "SURFACE"
+                  formData.shippingMode === "Surface"
                     ? "border-orange-500 bg-orange-50"
                     : "border-gray-300 hover:border-gray-400"
                 }`}
               >
                 <div className="text-4xl mb-2">🚚</div>
                 <h4 className="font-semibold">SURFACE</h4>
-                <p className="text-2xl font-bold text-orange-500 my-2">--</p>
+                <p className="text-sm text-gray-600 mt-2">Standard delivery (5-7 days)</p>
               </button>
 
               <button
                 type="button"
-                onClick={() => setFormData({ ...formData, shippingMode: "EXPRESS" })}
+                onClick={() => setFormData({ ...formData, shippingMode: "Express" })}
                 className={`p-6 rounded-lg border-2 transition-colors ${
-                  formData.shippingMode === "EXPRESS"
+                  formData.shippingMode === "Express"
                     ? "border-orange-500 bg-orange-50"
                     : "border-gray-300 hover:border-gray-400"
                 }`}
               >
                 <div className="text-4xl mb-2">✈️</div>
                 <h4 className="font-semibold">EXPRESS</h4>
-                <p className="text-2xl font-bold text-orange-500 my-2">--</p>
+                <p className="text-sm text-gray-600 mt-2">Fast delivery (2-3 days)</p>
               </button>
-            </div>
-
-            {/* Shipping Cost Breakup */}
-            <div className="mt-6 space-y-2">
-              <h4 className="font-semibold">Shipping Cost Breakup ▼</h4>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span>Freight Cost</span>
-                  <span>--</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Fuel Surcharge</span>
-                  <span>--</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>GST -18% (CGST + SGST)</span>
-                  <span>--</span>
-                </div>
-                <div className="flex justify-between font-semibold text-lg pt-2 border-t">
-                  <span>Total</span>
-                  <span>--</span>
-                </div>
-              </div>
             </div>
           </Card>
 
           {/* Payment Details */}
           <Card>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <span className="text-orange-500">💳</span> Payment Details{" "}
+              <span className="text-orange-500">💳</span> Payment Details *{" "}
               <span className="text-gray-400">ⓘ</span>
             </h3>
 
-            <div>
-              <Label htmlFor="paymentMode">Payment Mode</Label>
-              <Select
-                id="paymentMode"
-                name="paymentMode"
-                value={formData.paymentMode}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select</option>
-                <option value="Prepaid">Prepaid</option>
-                <option value="COD">Cash on Delivery (COD)</option>
-                <option value="Credit">Credit</option>
-              </Select>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="paymentMode">Payment Mode</Label>
+                <Select
+                  id="paymentMode"
+                  name="paymentMode"
+                  value={formData.paymentMode}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select Payment Mode</option>
+                  <option value="Prepaid">Prepaid</option>
+                  <option value="COD">Cash on Delivery (COD)</option>
+                </Select>
+              </div>
+
+              {formData.paymentMode === "COD" && (
+                <div>
+                  <Label htmlFor="codAmount">COD Amount (₹) *</Label>
+                  <TextInput
+                    id="codAmount"
+                    name="codAmount"
+                    type="number"
+                    value={formData.codAmount}
+                    onChange={handleChange}
+                    placeholder="Enter COD collection amount"
+                    required={formData.paymentMode === "COD"}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Amount to be collected from customer
+                  </p>
+                </div>
+              )}
             </div>
           </Card>
 

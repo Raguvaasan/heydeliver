@@ -11,6 +11,7 @@ const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
   const navigate = useNavigate()
   const [userName, setUserName] = useState("Admin")
   const [userInitial, setUserInitial] = useState("A")
+  const [userRole, setUserRole] = useState("Admin")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -37,6 +38,16 @@ const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
         }
         setUserName(name)
         setUserInitial(name.charAt(0).toUpperCase())
+        
+        // Get user role from loginType in sessionStorage
+        const loginType = sessionStorage.getItem("loginType")
+        if (loginType) {
+          // Capitalize first letter for display
+          const role = loginType.charAt(0).toUpperCase() + loginType.slice(1)
+          setUserRole(role)
+        } else {
+          setUserRole("Admin")
+        }
       }
     } catch (error) {
       console.error("Error parsing profile data:", error)
@@ -109,7 +120,7 @@ const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
                 <p className="text-sm font-semibold text-gray-900 dark:text-white leading-none">
                   {userName}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Admin</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{userRole}</p>
               </div>
               <HiChevronDown className={`h-5 w-5 text-gray-600 dark:text-gray-300 transition-transform duration-200 ml-2 ${isDropdownOpen ? "rotate-180" : ""}`} />
             </button>

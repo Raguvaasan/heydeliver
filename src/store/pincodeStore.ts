@@ -57,8 +57,8 @@ export const usePincodeStore = create<PincodeStoreState>((set) => ({
     set({ loading: true, error: null, pincodeData: null })
 
     try {
-      // Call through Vite proxy to avoid CORS
-      const apiUrl = `/delhivery-api/c/api/pin-codes/json/?filter_codes=${pincode}`
+      // Call through serverless function proxy
+      const apiUrl = `/delhivery-api/c/api/pin-codes/json?filter_codes=${pincode}`
       
       const response = await axios.get<DelhiveryResponse>(
         apiUrl,

@@ -419,15 +419,6 @@ root.render(
           />
 
           <Route
-            path="/settings/rate-markup"
-            element={
-              <ProtectedRoute>
-                <RateMarkupPage />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
             path="/settings/rate-card-markup"
             element={
               <ProtectedRoute>

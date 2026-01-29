@@ -11,6 +11,14 @@
   ],
   "rewrites": [
     {
+      "source": "/delhivery-api/:path*",
+      "destination": "/api/delhivery?path=:path*"
+    },
+    {
+      "source": "/api/orders/:path*",
+      "destination": "https://freightrekapi.vercel.app/orders/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://freightrekapi.vercel.app/:path*"
     },

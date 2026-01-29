@@ -4,6 +4,7 @@ import { HiInformationCircle, HiCalculator } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useRateCalculatorStore } from "../../store/rateCalculatorStore"
 import { useMarkupStore } from "../../store/markupStore"
+import { useRateCardStore } from "../../store/rateCardStore"
 import toast from "react-hot-toast"
 
 interface RateDetails {
@@ -29,11 +30,12 @@ const RateCalculatorPage: FC = () => {
   const [deliveryMode, setDeliveryMode] = useState<"E" | "S">("E") // E = Express, S = Surface
 
   const { rateData, loading, error, calculateRate, clearData } = useRateCalculatorStore()
-  const { rateCalculatorMarkup, fetchRateCalculatorMarkup } = useMarkupStore()
+  const { rateCardMarkup, fetchRateCardMarkup } = useMarkupStore()
+  const { calculateRateFromCard } = useRateCardStore()
 
-  // Fetch markup on component mount
+  // Fetch rate card markup on component mount
   useEffect(() => {
-    fetchRateCalculatorMarkup()
+    fetchRateCardMarkup()
   }, [])
 
   const calculateVolumetricWeight = () => {
@@ -95,65 +97,66 @@ const RateCalculatorPage: FC = () => {
   const getRateDetails = (): RateDetails | null => {
     if (!rateData) return null
 
-    const { charge_DL, tax_data, charge_DPH, total_amount, zone, charged_weight } = rateData
+    const { charge_DL, tax_data, charge_DPH, zone, charged_weight } = rateData
 
-    // Get markup settings from API
-    const markupValue = rateCalculatorMarkup?.markup_value || 0
-    const markupType = rateCalculatorMarkup?.markup_type || "percentage"
+    // Calculate rate using Rate Card values based on zone and weight
+    const mode = deliveryMode === "E" ? "express" : "surface"
+    const baseRate = calculateRateFromCard(mode, zone, charged_weight, shippingType)
 
-    let baseTotal = total_amount || 0
-    let finalTotal = baseTotal
+    console.log('Rate Calculation Debug:', {
+      zone,
+      charged_weight,
+      mode,
+      shippingType,
+      baseRate
+    })
 
-    // Apply markup
-    if (markupType === "percentage") {
-      finalTotal = baseTotal * (1 + markupValue / 100)
-    } else {
-      finalTotal = baseTotal + markupValue
+    // Apply rate card markup if configured
+    const markupValue = rateCardMarkup?.markup_value || 0
+    const markupType = rateCardMarkup?.markup_type || "percentage"
+
+    let finalTotal = baseRate
+
+    // Apply markup based on type (same as Rate Card Page)
+    if (markupValue > 0) {
+      if (markupType === "percentage") {
+        finalTotal = baseRate * (1 + markupValue / 100)
+      } else {
+        finalTotal = baseRate + markupValue
+      }
     }
 
-    // Round off to nearest integer
-    finalTotal = Math.round(finalTotal)
+    // Add GST (18% on base rate with markup)
+    const gstAmount = finalTotal * 0.18
+
+    // Add DPH (Diesel Price Hike) charges from Delhivery
+    const dphCharge = charge_DPH || 0
+
+    // Calculate total
+    const total = Math.round(finalTotal + gstAmount + dphCharge)
 
     return {
-      shippingCost: charge_DL || 0,
-      gstCharge: (tax_data.CGST || 0) + (tax_data.SGST || 0) + (tax_data.IGST || 0),
-      dieselCharge: charge_DPH || 0,
-      total: finalTotal,
+      shippingCost: Math.round(finalTotal),
+      gstCharge: Math.round(gstAmount),
+      dieselCharge: Math.round(dphCharge),
+      total: total,
       zone: zone || "N/A",
       chargedWeight: charged_weight || 0,
     }
-  }
-
-  const getBaseTotal = () => {
-    if (!rateData) return 0
-    return Math.round(rateData.total_amount || 0)
-  }
-
-  const getMarkupAmount = () => {
-    const baseTotal = rateData?.total_amount || 0
-    const markupValue = rateCalculatorMarkup?.markup_value || 0
-    const markupType = rateCalculatorMarkup?.markup_type || "percentage"
-
-    let markupAmount = 0
-    if (markupType === "percentage") {
-      markupAmount = baseTotal * (markupValue / 100)
-    } else {
-      markupAmount = markupValue
-    }
-
-    return Math.round(markupAmount)
   }
 
   const rateDetails = getRateDetails()
 
   return (
     <NavbarSidebarLayout isFooter={false}>
-      <div className="px-4 pt-6 pb-6">
-        {/* Header */}
+      <div className="px-4 pt-6 pb-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Rate Calculator
           </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Calculate shipping rates for your packages
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -509,18 +512,8 @@ const RateCalculatorPage: FC = () => {
                       <span>DPH (Diesel):</span>
                       <span className="font-medium">₹{Math.round(rateDetails.dieselCharge)}</span>
                     </div>
-                    <div className="border-t border-blue-300 dark:border-blue-700 pt-2 flex justify-between text-xs text-gray-600 dark:text-gray-400">
-                      <span>Base Total:</span>
-                      <span>₹{getBaseTotal()}</span>
-                    </div>
-                    {getMarkupAmount() > 0 && (
-                      <div className="flex justify-between text-xs text-green-600 dark:text-green-400">
-                        <span>Your Markup:</span>
-                        <span className="font-semibold">+₹{getMarkupAmount()}</span>
-                      </div>
-                    )}
                     <div className="border-t-2 border-blue-400 dark:border-blue-600 pt-2 mt-2 flex justify-between font-bold text-lg">
-                      <span>Customer Pays:</span>
+                      <span>Total Amount:</span>
                       <span className="text-blue-600">₹{rateDetails.total}</span>
                     </div>
                   </div>
