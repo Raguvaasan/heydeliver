@@ -266,9 +266,9 @@ const NewOrderPage: FC = () => {
                     required
                   >
                     <option value="">Select Channel Name</option>
-                    <option value="Online">Online</option>
+                    {/* <option value="Online">Online</option> */}
                     <option value="Offline">Offline</option>
-                    <option value="Custom">Custom Channel</option>
+                    {/* <option value="Custom">Custom Channel</option> */}
                   </Select>
                   <p className="text-xs text-gray-500 mt-1">
                     Channels are online (Shopify) or custom channel for offline (physical store) orders.
@@ -543,7 +543,7 @@ const NewOrderPage: FC = () => {
           </Card>
 
           {/* Pickup Location */}
-          <Card>
+          {/* <Card>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <span className="text-orange-500">🏭</span> Pickup Location *
             </h3>
@@ -566,7 +566,7 @@ const NewOrderPage: FC = () => {
                 }
               </p>
             </div>
-          </Card>
+          </Card> */}
 
           {/* Box Details */}
           <Card>
