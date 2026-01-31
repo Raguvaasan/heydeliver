@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import http from "../common/httpRequest"
+import http, { httpPublic } from "../common/httpRequest"
 
 interface Role {
   _id?: string
@@ -67,7 +67,7 @@ export const useStaffStore = create<StaffState>((set, get) => ({
   fetchStaffs: async () => {
     set({ loading: true, error: null })
     try {
-      const response = await http.get(`/admin/staff`)
+      const response = await httpPublic.get(`/admin/staff`)
       console.log("Staff API Response:", response.data) // Debug log
       const staffArray = response.data?.data?.staff || []
       console.log("Staff Array:", staffArray) // Debug log

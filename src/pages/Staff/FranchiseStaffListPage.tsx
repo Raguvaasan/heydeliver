@@ -41,25 +41,12 @@ const FranchiseStaffListPage: FC = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<"headquarters" | "franchise">("headquarters")
 
   const fetchStaffs = async () => {
     setLoading(true)
     try {
-      const token = sessionStorage.getItem("authToken")
-      const loginType = sessionStorage.getItem("loginType")
-      
       console.log("=== FRANCHISE STAFF FETCH DEBUG ===")
-      console.log("Token exists:", !!token)
-      console.log("Token value:", token ? token.substring(0, 30) + "..." : "NO TOKEN")
-      console.log("Login Type:", loginType)
-      
-      if (!token) {
-        console.log("No auth token found - stopping fetch")
-        setStaffs([])
-        setLoading(false)
-        return
-      }
-      
       console.log("Making API call to /admin/staff...")
       const response = await http.get("/admin/staff")
       console.log("API Response Status:", response.status)
@@ -67,7 +54,21 @@ const FranchiseStaffListPage: FC = () => {
       console.log("Response data object:", response.data)
       console.log("Response data.data:", response.data?.data)
       
-      const staffData = response.data?.data || []
+      // Handle different possible response structures
+      let staffData = []
+      if (response.data?.data) {
+        // If data is nested under data property
+        if (Array.isArray(response.data.data)) {
+          staffData = response.data.data
+        } else if (response.data.data.staff && Array.isArray(response.data.data.staff)) {
+          // If staff is nested under data.data.staff
+          staffData = response.data.data.staff
+        }
+      } else if (Array.isArray(response.data)) {
+        // If data is at root level
+        staffData = response.data
+      }
+      
       console.log("Parsed staff data array:", staffData)
       console.log("Staff count:", staffData.length)
       
@@ -76,6 +77,7 @@ const FranchiseStaffListPage: FC = () => {
       }
       
       setStaffs(staffData)
+      setErrorMessage(null)
       console.log("Staffs state updated")
     } catch (error: any) {
       console.error("=== ERROR FETCHING STAFFS ===")
@@ -86,11 +88,12 @@ const FranchiseStaffListPage: FC = () => {
       console.error("Error response data:", error.response?.data)
       
       if (error.response?.status === 401) {
-        setErrorMessage("Access Denied: Franchise users don't have permission to access staff data. Please contact admin to grant permissions.")
+        setErrorMessage("Access Denied: You don't have permission to access staff data.")
       } else {
         setErrorMessage("Failed to load staff data. Please try again.")
       }
       
+      // Always ensure staffs is an array
       setStaffs([])
     } finally {
       setLoading(false)
@@ -197,11 +200,18 @@ const FranchiseStaffListPage: FC = () => {
     return "-"
   }
 
-  const filteredStaffs = staffs.filter((staff) =>
-    staff.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    staff.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    staff.phone?.includes(searchTerm)
-  )
+  const filteredStaffs = Array.isArray(staffs) ? staffs.filter((staff) => {
+    const matchesSearch = staff.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      staff.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      staff.phone?.includes(searchTerm)
+    
+    // Filter by tab - Check for franchiseId presence
+    const matchesTab = activeTab === "headquarters" 
+      ? !staff.franchiseId || staff.franchiseId === null || staff.franchiseId === ""  // HQ staff have no franchiseId
+      : staff.franchiseId && staff.franchiseId !== null && staff.franchiseId !== ""  // Franchise staff have franchiseId
+    
+    return matchesSearch && matchesTab
+  }) : []
 
   return (
     <NavbarSidebarLayout isFooter={false}>
@@ -225,6 +235,32 @@ const FranchiseStaffListPage: FC = () => {
             </Button>
           </div>
 
+          {/* Tabs */}
+          <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex gap-8">
+              <button
+                onClick={() => setActiveTab("headquarters")}
+                className={`pb-3 px-1 font-medium transition-colors ${
+                  activeTab === "headquarters"
+                    ? "text-orange-500 border-b-2 border-orange-500"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Head Quarters
+              </button>
+              <button
+                onClick={() => setActiveTab("franchise")}
+                className={`pb-3 px-1 font-medium transition-colors ${
+                  activeTab === "franchise"
+                    ? "text-orange-500 border-b-2 border-orange-500"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Franchise
+              </button>
+            </div>
+          </div>
+
           <div className="mb-4">
             <Label htmlFor="search" value="Search Staff" />
             <TextInput
@@ -235,25 +271,7 @@ const FranchiseStaffListPage: FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>errorMessage ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="text-red-600 text-lg font-semibold mb-2">
-                  {errorMessage}
-                </div>
-                <p className="text-gray-500 text-sm mb-4">
-                  You are logged in as: {sessionStorage.getItem("loginType") || "Unknown"}
-                </p>
-                <Button
-                  onClick={() => {
-                    sessionStorage.clear()
-                    window.location.href = "/admin/"
-                  }}
-                  className="bg-orange-500 hover:bg-orange-600"
-                >
-                  Go to Login
-                </Button>
-              </div>
-            ) : 
+          </div>
 
           <div className="overflow-x-auto">
             {loading ? (
@@ -267,7 +285,11 @@ const FranchiseStaffListPage: FC = () => {
                     <th className="px-4 py-3">NAME</th>
                     <th className="px-4 py-3">EMAIL</th>
                     <th className="px-4 py-3">PHONE</th>
-                    <th className="px-4 py-3">ROLE</th>
+                    {activeTab === "headquarters" ? (
+                      <th className="px-4 py-3">ROLE</th>
+                    ) : (
+                      <th className="px-4 py-3">FRANCHISE</th>
+                    )}
                     <th className="px-4 py-3">STATUS</th>
                     <th className="px-4 py-3 text-center">ACTION</th>
                   </tr>
@@ -282,7 +304,10 @@ const FranchiseStaffListPage: FC = () => {
                         <td className="px-4 py-3">{staff.email}</td>
                         <td className="px-4 py-3">{staff.phone}</td>
                         <td className="px-4 py-3">
-                          {getRoleName(staff)}
+                          {activeTab === "headquarters" 
+                            ? getRoleName(staff)
+                            : (typeof staff.franchiseId === 'object' ? (staff.franchiseId as any)?.agencyName : staff.franchise) || "-"
+                          }
                         </td>
                         <td className="px-4 py-3">
                           <Badge color={staff.status === "Active" || staff.status === true ? "success" : "failure"}>

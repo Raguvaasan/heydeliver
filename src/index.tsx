@@ -19,7 +19,7 @@ import SubadminAndSupport from "./pages/AccessManagement/SubadminAndSupport"
 import StaffPage from "./pages/AccessManagement/StaffPage"
 import FranchiseStaffPage from "./pages/Staff/FranchiseStaffPage"
 import FranchiseStaffListPage from "./pages/Staff/FranchiseStaffListPage"
-import FranchiseAddStaffPage from "./pages/Staff/FranchiseAddStaffPage"
+import FranchiseAddEditStaffPage from "./pages/Staff/FranchiseAddEditStaffPage"
 import TestFranchiseStaffPage from "./pages/Staff/TestFranchiseStaffPage"
 import FranchiseStaffDetailPage from "./pages/Staff/FranchiseStaffDetailPage"
 import OrdersPage from "./pages/Orders/OrdersPage"
@@ -179,7 +179,7 @@ root.render(
             path="/franchise-staff/add"
             element={
               <ProtectedRoute>
-                <FranchiseAddStaffPage />
+                <FranchiseAddEditStaffPage />
               </ProtectedRoute>
             }
           />
@@ -188,7 +188,7 @@ root.render(
             path="/franchise-staff/edit/:id"
             element={
               <ProtectedRoute>
-                <FranchiseAddStaffPage />
+                <FranchiseAddEditStaffPage />
               </ProtectedRoute>
             }
           />

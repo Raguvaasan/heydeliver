@@ -1,4 +1,4 @@
-import http from "../common/httpRequest"
+import http, { httpPublic } from "../common/httpRequest"
 import { create } from "zustand"
 
 interface Staff {
@@ -43,7 +43,7 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
   fetchStaffs: async () => {
     set({ loading: true, error: null })
     try {
-      const response = await http.get("/admin/staff")
+      const response = await httpPublic.get("/admin/staff")
       const staffData = response.data?.data || []
       console.log("Fetched staffs:", staffData)
       set({ staffs: staffData, loading: false })

@@ -34,4 +34,16 @@ httpRequest.interceptors.response.use(
   }
 )
 
+// Public HTTP instance without token for public APIs
+export const httpPublic = axios.create({
+  baseURL: API_URL,
+})
+
+httpPublic.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
 export default httpRequest
