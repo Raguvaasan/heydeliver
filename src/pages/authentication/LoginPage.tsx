@@ -50,20 +50,15 @@ const LoginPage: FC = function () {
           result = (await loginAdminUser(email, password)) as LoginResponse
         } catch (adminError: any) {
           // If admin login fails, try staff login with email as username
-          console.log("Admin login failed, trying staff login...")
-          console.log("Admin error:", adminError.response?.data)
           lastError = adminError
           try {
             result = (await loginStaffUser(email, password)) as LoginResponse
           } catch (staffError: any) {
-            console.log("Staff login also failed:", staffError.response?.data)
             // Both failed, throw the most recent error
             throw staffError
           }
         }
       }
-
-      console.log("Login response:", result) // Debug log
 
       // Check for success in response
       const isSuccess = result.data?.success
@@ -74,11 +69,11 @@ const LoginPage: FC = function () {
         const userData = result.data?.["data"] || result.data
 
         if (token) {
-          console.log("Saving token:", token)
+          // Store authentication token securely
+          // TODO: Consider moving to HttpOnly cookies for better security
           sessionStorage.setItem("authToken", token)
         } else {
           // If no token, create a session identifier for franchise/staff login
-          console.log("No token found, creating session identifier")
           const sessionId = `session_${loginType}_${Date.now()}`
           sessionStorage.setItem("authToken", sessionId)
         }
@@ -89,9 +84,6 @@ const LoginPage: FC = function () {
         )
         sessionStorage.setItem("loginType", loginType)
 
-        // Verify data is saved
-        console.log("Login data saved successfully")
-
         toast.success("Login successful! Redirecting...")
         setTimeout(() => {
           window.location.href = "/admin/dashboard"
@@ -100,13 +92,7 @@ const LoginPage: FC = function () {
         throw new Error(result.data?.message || "Invalid response from server")
       }
     } catch (err: any) {
-      console.error("Login error details:", err)
-      console.error("Error response:", err.response)
       const errorMessage = err.response?.data?.message || err.message || "Invalid login credentials"
-      console.error("Showing error:", errorMessage)
-      
-      // Show alert as backup in case toast doesn't show
-      alert(`Login Failed: ${errorMessage}`)
       
       toast.error(errorMessage, {
         duration: 5000,

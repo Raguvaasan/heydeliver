@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from "react"
+import { FC, useEffect, useState, useCallback, useMemo } from "react"
 import { Badge, Button, Card, Spinner, Tabs } from "flowbite-react"
 import { HiEye, HiPencil, HiTrash } from "react-icons/hi"
 import { useNavigate } from "react-router-dom"
@@ -17,49 +17,56 @@ const OrdersPage: FC = () => {
     fetchActiveOrders()
   }, [fetchOrders, fetchActiveOrders])
 
-  const handleSelectOrder = (orderId: string) => {
+  // Memoized callbacks to prevent unnecessary re-renders
+  const handleSelectOrder = useCallback((orderId: string) => {
     setSelectedOrders((prev) =>
       prev.includes(orderId)
         ? prev.filter((id) => id !== orderId)
         : [...prev, orderId]
     )
-  }
+  }, [])
 
-  const handleSelectAll = (ordersList: any[]) => {
+  const handleSelectAll = useCallback((ordersList: any[]) => {
     if (selectedOrders.length === ordersList.length) {
       setSelectedOrders([])
     } else {
       setSelectedOrders(ordersList.map((order) => order._id))
     }
-  }
+  }, [selectedOrders.length])
 
-  const handleView = (orderId: string) => {
+  const handleView = useCallback((orderId: string) => {
     navigate(`/orders/${orderId}`)
-  }
+  }, [navigate])
 
-  const handleEdit = (orderId: string) => {
+  const handleEdit = useCallback((orderId: string) => {
     navigate(`/orders/edit/${orderId}`)
-  }
+  }, [navigate])
 
-  const handleDelete = async (orderId: string) => {
+  const handleDelete = useCallback(async (orderId: string) => {
     if (window.confirm("Are you sure you want to delete this order?")) {
       try {
         await deleteOrder(orderId)
+        toast.success("Order deleted successfully")
       } catch (error) {
-        console.error("Delete failed:", error)
+        toast.error("Failed to delete order")
       }
     }
-  }
+  }, [deleteOrder])
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = useCallback((status: string) => {
     const statusLower = status?.toLowerCase()
     if (statusLower === "delivered") return "success"
     if (statusLower === "in transit") return "info"
     if (statusLower === "pending") return "warning"
     return "gray"
-  }
+  }, [])
 
-  const renderOrdersTable = (ordersList: any[]) => {
+  // Memoize the current orders list based on active tab
+  const currentOrdersList = useMemo(() => {
+    return activeTab === "recent" ? orders : activeOrders
+  }, [activeTab, orders, activeOrders])
+
+  const renderOrdersTable = useCallback((ordersList: any[]) => {
     if (loading) {
       return (
         <div className="flex justify-center items-center py-12">
@@ -170,13 +177,13 @@ const OrdersPage: FC = () => {
                   </div>
                 </td>
               </tr>
-              ))
+            ))
             )}
           </tbody>
         </table>
       </div>
     )
-  }
+  }, [loading, selectedOrders, handleSelectAll, handleView, handleEdit, handleDelete, getStatusColor])
 
   return (
     <NavbarSidebarLayout isFooter={false}>
@@ -231,7 +238,7 @@ const OrdersPage: FC = () => {
           </div>
 
           {/* Table */}
-          {activeTab === "recent" ? renderOrdersTable(orders) : renderOrdersTable(activeOrders)}
+          {renderOrdersTable(currentOrdersList)}
         </Card>
       </div>
     </NavbarSidebarLayout>

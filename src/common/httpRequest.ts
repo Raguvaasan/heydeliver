@@ -23,12 +23,8 @@ httpRequest.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.log("401 Error - but NOT redirecting automatically")
-      console.log("Current path:", window.location.pathname)
-      console.log("Auth token exists:", !!sessionStorage.getItem("authToken"))
-      // Don't automatically redirect - let the component handle it
-      // sessionStorage.removeItem("authToken")
-      // window.location.href = "/"
+      // 401 Unauthorized - Let the component handle auth errors
+      // Don't automatically redirect to allow proper error handling
     }
     return Promise.reject(error)
   }

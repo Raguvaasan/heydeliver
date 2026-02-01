@@ -1,60 +1,101 @@
-import { StrictMode } from "react"
+import { lazy, Suspense } from "react"
 import { createRoot } from "react-dom/client"
+import { Spinner } from "flowbite-react"
 
 import "./index.css"
 import theme from "./flowbite-theme"
 import { Flowbite } from "flowbite-react"
 import { Routes, Route } from "react-router"
 import { BrowserRouter } from "react-router-dom"
-import LoginPage from "./pages/authentication/LoginPage"
 import ProtectedRoute from "./protectedRoutes/ProtectedRoute"
 import ProtectedLogin from "./protectedRoutes/ProtectedLogin"
-import RoleAndPermissionPage from "./pages/AccessManagement/RoleAndPermission"
-import AddRolePage from "./pages/AccessManagement/AddRolePage"
-import EditRolePage from "./pages/AccessManagement/EditRolePage"
-import FranchiseRolePage from "./pages/Role/FranchiseRolePage"
-import DashboardPage from "./pages/Dashboard/DashboardPage"
-import AgencyManagementPage from "./pages/AgencyManagement/AgencyManagementPage"
-import SubadminAndSupport from "./pages/AccessManagement/SubadminAndSupport"
-import StaffPage from "./pages/AccessManagement/StaffPage"
-import FranchiseStaffPage from "./pages/Staff/FranchiseStaffPage"
-import FranchiseStaffListPage from "./pages/Staff/FranchiseStaffListPage"
-import FranchiseAddEditStaffPage from "./pages/Staff/FranchiseAddEditStaffPage"
-import TestFranchiseStaffPage from "./pages/Staff/TestFranchiseStaffPage"
-import FranchiseStaffDetailPage from "./pages/Staff/FranchiseStaffDetailPage"
-import OrdersPage from "./pages/Orders/OrdersPage"
-import NewOrderPage from "./pages/Orders/NewOrderPage"
-import OrderDetailsPage from "./pages/Orders/OrderDetailsPage"
-import BulkOrderPage from "./pages/Orders/BulkOrderPage"
-import CompletedOrdersPage from "./pages/Orders/CompletedOrdersPage"
-import ForwardOrdersPage from "./pages/Orders/ForwardOrdersPage"
-import RateCalculatorPage from "./pages/RateCalculator/RateCalculatorPage"
-import ServiceAvailabilityPage from "./pages/ServiceAvailability/ServiceAvailabilityPage"
-import WalletPage from "./pages/Wallet/WalletPage"
-import AddMoneyPage from "./pages/Wallet/AddMoneyPage"
-import TransactionsPage from "./pages/Wallet/TransactionsPage"
-import RechargesPage from "./pages/Wallet/RechargesPage"
-import InvoicePage from "./pages/Invoice/InvoicePage"
-import ReportsPage from "./pages/Reports/ReportsPage"
-import FranchiseWiseReportPage from "./pages/Reports/FranchiseWiseReportPage"
-import TotalOrdersReportPage from "./pages/Reports/TotalOrdersReportPage"
-import TotalRevenueReportPage from "./pages/Reports/TotalRevenueReportPage"
-import DeliveryPerformanceReportPage from "./pages/Reports/DeliveryPerformanceReportPage"
-import StaffPerformanceReportPage from "./pages/Reports/StaffPerformanceReportPage"
-import OrdersReportPage from "./pages/Reports/OrdersReportPage"
-import RevenueReportPage from "./pages/Reports/RevenueReportPage"
-import TrackingPage from "./pages/Tracking/TrackingPage"
-import PaymentsPage from "./pages/Payments/PaymentsPage"
-import RateCardPage from "./pages/Settings/RateCardPage"
-import PincodeServiceabilityPage from "./pages/Settings/PincodeServiceabilityPage"
-import RateMarkupPage from "./pages/Settings/RateMarkupPage"
-import RateCardMarkupPage from "./pages/Settings/RateCardMarkupPage"
-import ProfilePage from "./pages/Profile/ProfilePage"
 import { ThemeProvider } from "./context/ThemeContext"
 import { Toaster } from "react-hot-toast"
-import RegisterPage from "./pages/authentication/RegisterPage"
-import CreatePickupRequestPage from "./pages/PickupRequest/CreatePickupRequestPage"
-import PickupRequestsPage from "./pages/PickupRequest/PickupRequestsPage"
+
+// Lazy load all page components for better performance
+// Authentication
+const LoginPage = lazy(() => import("./pages/authentication/LoginPage"))
+const RegisterPage = lazy(() => import("./pages/authentication/RegisterPage"))
+
+// Dashboard
+const DashboardPage = lazy(() => import("./pages/Dashboard/DashboardPage"))
+
+// Access Management
+const RoleAndPermissionPage = lazy(() => import("./pages/AccessManagement/RoleAndPermission"))
+const AddRolePage = lazy(() => import("./pages/AccessManagement/AddRolePage"))
+const EditRolePage = lazy(() => import("./pages/AccessManagement/EditRolePage"))
+const SubadminAndSupport = lazy(() => import("./pages/AccessManagement/SubadminAndSupport"))
+const StaffPage = lazy(() => import("./pages/AccessManagement/StaffPage"))
+
+// Franchise Role
+const FranchiseRolePage = lazy(() => import("./pages/Role/FranchiseRolePage"))
+
+// Agency Management
+const AgencyManagementPage = lazy(() => import("./pages/AgencyManagement/AgencyManagementPage"))
+
+// Staff Management
+const FranchiseStaffPage = lazy(() => import("./pages/Staff/FranchiseStaffPage"))
+const FranchiseStaffListPage = lazy(() => import("./pages/Staff/FranchiseStaffListPage"))
+const FranchiseAddStaffPage = lazy(() => import("./pages/Staff/FranchiseAddStaffPageModern"))
+const FranchiseAddEditStaffPage = lazy(() => import("./pages/Staff/FranchiseAddEditStaffPage"))
+const TestFranchiseStaffPage = lazy(() => import("./pages/Staff/TestFranchiseStaffPage"))
+const FranchiseStaffDetailPage = lazy(() => import("./pages/Staff/FranchiseStaffDetailPage"))
+
+// Orders
+const OrdersPage = lazy(() => import("./pages/Orders/OrdersPage"))
+const NewOrderPage = lazy(() => import("./pages/Orders/NewOrderPage"))
+const OrderDetailsPage = lazy(() => import("./pages/Orders/OrderDetailsPage"))
+const BulkOrderPage = lazy(() => import("./pages/Orders/BulkOrderPage"))
+const CompletedOrdersPage = lazy(() => import("./pages/Orders/CompletedOrdersPage"))
+const ForwardOrdersPage = lazy(() => import("./pages/Orders/ForwardOrdersPage"))
+
+// Pickup Requests
+const CreatePickupRequestPage = lazy(() => import("./pages/PickupRequest/CreatePickupRequestPage"))
+const PickupRequestsPage = lazy(() => import("./pages/PickupRequest/PickupRequestsPage"))
+
+// Rate Calculator & Service
+const RateCalculatorPage = lazy(() => import("./pages/RateCalculator/RateCalculatorPage"))
+const ServiceAvailabilityPage = lazy(() => import("./pages/ServiceAvailability/ServiceAvailabilityPage"))
+
+// Wallet & Payments
+const WalletPage = lazy(() => import("./pages/Wallet/WalletPage"))
+const AddMoneyPage = lazy(() => import("./pages/Wallet/AddMoneyPage"))
+const TransactionsPage = lazy(() => import("./pages/Wallet/TransactionsPage"))
+const RechargesPage = lazy(() => import("./pages/Wallet/RechargesPage"))
+const PaymentsPage = lazy(() => import("./pages/Payments/PaymentsPage"))
+const InvoicePage = lazy(() => import("./pages/Invoice/InvoicePage"))
+
+// Reports
+const ReportsPage = lazy(() => import("./pages/Reports/ReportsPage"))
+const FranchiseWiseReportPage = lazy(() => import("./pages/Reports/FranchiseWiseReportPage"))
+const TotalOrdersReportPage = lazy(() => import("./pages/Reports/TotalOrdersReportPage"))
+const TotalRevenueReportPage = lazy(() => import("./pages/Reports/TotalRevenueReportPage"))
+const DeliveryPerformanceReportPage = lazy(() => import("./pages/Reports/DeliveryPerformanceReportPage"))
+const StaffPerformanceReportPage = lazy(() => import("./pages/Reports/StaffPerformanceReportPage"))
+const OrdersReportPage = lazy(() => import("./pages/Reports/OrdersReportPage"))
+const RevenueReportPage = lazy(() => import("./pages/Reports/RevenueReportPage"))
+
+// Tracking
+const TrackingPage = lazy(() => import("./pages/Tracking/TrackingPage"))
+
+// Settings
+const RateCardPage = lazy(() => import("./pages/Settings/RateCardPage"))
+const PincodeServiceabilityPage = lazy(() => import("./pages/Settings/PincodeServiceabilityPage"))
+const RateMarkupPage = lazy(() => import("./pages/Settings/RateMarkupPage"))
+const RateCardMarkupPage = lazy(() => import("./pages/Settings/RateCardMarkupPage"))
+
+// Profile
+const ProfilePage = lazy(() => import("./pages/Profile/ProfilePageModern"))
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="text-center">
+      <Spinner size="xl" />
+      <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+    </div>
+  </div>
+)
 
 const container = document.getElementById("root")
 
@@ -69,31 +110,32 @@ root.render(
     <Flowbite theme={{ theme }}>
       <BrowserRouter basename="/admin">
         <Toaster position="top-right" reverseOrder={false} />
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <ProtectedLogin>
-                <LoginPage />
-              </ProtectedLogin>
-            }          />
-         
-         <Route
-            path="/register"
-            element={
-              <ProtectedLogin>
-                <RegisterPage />
-              </ProtectedLogin>
-            }          />
-         
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <ProtectedLogin>
+                  <LoginPage />
+                </ProtectedLogin>
+              }          />
+           
+           <Route
+              path="/register"
+              element={
+                <ProtectedLogin>
+                  <RegisterPage />
+                </ProtectedLogin>
+              }          />
+           
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
 
           <Route
             path="/agencies"
@@ -490,7 +532,8 @@ root.render(
             }
           />
 
-                  </Routes>
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </Flowbite>
   </ThemeProvider>
