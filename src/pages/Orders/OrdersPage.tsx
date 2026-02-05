@@ -91,7 +91,7 @@ const OrdersPage: FC = () => {
               <th className="px-4 py-3 text-center">ACTION</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white">
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {ordersList.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
@@ -147,14 +147,14 @@ const OrdersPage: FC = () => {
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-center gap-2">
                     <button
-                      onClick={() => handleView(order._id)}
+                      onClick={() => handleView(order._id || order.orderId || order.bookingId)}
                       className="p-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400"
                       title="View"
                     >
                       <HiEye className="h-5 w-5" />
                     </button>
                     <button
-                      onClick={() => handleEdit(order._id)}
+                      onClick={() => handleEdit(order._id || order.orderId || order.bookingId)}
                       className="p-1.5 text-green-600 hover:text-green-700 dark:text-green-400"
                       title="Edit"
                     >
