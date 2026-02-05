@@ -19,6 +19,10 @@
       "destination": "https://freightrekapi.vercel.app/orders/:path*"
     },
     {
+      "source": "/api/shipment/:path*",
+      "destination": "https://freightrekapi.vercel.app/api/shipment/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://freightrekapi.vercel.app/:path*"
     },

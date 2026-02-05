@@ -1,24 +1,107 @@
-import { FC, useState } from "react"
+import { FC, useState, useEffect } from "react"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
-import { Card, Button, Modal, Label, TextInput } from "flowbite-react"
+import { Card, Button, Modal, Label, TextInput, Spinner } from "flowbite-react"
 import { HiCurrencyRupee, HiCreditCard } from "react-icons/hi"
 import toast from "react-hot-toast"
+import { useWalletStore } from "../../store/walletStore"
+
+// Declare Cashfree SDK on window object
+declare global {
+  interface Window {
+    Cashfree: any
+  }
+}
 
 const AddMoneyPage: FC = () => {
   const [rechargeAmount, setRechargeAmount] = useState("")
   const [paymentType, setPaymentType] = useState<"upi" | "card">("upi")
+  const [cashfreeLoaded, setCashfreeLoaded] = useState(false)
 
-  // Mock data
-  const currentBalance = 0.0
+  const { balance, loading, paymentLoading, fetchBalance, createPaymentOrder, verifyPayment } = useWalletStore()
 
-  const handleRecharge = () => {
-    if (!rechargeAmount || parseFloat(rechargeAmount) < 500) {
-      toast.error("Minimum recharge value ₹500")
+  // Load Cashfree SDK
+  useEffect(() => {
+    const script = document.createElement("script")
+    script.src = "https://sdk.cashfree.com/js/v3/cashfree.js"
+    script.async = true
+    script.onload = () => {
+      setCashfreeLoaded(true)
+      console.log("Cashfree SDK loaded successfully")
+    }
+    script.onerror = () => {
+      toast.error("Failed to load payment gateway")
+    }
+    document.body.appendChild(script)
+
+    return () => {
+      document.body.removeChild(script)
+    }
+  }, [])
+
+  // Fetch wallet balance on mount
+  useEffect(() => {
+    fetchBalance()
+  }, [fetchBalance])
+
+  const handleRecharge = async () => {
+    const amount = parseFloat(rechargeAmount)
+    
+    if (!rechargeAmount || amount <= 0) {
+      toast.error("Please enter a valid amount")
       return
     }
 
-    // Handle payment processing here
-    toast.success("Proceeding to payment...")
+    if (!cashfreeLoaded) {
+      toast.error("Payment gateway not loaded. Please refresh the page.")
+      return
+    }
+
+    try {
+      // Create payment order from backend
+      const orderData = await createPaymentOrder(amount, paymentType)
+      
+      console.log("Order Data:", orderData)
+      
+      if (!orderData?.orderId || !orderData?.sessionId) {
+        toast.error("Failed to create payment order")
+        return
+      }
+
+      // Check if Cashfree is available
+      if (!window.Cashfree) {
+        toast.error("Payment gateway not initialized. Please refresh the page.")
+        return
+      }
+
+      // Initialize Cashfree with environment
+      const cashfree = window.Cashfree({
+        mode: "sandbox" // Use "production" for live
+      })
+
+      // Define payment session
+      const checkoutOptions = {
+        paymentSessionId: orderData.sessionId,
+        returnUrl: `${window.location.origin}/admin/wallet/payment-callback?order_id=${orderData.orderId}`,
+      }
+
+      console.log("Redirecting to Cashfree with options:", checkoutOptions)
+
+      // Trigger payment
+      cashfree.checkout(checkoutOptions).then((result: any) => {
+        console.log("Cashfree result:", result)
+        if (result.error) {
+          console.error("Payment error:", result.error)
+          toast.error(result.error.message || "Payment failed")
+        }
+        if (result.redirect) {
+          console.log("Payment redirect successful")
+        }
+      })
+
+    } catch (error: any) {
+      console.error("Recharge error:", error)
+      toast.error(error.message || "Failed to process payment")
+    }
   }
 
   const quickAmounts = [500, 1000, 2000, 5000]
@@ -39,9 +122,15 @@ const AddMoneyPage: FC = () => {
               <h2 className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Current Balance
               </h2>
-              <p className="text-3xl font-bold text-orange-600 mt-1">
-                ₹ {currentBalance.toFixed(2)}
-              </p>
+              {loading ? (
+                <div className="mt-2">
+                  <Spinner size="md" />
+                </div>
+              ) : (
+                <p className="text-3xl font-bold text-orange-600 mt-1">
+                  ₹ {balance.toFixed(2)}
+                </p>
+              )}
             </div>
             <div className="flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full">
               <HiCurrencyRupee className="w-8 h-8 text-orange-600" />
@@ -60,9 +149,7 @@ const AddMoneyPage: FC = () => {
                 Recharge Wallet
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                <span className="text-green-600 font-semibold">New!</span> Minimum
-                balance required to ship is now{" "}
-                <span className="line-through">₹500</span> <span className="text-green-600 font-bold">₹ 100</span>
+                Add money to your wallet for seamless order processing
               </p>
             </div>
 
@@ -90,9 +177,6 @@ const AddMoneyPage: FC = () => {
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                <span className="font-semibold">Note:</span> Minimum recharge value ₹500
-              </p>
             </div>
 
             <div>
@@ -142,8 +226,21 @@ const AddMoneyPage: FC = () => {
               onClick={handleRecharge}
               size="lg"
               className="w-full bg-gray-800 hover:bg-gray-900"
+              disabled={paymentLoading || !cashfreeLoaded}
             >
-              Proceed To Payment
+              {paymentLoading ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Processing...
+                </>
+              ) : !cashfreeLoaded ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Loading Payment Gateway...
+                </>
+              ) : (
+                "Proceed To Payment"
+              )}
             </Button>
           </div>
         </Card>

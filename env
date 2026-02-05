@@ -3,5 +3,8 @@
 # VITE_API_URL=http://127.0.0.1:8080
 VITE_ENV=dev
 VITE_API_URL=https://freightrekapi.vercel.app
- 
+
+# Note: Cashfree credentials should be stored in backend only
+# Never add CASHFREE_CLIENT_SECRET to frontend environment
+
 

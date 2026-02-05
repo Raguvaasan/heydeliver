@@ -19,8 +19,8 @@ const WalletPage: FC = () => {
   const recharges: any[] = []
 
   const handleRecharge = () => {
-    if (!rechargeAmount || parseFloat(rechargeAmount) < 500) {
-      toast.error("Minimum recharge value ₹500")
+    if (!rechargeAmount || parseFloat(rechargeAmount) <= 0) {
+      toast.error("Please enter a valid amount")
       return
     }
 
@@ -233,9 +233,7 @@ const WalletPage: FC = () => {
                 <HiCurrencyRupee className="w-8 h-8 text-gray-600" />
               </div>
               <p className="text-sm text-gray-600">
-                <span className="text-green-600 font-semibold">New!</span> Minimum
-                balance required to ship is now{" "}
-                <span className="line-through">₹500</span> ₹ 100
+                Add money to your wallet for seamless order processing
               </p>
             </div>
 
@@ -263,9 +261,6 @@ const WalletPage: FC = () => {
                   ))}
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Note: Minimum recharge value ₹500
-              </p>
             </div>
 
             <div>

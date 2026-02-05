@@ -8,10 +8,16 @@ export default defineConfig({
   base: "/admin/",
   server: {
     proxy: {
+      '/api/shipment': {
+        target: 'https://freightrekapi.vercel.app',
+        changeOrigin: true,
+        rewrite: (path) => path,
+        secure: true,
+      },
       '/api': {
         target: 'https://freightrekapi.vercel.app',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        
         secure: true,
       },
       '/delhivery-api': {
