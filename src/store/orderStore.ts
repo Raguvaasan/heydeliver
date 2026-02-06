@@ -49,6 +49,33 @@ interface DelhiveryShipment {
   address_type?: string
 }
 
+interface FreightrekShipmentRequest {
+  name: string
+  add: string
+  pin: string
+  city: string
+  state: string
+  country: string
+  phone: string
+  order: string
+  paymentMode: string
+  productsDesc?: string
+  hsnCode?: string
+  totalAmount?: string
+  sellerName?: string
+  sellerAdd?: string
+  sellerInv?: string
+  quantity?: string
+  shipmentWidth?: string
+  shipmentHeight?: string
+  weight?: string
+  shippingMode?: string
+  addressType?: string
+  pickupLocation: {
+    name: string
+  }
+}
+
 interface DelhiveryResponse {
   success: boolean
   packages: Array<{
@@ -87,8 +114,6 @@ interface OrderState {
   updateOrder: (id: string, data: Partial<Order>) => Promise<void>
   deleteOrder: (id: string) => Promise<void>
   clearSelectedOrder: () => void
-  
-  // New Delhivery APIs
   updateShipment: (waybill: string, data: any) => Promise<any>
   cancelShipment: (waybill: string) => Promise<any>
   updateEwaybill: (waybill: string, dcn: string, ewbn: string) => Promise<any>
@@ -106,27 +131,82 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
   fetchOrders: async (page = 1, limit = 10) => {
     set({ loading: true, error: null })
+
+    const authToken = sessionStorage.getItem("authToken")
+    const requestParams = { page, limit, _ts: Date.now() }
+
     try {
-      const res = await http.get("/orders", {
-        params: { page, limit }
-      })
-      console.log("Orders API response:", res.data)
-      
-      const ordersData = res.data?.data || []
-      const ordersArray = Array.isArray(ordersData) ? ordersData : []
-      const pagination = res.data?.pagination || null
-      
-      set({ 
-        orders: ordersArray, 
-        pagination,
-        loading: false 
+      const [primaryRes, freightrekRes] = await Promise.allSettled([
+        http.get("/orders", {
+          params: requestParams,
+          validateStatus: () => true,
+        }),
+        axios.get("/api/shipment/orders", {
+          params: requestParams,
+          headers: {
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          timeout: 30000,
+          validateStatus: () => true,
+        }),
+      ])
+
+      const primaryData =
+        primaryRes.status === "fulfilled" &&
+          primaryRes.value.status >= 200 &&
+          primaryRes.value.status < 300 &&
+          Array.isArray(primaryRes.value.data?.data)
+          ? primaryRes.value.data.data
+          : []
+
+      const freightrekRaw =
+        freightrekRes.status === "fulfilled" &&
+          freightrekRes.value.status >= 200 &&
+          freightrekRes.value.status < 300
+          ? freightrekRes.value.data?.data ?? freightrekRes.value.data ?? []
+          : []
+
+      const freightrekData = Array.isArray(freightrekRaw)
+        ? freightrekRaw.map((item: any) => ({
+          ...item,
+          _id: item?._id || item?.id || item?.orderId,
+          bookingId: item?.bookingId || item?.orderId || item?.order,
+          customer: item?.customer || item?.customerName || item?.consigneeName,
+          customerNumber: item?.customerNumber || item?.phone || item?.consigneeNumber,
+        }))
+        : []
+
+      const mergedOrders = Array.from(
+        new Map(
+          [...primaryData, ...freightrekData].map((order: any) => [
+            order?._id || order?.id || order?.order || order?.bookingId || JSON.stringify(order),
+            order,
+          ])
+        ).values()
+      )
+
+      const pagination =
+        primaryRes.status === "fulfilled" ? primaryRes.value.data?.pagination :
+          freightrekRes.status === "fulfilled" ? freightrekRes.value.data?.pagination :
+            null
+
+      if (primaryRes.status === "rejected" && freightrekRes.status === "rejected") {
+        throw primaryRes.reason
+      }
+
+      set({
+        orders: mergedOrders,
+        pagination: pagination || null,
+        loading: false,
+        error: null,
       })
     } catch (err: any) {
       console.error("Error fetching orders:", err)
-      set({ 
-        orders: [], 
-        loading: false, 
-        error: err?.response?.data?.message || err?.message || "Failed to fetch orders"
+
+      set({
+        orders: [],
+        loading: false,
+        error: err?.response?.data?.message || err?.message || "Failed to fetch orders",
       })
     }
   },
@@ -137,19 +217,19 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       const res = await http.get("/orders/active", {
         params: { page, limit }
       })
-      
+
       const ordersData = res.data?.data || []
       const ordersArray = Array.isArray(ordersData) ? ordersData : []
-      
-      set({ 
-        activeOrders: ordersArray, 
-        loading: false 
+
+      set({
+        activeOrders: ordersArray,
+        loading: false
       })
     } catch (err: any) {
       console.error("Error fetching active orders:", err)
-      set({ 
-        activeOrders: [], 
-        loading: false, 
+      set({
+        activeOrders: [],
+        loading: false,
         error: err?.response?.data?.message || err?.message || "Failed to fetch active orders"
       })
     }
@@ -158,17 +238,51 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   getOrderById: async (id: string) => {
     set({ loading: true, error: null })
     try {
-      const res = await http.get(`/orders/${id}`)
-      const orderData = res.data?.data || res.data
+      const res = await http.get(`/orders/${id}`, { validateStatus: () => true })
+      if (res.status >= 200 && res.status < 300) {
+        const orderData = res.data?.data || res.data
+        set({
+          selectedOrder: orderData || null,
+          loading: false,
+        })
+        return
+      }
+
+      const authToken = sessionStorage.getItem("authToken")
+      const shipmentRes = await axios.get(`/api/shipment/order/${encodeURIComponent(id)}`, {
+        headers: {
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        timeout: 30000,
+      })
+
+      const shipmentData = shipmentRes.data?.data || shipmentRes.data
+      const normalizedShipment = shipmentData
+        ? {
+            ...shipmentData,
+            _id: shipmentData?.orderId,
+            bookingId: shipmentData?.orderId,
+            customer: shipmentData?.consignee?.name ?? "",
+            customerNumber: shipmentData?.consignee?.phone ?? "",
+            amount: shipmentData?.amount ?? shipmentData?.totalAmount ?? 0,
+            paymentMode: shipmentData?.shipmentDetails?.paymentMode ?? "",
+            deliveryAddress: shipmentData?.consignee?.address ?? "",
+            deliveryCity: shipmentData?.consignee?.city ?? "",
+            deliveryState: shipmentData?.consignee?.state ?? "",
+            deliveryPincode: shipmentData?.consignee?.pin ?? "",
+            bookingDate: shipmentData?.createdAt ?? "",
+          }
+        : null
+
       set({
-        selectedOrder: orderData || null,
+        selectedOrder: normalizedShipment,
         loading: false,
       })
     } catch (err: any) {
       console.error("Error getting order:", err)
-      set({ 
-        loading: false, 
-        error: err?.response?.data?.message || err?.message || "Failed to get order" 
+      set({
+        loading: false,
+        error: err?.response?.data?.message || err?.message || "Failed to get order"
       })
       toast.error("Failed to get order details")
     }
@@ -193,17 +307,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   createDelhiveryShipment: async (shipmentData: DelhiveryShipment, pickupLocation: string) => {
     set({ loading: true, error: null })
     try {
-      const requestData = {
-        format: 'json',
-        data: JSON.stringify({
-          shipments: [shipmentData],
-          pickup_location: {
-            name: pickupLocation
-          }
-        })
-      }
-
-      // Use URLSearchParams for form-urlencoded format
       const formData = new URLSearchParams()
       formData.append('format', 'json')
       formData.append('data', JSON.stringify({
@@ -225,20 +328,64 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         }
       )
 
-      set({ loading: false })
-      
-      if (response.data.success) {
+      if (response.data?.success !== true) {
+        const authToken = sessionStorage.getItem("authToken")
+        const freightrekPayload: FreightrekShipmentRequest = {
+          name: shipmentData.name,
+          add: shipmentData.add,
+          pin: shipmentData.pin,
+          city: shipmentData.city,
+          state: shipmentData.state,
+          country: shipmentData.country,
+          phone: shipmentData.phone,
+          order: shipmentData.order,
+          paymentMode: shipmentData.payment_mode,
+          productsDesc: shipmentData.products_desc || "",
+          hsnCode: shipmentData.hsn_code || "",
+          totalAmount: shipmentData.total_amount || "",
+          sellerName: shipmentData.seller_name || "",
+          sellerAdd: shipmentData.seller_add || "",
+          sellerInv: shipmentData.seller_inv || "",
+          quantity: shipmentData.quantity || "",
+          shipmentWidth: shipmentData.shipment_width || "",
+          shipmentHeight: shipmentData.shipment_height || "",
+          weight: shipmentData.weight || "",
+          shippingMode: shipmentData.shipping_mode || "",
+          addressType: shipmentData.address_type || "",
+          pickupLocation: {
+            name: pickupLocation
+          }
+        }
+
+        try {
+          await axios.post(
+            '/api/shipment/create',
+            freightrekPayload,
+            {
+              headers: {
+                'Content-Type': 'application/json',
+                ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+              },
+              timeout: 30000
+            }
+          )
+        } catch (freightrekErr: any) {
+          console.error("Error creating Freightrek shipment:", freightrekErr)
+        }
+
+        set({ loading: false })
         toast.success("Shipment created successfully!")
         return response.data
       } else {
+        set({ loading: false })
         throw new Error(response.data.rmk || "Failed to create shipment")
       }
     } catch (err: any) {
       console.error("Error creating Delhivery shipment:", err)
-      const errorMessage = err?.response?.data?.rmk || 
-                          err?.response?.data?.message || 
-                          err?.message || 
-                          "Failed to create shipment"
+      const errorMessage = err?.response?.data?.rmk ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to create shipment"
       set({ loading: false, error: errorMessage })
       toast.error(errorMessage)
       throw err
@@ -303,10 +450,10 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       toast.success("Shipment updated successfully!")
       return response.data
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.error || 
-                          err?.response?.data?.message || 
-                          err?.message || 
-                          "Failed to update shipment"
+      const errorMessage = err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to update shipment"
       set({ loading: false, error: errorMessage })
       toast.error(errorMessage)
       throw err
@@ -335,10 +482,10 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       toast.success("Shipment cancelled successfully!")
       return response.data
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.error || 
-                          err?.response?.data?.message || 
-                          err?.message || 
-                          "Failed to cancel shipment"
+      const errorMessage = err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to cancel shipment"
       set({ loading: false, error: errorMessage })
       toast.error(errorMessage)
       throw err
@@ -370,10 +517,10 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       toast.success("E-waybill updated successfully!")
       return response.data
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.error || 
-                          err?.response?.data?.message || 
-                          err?.message || 
-                          "Failed to update e-waybill"
+      const errorMessage = err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to update e-waybill"
       set({ loading: false, error: errorMessage })
       toast.error(errorMessage)
       throw err
@@ -403,10 +550,10 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       toast.success("Tracking data fetched successfully!")
       return response.data
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.error || 
-                          err?.response?.data?.message || 
-                          err?.message || 
-                          "Failed to track shipment"
+      const errorMessage = err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to track shipment"
       set({ loading: false, error: errorMessage, trackingData: null })
       toast.error(errorMessage)
       throw err
