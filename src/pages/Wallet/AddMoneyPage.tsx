@@ -104,7 +104,7 @@ const AddMoneyPage: FC = () => {
     }
   }
 
-  const quickAmounts = [500, 1000, 2000, 5000]
+  const quickAmounts = [1, 10, 50, 100, 500, 1000]
 
   return (
     <NavbarSidebarLayout>
@@ -162,10 +162,14 @@ const AddMoneyPage: FC = () => {
                   type="number"
                   value={rechargeAmount}
                   onChange={(e) => setRechargeAmount(e.target.value)}
-                  placeholder="500"
+                  placeholder="100"
                   className="pl-8"
+                  min="1"
                 />
               </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Enter any amount starting from ₹1
+              </p>
               <div className="flex gap-3 mt-3">
                 {quickAmounts.map((amount) => (
                   <button

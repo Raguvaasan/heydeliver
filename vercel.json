@@ -23,8 +23,8 @@
       "destination": "https://freightrekapi.vercel.app/api/shipment/:path*"
     },
     {
-      "source": "/api/:path*",
-      "destination": "https://freightrekapi.vercel.app/:path*"
+      "source": "/api/admin/:path*",
+      "destination": "https://freightrekapi.vercel.app/admin/:path*"
     },
     {
       "source": "/admin/assets/:path*",

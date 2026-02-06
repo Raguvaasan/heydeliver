@@ -61,14 +61,28 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   createPaymentOrder: async (amount: number, paymentMethod: string) => {
     set({ paymentLoading: true, error: null })
     try {
+      console.log('Creating payment order:', { amount, paymentMethod })
+      
+      // Validate amount
+      if (!amount || amount <= 0) {
+        throw new Error('Invalid amount')
+      }
+      
+      if (!paymentMethod) {
+        throw new Error('Payment method is required')
+      }
+      
       const response = await httpRequest.post("/wallet/create-payment-order", {
         amount,
         paymentMethod,
       })
+      
+      console.log('Payment order response:', response.data)
       set({ paymentLoading: false })
       return response.data
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || "Failed to create payment order"
+      console.error('Payment order error:', error)
+      const errorMsg = error.response?.data?.message || error.message || "Failed to create payment order"
       set({ error: errorMsg, paymentLoading: false })
       toast.error(errorMsg)
       throw error
