@@ -42,9 +42,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Get auth token from header
+    console.log('Authorization header:', req.headers.authorization);
     const authToken = req.headers.authorization?.replace('Bearer ', '');
+    console.log('Extracted token:', authToken ? `${authToken.substring(0, 20)}...` : 'NO TOKEN');
+    
     if (!authToken) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
+      return res.status(401).json({ success: false, message: 'Unauthorized - No token provided' });
     }
 
     // Forward to actual backend
