@@ -75,7 +75,7 @@ const AddMoneyPage: FC = () => {
 
       // Initialize Cashfree with environment
       const cashfree = window.Cashfree({
-        mode: "sandbox" // Use "production" for live
+        mode: "production" // Match backend environment
       })
 
       // Define payment session
