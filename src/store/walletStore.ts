@@ -24,7 +24,7 @@ interface WalletState {
   fetchBalance: () => Promise<void>
   fetchTransactions: () => Promise<void>
   createPaymentOrder: (amount: number, paymentMethod: string) => Promise<any>
-  verifyPayment: (orderId: string, paymentId: string) => Promise<void>
+  verifyPayment: (orderId: string, paymentId?: string) => Promise<void>
   addMoneyToWallet: (amount: number, transactionId: string) => Promise<void>
 }
 
@@ -89,22 +89,30 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     }
   },
 
-  verifyPayment: async (orderId: string, paymentId: string) => {
+  verifyPayment: async (orderId: string, paymentId?: string) => {
     try {
-      const response = await httpRequest.post("/wallet/verify-payment", {
-        orderId,
-        paymentId,
-      })
+      console.log('🔍 Verifying payment:', { orderId, paymentId })
       
-      if (response.data?.success) {
+      const payload: any = { orderId }
+      if (paymentId) {
+        payload.paymentId = paymentId
+      }
+      
+      const response = await httpRequest.post("/wallet/verify-payment", payload)
+      
+      console.log('✅ Verify response:', response.data)
+      
+      if (response.data?.success && response.data?.status === "SUCCESS") {
         // Refresh balance after successful payment
         await get().fetchBalance()
-        toast.success("Payment successful! Wallet recharged.")
+        toast.success(`Payment successful! ₹${response.data.amount} added. New balance: ₹${response.data.newBalance}`)
       } else {
-        toast.error("Payment verification failed")
+        toast.error(response.data?.message || "Payment verification failed")
+        throw new Error(response.data?.message || "Payment verification failed")
       }
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || "Payment verification failed"
+      console.error('❌ Verification error:', error)
+      const errorMsg = error.response?.data?.message || error.message || "Payment verification failed"
       toast.error(errorMsg)
       throw error
     }

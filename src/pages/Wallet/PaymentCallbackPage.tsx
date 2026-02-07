@@ -15,10 +15,11 @@ const PaymentCallbackPage: FC = () => {
 
   useEffect(() => {
     const orderId = searchParams.get("order_id")
-    const paymentId = searchParams.get("payment_id")
-    const status = searchParams.get("status")
+
+    console.log('💳 Payment callback received:', { orderId })
 
     if (!orderId) {
+      console.error('❌ No order_id in URL')
       toast.error("Invalid payment response")
       setVerifying(false)
       setPaymentStatus("failed")
@@ -27,22 +28,25 @@ const PaymentCallbackPage: FC = () => {
 
     const verifyPaymentStatus = async () => {
       try {
-        // Check if payment was successful based on status parameter
-        if (status === "SUCCESS" || status === "success") {
-          if (paymentId) {
-            await verifyPayment(orderId, paymentId)
-            await fetchBalance()
-            setPaymentStatus("success")
-          } else {
-            setPaymentStatus("failed")
-          }
-        } else {
-          setPaymentStatus("failed")
-          toast.error("Payment was not completed")
-        }
-      } catch (error) {
-        console.error("Payment verification error:", error)
+        console.log('🔍 Starting payment verification for:', orderId)
+        
+        // Call verify payment - paymentId is now optional
+        await verifyPayment(orderId)
+        
+        // Refresh balance
+        await fetchBalance()
+        
+        console.log('✅ Payment verified successfully')
+        setPaymentStatus("success")
+        
+      } catch (error: any) {
+        console.error('❌ Payment verification error:', error)
         setPaymentStatus("failed")
+        
+        // Show specific error message if available
+        if (error.response?.data?.message) {
+          toast.error(error.response.data.message)
+        }
       } finally {
         setVerifying(false)
       }
