@@ -4,7 +4,6 @@ import {
   HiTruck,
   HiCube,
   HiCurrencyRupee,
-  HiLocationMarker,
   HiOfficeBuilding,
 } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
@@ -92,11 +91,25 @@ const DashboardPage: FC = () => {
       iconBgColor: "bg-yellow-500",
     },
     {
-      icon: <HiOfficeBuilding className="h-5 w-5" />,
-      title: "Active Franchise",
-      value: "65",
-      subtitle: "Inactive 1",
+      icon: <HiCurrencyRupee className="h-5 w-5" />,
+      title: "Total Revenue",
+      value: "₹8,25,480",
+      subtitle: "Monthly ₹6,99,250",
       iconBgColor: "bg-pink-500",
+    },
+    {
+      icon: <HiCurrencyRupee className="h-5 w-5" />,
+      title: "Today's Revenue",
+      value: "₹58,642",
+      subtitle: "↑6.4% vs yesterday",
+      iconBgColor: "bg-emerald-500",
+    },
+    {
+      icon: <HiTruck className="h-5 w-5" />,
+      title: "Today's Shipments",
+      value: "214",
+      subtitle: "Delivered 162 | In Transit 52",
+      iconBgColor: "bg-indigo-500",
     },
   ]
   
@@ -187,7 +200,7 @@ const DashboardPage: FC = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 mb-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 mb-6">
           {stats.map((stat, index) => (
             <StatCard
               key={index}
