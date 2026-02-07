@@ -107,7 +107,7 @@ const InvoicePage: FC = () => {
               >
                 Invoice List
               </button>
-              <button
+              {/* <button
                 onClick={() => setActiveTab("credit")}
                 className={`pb-3 font-medium transition-colors ${
                   activeTab === "credit"
@@ -126,7 +126,7 @@ const InvoicePage: FC = () => {
                 }`}
               >
                 Debit Notes
-              </button>
+              </button> */}
             </div>
           </div>
 

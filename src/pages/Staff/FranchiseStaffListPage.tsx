@@ -227,12 +227,12 @@ const FranchiseStaffListPage: FC = () => {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Manage Staffs
             </h2>
-            <Button
+            {/* <Button
               onClick={() => setAddModalOpen(true)}
               className="bg-orange-500 hover:bg-orange-600"
             >
               ADD STAFF
-            </Button>
+            </Button> */}
           </div>
 
           {/* Tabs */}
