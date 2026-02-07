@@ -21,10 +21,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { orderId, paymentId } = req.body;
 
     // Validate input
-    if (!orderId || !paymentId) {
+    if (!orderId) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Order ID and payment ID are required' 
+        message: 'Order ID is required' 
       });
     }
 
@@ -36,9 +36,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Forward to actual backend
     const backendUrl = process.env.BACKEND_API_URL || 'https://freightrekapi.vercel.app';
+    const payload: any = { orderId };
+    if (paymentId) {
+      payload.paymentId = paymentId;
+    }
     const response = await axios.post(
       `${backendUrl}/api/wallet/verify-payment`,
-      { orderId, paymentId },
+      payload,
       {
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -49,10 +53,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(200).json(response.data);
   } catch (error: any) {
-    console.error('Verify payment error:', error.response?.data || error.message);
+    console.error('Verify payment error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+      orderId: req.body?.orderId,
+      paymentId: req.body?.paymentId
+    });
     res.status(error.response?.status || 500).json({
       success: false,
-      message: error.response?.data?.message || 'Failed to verify payment'
+      message: error.response?.data?.message || 'Failed to verify payment',
+      error: error.response?.data || error.message
     });
   }
 }

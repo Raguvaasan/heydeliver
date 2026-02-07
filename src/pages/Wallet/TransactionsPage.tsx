@@ -1,7 +1,8 @@
-import { FC, useState } from "react"
+import { FC, useState, useEffect } from "react"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
-import { Card, Button, TextInput, Select } from "flowbite-react"
+import { Card, Button, TextInput, Select, Spinner } from "flowbite-react"
 import { HiCalendar } from "react-icons/hi"
+import { useWalletStore } from "../../store/walletStore"
 
 const TransactionsPage: FC = () => {
   const [dateRange, setDateRange] = useState("8 Jan 2026 to 15 Jan 2026")
@@ -9,11 +10,25 @@ const TransactionsPage: FC = () => {
   const [transactionType, setTransactionType] = useState("")
   const [accountName, setAccountName] = useState("")
 
-  // Mock data
-  const currentBalance = 0.0
-  const totalCredit = 0.0
-  const totalDebit = 0.0
-  const transactions: any[] = []
+  // Get data from wallet store
+  const { balance, transactions, loading, error, fetchBalance, fetchTransactions } = useWalletStore()
+
+  // Calculate totals - ensure transactions is always an array
+  const safeTransactions = Array.isArray(transactions) ? transactions : []
+  const totalCredit = safeTransactions
+    .filter((t) => t.type === "credit" && t.status === "completed")
+    .reduce((sum, t) => sum + t.amount, 0)
+  
+  const totalDebit = safeTransactions
+    .filter((t) => t.type === "debit" && t.status === "completed")
+    .reduce((sum, t) => sum + t.amount, 0)
+
+  // Fetch data on mount
+  useEffect(() => {
+    console.log('TransactionsPage: Fetching balance and transactions')
+    fetchBalance()
+    fetchTransactions()
+  }, [fetchBalance, fetchTransactions])
 
   return (
     <NavbarSidebarLayout>
@@ -24,32 +39,47 @@ const TransactionsPage: FC = () => {
           </h1>
         </div>
 
+        {/* Error Alert */}
+        {error && (
+          <Card className="mb-6 bg-red-50 dark:bg-red-900/20">
+            <div className="text-red-600 dark:text-red-400">
+              {error}
+            </div>
+          </Card>
+        )}
+
         {/* Balance Summary Card */}
         <Card className="mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Current Balance
-              </h2>
-              <p className="text-3xl font-bold text-orange-600 mt-1">
-                ₹ {currentBalance.toFixed(2)}
-              </p>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Spinner size="lg" />
             </div>
-            <div className="flex gap-8">
+          ) : (
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total Credit</p>
-                <p className="text-xl font-semibold text-green-600">
-                  ₹{totalCredit.toFixed(2)}
+                <h2 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  Current Balance
+                </h2>
+                <p className="text-3xl font-bold text-orange-600 mt-1">
+                  ₹ {(balance || 0).toFixed(2)}
                 </p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total Debit</p>
-                <p className="text-xl font-semibold text-red-600">
-                  ₹{totalDebit.toFixed(2)}
-                </p>
+              <div className="flex gap-8">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Credit</p>
+                  <p className="text-xl font-semibold text-green-600">
+                    ₹{totalCredit.toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Debit</p>
+                  <p className="text-xl font-semibold text-red-600">
+                    ₹{totalDebit.toFixed(2)}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </Card>
 
         {/* Filters Card */}
@@ -106,7 +136,7 @@ const TransactionsPage: FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {transactions.length === 0 ? (
+                {safeTransactions.length === 0 ? (
                   <tr>
                     <td
                       colSpan={8}
@@ -131,22 +161,24 @@ const TransactionsPage: FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  transactions.map((transaction: any, index: number) => (
+                  safeTransactions.map((transaction, index) => (
                     <tr
-                      key={index}
+                      key={transaction.id || index}
                       className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
-                      <td className="px-4 py-3">{transaction.details}</td>
-                      <td className="px-4 py-3">{transaction.account}</td>
-                      <td className="px-4 py-3">{transaction.orderId}</td>
-                      <td className="px-4 py-3">{transaction.awb}</td>
-                      <td className="px-4 py-3">{transaction.weight}</td>
+                      <td className="px-4 py-3">
+                        {new Date(transaction.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3">-</td>
+                      <td className="px-4 py-3">{transaction.orderId || "-"}</td>
+                      <td className="px-4 py-3">-</td>
+                      <td className="px-4 py-3">-</td>
                       <td className="px-4 py-3">{transaction.description}</td>
                       <td className="px-4 py-3 text-right text-green-600 font-medium">
-                        {transaction.credit}
+                        {transaction.type === "credit" ? `₹${transaction.amount.toFixed(2)}` : "-"}
                       </td>
                       <td className="px-4 py-3 text-right text-red-600 font-medium">
-                        {transaction.debit}
+                        {transaction.type === "debit" ? `₹${transaction.amount.toFixed(2)}` : "-"}
                       </td>
                     </tr>
                   ))
@@ -158,7 +190,7 @@ const TransactionsPage: FC = () => {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Showing 1 - 0 of 0
+              Showing 1 - {safeTransactions.length} of {safeTransactions.length}
             </p>
             <div className="flex gap-2">
               <Button size="sm" color="gray" disabled>
