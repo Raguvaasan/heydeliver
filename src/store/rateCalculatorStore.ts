@@ -67,7 +67,66 @@ interface RateCalculatorState {
   loading: boolean
   error: string | null
   calculateRate: (params: RateCalculatorParams) => Promise<void>
+  fetchRateData: (params: RateCalculatorParams) => Promise<RateData | null>
   clearData: () => void
+}
+
+const buildApiUrl = (params: RateCalculatorParams) => {
+  const queryParams = new URLSearchParams({
+    md: params.md,
+    ss: params.ss,
+    d_pin: params.d_pin,
+    o_pin: params.o_pin,
+    cgm: params.cgm.toString(),
+    pt: params.pt,
+  })
+
+  return `/delhivery-api/api/kinko/v1/invoice/charges/.json?${queryParams.toString()}`
+}
+
+const getErrorMessage = (err: any) => {
+  let errorMessage = "Failed to calculate rate"
+
+  if (err.code === "ECONNABORTED") {
+    errorMessage = "Request timeout - API took too long to respond"
+  } else if (err.response?.status === 404) {
+    errorMessage = "Rate not found for the given pincodes"
+  } else if (err.response?.status === 401) {
+    errorMessage = "Authentication failed - Invalid API token"
+  } else if (err.response?.status === 403) {
+    errorMessage = "Access forbidden"
+  } else if (err.response?.status === 500) {
+    errorMessage = "Delhivery server error"
+  } else if (err.response?.data?.message) {
+    errorMessage = err.response.data.message
+  } else if (err.response?.data?.error) {
+    errorMessage = err.response.data.error
+  } else if (err.message === "Network Error") {
+    errorMessage = "Cannot connect to Delhivery API. Please check your internet connection."
+  } else if (err.message?.includes("CORS")) {
+    errorMessage = "CORS error - API blocked by browser security policy"
+  } else if (err.message) {
+    errorMessage = err.message
+  }
+
+  return errorMessage
+}
+
+const requestRateData = async (params: RateCalculatorParams) => {
+  const apiUrl = buildApiUrl(params)
+
+  const response = await axios.get<RateData[]>(apiUrl, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    timeout: 15000,
+  })
+
+  if (response.data && response.data.length > 0) {
+    return response.data[0]
+  }
+
+  return null
 }
 
 export const useRateCalculatorStore = create<RateCalculatorState>((set) => ({
@@ -79,31 +138,10 @@ export const useRateCalculatorStore = create<RateCalculatorState>((set) => ({
     set({ loading: true, error: null, rateData: null })
 
     try {
-      // Call through Vite proxy to avoid CORS
-      const queryParams = new URLSearchParams({
-        md: params.md,
-        ss: params.ss,
-        d_pin: params.d_pin,
-        o_pin: params.o_pin,
-        cgm: params.cgm.toString(),
-        pt: params.pt,
-      })
+      const data = await requestRateData(params)
 
-      const apiUrl = `/delhivery-api/api/kinko/v1/invoice/charges/.json?${queryParams.toString()}`
-
-      const response = await axios.get<RateData[]>(apiUrl, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        timeout: 15000,
-      })
-
-      if (response.data && response.data.length > 0) {
-        set({
-          rateData: response.data[0],
-          loading: false,
-          error: null,
-        })
+      if (data) {
+        set({ rateData: data, loading: false, error: null })
         return
       }
 
@@ -113,37 +151,23 @@ export const useRateCalculatorStore = create<RateCalculatorState>((set) => ({
         rateData: null,
       })
     } catch (err: any) {
-      let errorMessage = "Failed to calculate rate"
-
-      if (err.code === "ECONNABORTED") {
-        errorMessage = "Request timeout - API took too long to respond"
-      } else if (err.response?.status === 404) {
-        errorMessage = "Rate not found for the given pincodes"
-      } else if (err.response?.status === 401) {
-        errorMessage = "Authentication failed - Invalid API token"
-      } else if (err.response?.status === 403) {
-        errorMessage = "Access forbidden"
-      } else if (err.response?.status === 500) {
-        errorMessage = "Delhivery server error"
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message
-      } else if (err.response?.data?.error) {
-        errorMessage = err.response.data.error
-      } else if (err.message === "Network Error") {
-        errorMessage = "Cannot connect to Delhivery API. Please check your internet connection."
-      } else if (err.message?.includes("CORS")) {
-        errorMessage = "CORS error - API blocked by browser security policy"
-      } else if (err.message) {
-        errorMessage = err.message
-      }
-
-      console.error("Rate calculation error:", err)
+      const errorMessage = getErrorMessage(err)
 
       set({
         loading: false,
         error: errorMessage,
         rateData: null,
       })
+    }
+  },
+
+  fetchRateData: async (params: RateCalculatorParams) => {
+    try {
+      return await requestRateData(params)
+    } catch (err: any) {
+      const errorMessage = getErrorMessage(err)
+      console.error("Rate calculation error:", err)
+      throw new Error(errorMessage)
     }
   },
 
