@@ -3,6 +3,7 @@ import { Button, Card, Label, TextInput, Select } from "flowbite-react"
 import { useNavigate } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useOrderStore } from "../../store/orderStore"
+import { useRateCalculatorStore } from "../../store/rateCalculatorStore"
 import toast from "react-hot-toast"
 import { HiPlus, HiTrash, HiRefresh } from "react-icons/hi"
 
@@ -26,12 +27,13 @@ const generateOrderId = () => {
 const NewOrderPage: FC = () => {
   const navigate = useNavigate()
   const { createDelhiveryShipment, loading } = useOrderStore()
+  const { fetchRateData } = useRateCalculatorStore()
 
   // Get user profile data for franchise
   const loginType = sessionStorage.getItem("loginType")
   const profileDataStr = sessionStorage.getItem("profileData")
   const profileData = profileDataStr ? JSON.parse(profileDataStr) : null
-
+  console.log("swe", profileData)
   const [formData, setFormData] = useState({
     // Customer Details
     customerName: "",
@@ -101,12 +103,37 @@ const NewOrderPage: FC = () => {
 
   const [showSellerDetails, setShowSellerDetails] = useState(false)
   const [showCustomerDetails, setShowCustomerDetails] = useState(false)
+  const [chargeableWeight, setChargeableWeight] = useState<number | null>(null)
+  const [expressRate, setExpressRate] = useState<number | null>(null)
+  const [surfaceRate, setSurfaceRate] = useState<number | null>(null)
+  const [rateLoading, setRateLoading] = useState(false)
+  const [rateError, setRateError] = useState<string | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     })
+  }
+
+  const handleChannelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value
+    if (!value) {
+      setFormData((prev) => ({
+        ...prev,
+        channelName: value,
+      }))
+      return
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      channelName: value,
+      sellerName: profileData?.agencyName || prev.sellerName,
+      sellerAddress: profileData?.address || prev.sellerAddress,
+      sellerInvoice: profileData?.gstNumber || prev.sellerInvoice,
+    }))
+    setShowSellerDetails(true)
   }
 
   const handleBoxChange = (id: number, field: keyof BoxDetails, value: string) => {
@@ -116,6 +143,74 @@ const NewOrderPage: FC = () => {
       )
     )
   }
+
+  const calculateChargeableWeight = () => {
+    if (boxes.length === 0) return null
+
+    const actualWeight = boxes.reduce((sum, box) => {
+      const weight = parseFloat(box.weight) || 0
+      return sum + weight
+    }, 0)
+
+    const volumetricWeight = boxes.reduce((sum, box) => {
+      const l = parseFloat(box.length) || 0
+      const b = parseFloat(box.breadth) || 0
+      const h = parseFloat(box.height) || 0
+      const volumetric = (l * b * h) / 5000
+      return sum + volumetric
+    }, 0)
+
+    const charged = Math.max(actualWeight, volumetricWeight)
+    return charged > 0 ? charged : null
+  }
+
+  useEffect(() => {
+    const charged = calculateChargeableWeight()
+    const chargedRounded = charged ? Math.ceil(charged) : null
+
+    setChargeableWeight(chargedRounded)
+    setExpressRate(null)
+    setSurfaceRate(null)
+    setRateError(null)
+
+    if (!chargedRounded) {
+      setRateLoading(false)
+      return
+    }
+
+    if (!profileData?.pincode || formData.deliveryPincode.length !== 6) {
+      setRateLoading(false)
+      return
+    }
+
+    const pt = formData.paymentMode === "COD" ? "COD" : "Pre-paid"
+    const baseParams = {
+      ss: "Delivered",
+      d_pin: formData.deliveryPincode,
+      o_pin: profileData.pincode,
+      cgm: chargedRounded,
+      pt,
+    }
+
+    const timer = setTimeout(async () => {
+      setRateLoading(true)
+      try {
+        const [expressData, surfaceData] = await Promise.all([
+          fetchRateData({ ...baseParams, md: "E" }),
+          fetchRateData({ ...baseParams, md: "S" }),
+        ])
+
+        setExpressRate(expressData?.total_amount ?? null)
+        setSurfaceRate(surfaceData?.total_amount ?? null)
+      } catch (err: any) {
+        setRateError(err?.message || "Failed to fetch rates")
+      } finally {
+        setRateLoading(false)
+      }
+    }, 400)
+
+    return () => clearTimeout(timer)
+  }, [boxes, formData.deliveryPincode, formData.paymentMode, profileData?.pincode, fetchRateData])
 
   const addBox = () => {
     const newId = boxes.length > 0 ? Math.max(...boxes.map((b) => b.id)) + 1 : 1
@@ -178,6 +273,7 @@ const NewOrderPage: FC = () => {
 
       // Use first box dimensions (you can calculate volumetric weight if needed)
       const firstBox = boxes[0]
+      const selectedRate = formData.shippingMode === "Express" ? expressRate : surfaceRate
 
       const shipmentData = {
         name: formData.customerName,
@@ -199,7 +295,7 @@ const NewOrderPage: FC = () => {
         hsn_code: formData.hsnCode || "",
         cod_amount: formData.paymentMode === "COD" ? formData.codAmount : "",
         order_date: formData.orderDate || null,
-        total_amount: formData.totalAmount || "",
+        total_amount: selectedRate?.toString() || formData.totalAmount || formData.codAmount,
         seller_add: formData.sellerAddress || "",
         seller_name: formData.sellerName || "",
         seller_inv: formData.sellerInvoice || "",
@@ -262,13 +358,11 @@ const NewOrderPage: FC = () => {
                     id="channelName"
                     name="channelName"
                     value={formData.channelName}
-                    onChange={handleChange}
+                    onChange={handleChannelChange}
                     required
                   >
                     <option value="">Select Channel Name</option>
-                    {/* <option value="Online">Online</option> */}
-                    <option value="Offline">Offline</option>
-                    {/* <option value="Custom">Custom Channel</option> */}
+                    <option value="Offline">{profileData?.agencyName || "Offline"}</option>
                   </Select>
                   <p className="text-xs text-gray-500 mt-1">
                     Channels are online (Shopify) or custom channel for offline (physical store) orders.
@@ -346,13 +440,13 @@ const NewOrderPage: FC = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="sellerInvoice">Seller Invoice Number</Label>
+                      <Label htmlFor="sellerInvoice">Seller GST Number</Label>
                       <TextInput
                         id="sellerInvoice"
                         name="sellerInvoice"
                         value={formData.sellerInvoice}
                         onChange={handleChange}
-                        placeholder="Enter invoice number"
+                        placeholder="Enter GST number"
                       />
                     </div>
                   </div>
@@ -469,6 +563,7 @@ const NewOrderPage: FC = () => {
           </div>
 
           {/* Add Products to be shipped */}
+          {/* 
           <Card>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -541,6 +636,7 @@ const NewOrderPage: FC = () => {
               </div>
             </div>
           </Card>
+          */}
 
           {/* Pickup Location */}
           {/* <Card>
@@ -674,7 +770,9 @@ const NewOrderPage: FC = () => {
                 </p>
                 <div>
                   <Label>Total Chargeable Weight <span className="text-gray-400">ⓘ</span></Label>
-                  <p className="text-lg font-semibold">- gm</p>
+                  <p className="text-lg font-semibold">
+                    {chargeableWeight ? `${chargeableWeight} gm` : "- gm"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -698,6 +796,7 @@ const NewOrderPage: FC = () => {
               >
                 <div className="text-4xl mb-2">🚚</div>
                 <h4 className="font-semibold">SURFACE</h4>
+                {rateLoading ? "Calculating..." : surfaceRate !== null ? `₹${surfaceRate}` : "-"}
                 <p className="text-sm text-gray-600 mt-2">Standard delivery (5-7 days)</p>
               </button>
 
@@ -712,6 +811,7 @@ const NewOrderPage: FC = () => {
               >
                 <div className="text-4xl mb-2">✈️</div>
                 <h4 className="font-semibold">EXPRESS</h4>
+                {rateLoading ? "Calculating..." : expressRate !== null ? `₹${expressRate}` : "-"}
                 <p className="text-sm text-gray-600 mt-2">Fast delivery (2-3 days)</p>
               </button>
             </div>
