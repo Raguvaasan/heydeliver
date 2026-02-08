@@ -25,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Forward to actual backend
-    const backendUrl = process.env.BACKEND_API_URL || 'https://freightrekapi.vercel.app';
+    const backendUrl = process.env['BACKEND_API_URL'] || 'https://freightrekapi.vercel.app';
     const response = await axios.get(
       `${backendUrl}/api/wallet/balance`,
       {
@@ -35,10 +35,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     );
 
-    res.status(200).json(response.data);
+    return res.status(200).json(response.data);
   } catch (error: any) {
     console.error('Get balance error:', error.response?.data || error.message);
-    res.status(error.response?.status || 500).json({
+    return res.status(error.response?.status || 500).json({
       success: false,
       message: error.response?.data?.message || 'Failed to fetch balance'
     });

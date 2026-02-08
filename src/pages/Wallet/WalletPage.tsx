@@ -13,8 +13,33 @@ const WalletPage: FC = () => {
   const [paymentType, setPaymentType] = useState<"upi" | "card">("upi")
   const [activeTab, setActiveTab] = useState(0)
 
+  // Get user role from session storage
+  const getProfileData = () => {
+    try {
+      const profileData = sessionStorage.getItem("profileData")
+      return profileData ? JSON.parse(profileData) : null
+    } catch (error) {
+      return null
+    }
+  }
+
+  const profileData = getProfileData()
+  const loginType = sessionStorage.getItem("loginType") || ""
+  const userRole = profileData?.role?.name?.toLowerCase() || ""
+  const roleName = profileData?.role?.roleName?.toLowerCase() || ""
+  
+  // Check if user is admin from multiple sources
+  const isAdmin = loginType === "admin" || 
+                 userRole === "admin" || 
+                 userRole === "super admin" ||
+                 roleName === "admin" ||
+                 roleName === "super admin"
+  
+  // Debug log
+  console.log("WalletPage: loginType =", loginType, ", userRole =", userRole, ", roleName =", roleName, ", isAdmin =", isAdmin)
+
   // Get data from wallet store
-  const { balance, transactions, loading, error, fetchBalance, fetchTransactions } = useWalletStore()
+  const { balance, transactions, loading, error, fetchBalance, fetchTransactions, fetchAllFranchiseTransactions, fetchAllFranchiseRecharges } = useWalletStore()
 
   // Calculate totals - ensure transactions is always an array
   const safeTransactions = Array.isArray(transactions) ? transactions : []
@@ -28,21 +53,50 @@ const WalletPage: FC = () => {
 
   // Separate transactions by type
   // Recharges: wallet credit transactions (adding money)
-  const recharges = safeTransactions.filter((t) => 
-    t.type === "credit" && t.description?.toLowerCase().includes("recharge")
-  )
+  // For admin: show all credit transactions from all franchises
+  // For users: show only their own recharge transactions
+  const recharges = isAdmin 
+    ? safeTransactions.filter((t) => t.type === "credit")  // Admin sees all franchise credits
+    : safeTransactions.filter((t) => 
+        t.type === "credit" && t.description?.toLowerCase().includes("recharge")
+      )
 
   // Order transactions: transactions related to orders (typically debits or with orderId)
   const orderTransactions = safeTransactions.filter((t) => 
     t.type === "debit" || (t.orderId && !t.description?.toLowerCase().includes("recharge"))
   )
 
-  // Fetch data on mount
+  // Fetch data on mount - admin gets all franchise transactions, others get their own
   useEffect(() => {
-    console.log('WalletPage: Fetching balance and transactions')
-    fetchBalance()
-    fetchTransactions()
-  }, [fetchBalance, fetchTransactions])
+    console.log('WalletPage: isAdmin =', isAdmin)
+    if (isAdmin) {
+      console.log('WalletPage: Fetching franchise data for tab', activeTab)
+      // Admin users see all franchise wallet data based on active tab
+      if (activeTab === 0) {
+        // Transactions tab: fetch all types
+        fetchAllFranchiseTransactions()
+      } else {
+        // Recharges tab: fetch only credit transactions
+        fetchAllFranchiseRecharges()
+      }
+    } else {
+      console.log('WalletPage: Fetching user balance and transactions')
+      // Regular users see only their own transactions
+      fetchBalance()
+      fetchTransactions()
+    }
+  }, [isAdmin, activeTab, fetchBalance, fetchTransactions, fetchAllFranchiseTransactions, fetchAllFranchiseRecharges])
+
+  // Debug log for transactions
+  useEffect(() => {
+    console.log('WalletPage: transactions =', transactions)
+    console.log('WalletPage: recharges =', recharges)
+    console.log('WalletPage: Total credit =', totalCredit)
+    // Log first transaction to see data structure
+    if (transactions.length > 0) {
+      console.log('WalletPage: First transaction structure =', transactions[0])
+    }
+  }, [transactions, recharges, totalCredit])
 
   const handleRecharge = () => {
     if (!rechargeAmount || parseFloat(rechargeAmount) <= 0) {
@@ -55,6 +109,33 @@ const WalletPage: FC = () => {
     setShowRechargeModal(false)
   }
 
+  // Helper function to extract user/franchise name from transaction
+  const getUserDisplayName = (transaction: any): string => {
+    // Try different possible formats from backend
+    if (transaction.franchiseName) return transaction.franchiseName
+    if (transaction.userName) return transaction.userName
+    
+    // Check nested user object
+    if (transaction.user) {
+      if (transaction.user.name) return transaction.user.name
+      if (transaction.user.agencyName) return transaction.user.agencyName
+      if (transaction.user.firstName && transaction.user.lastName) {
+        return `${transaction.user.firstName} ${transaction.user.lastName}`
+      }
+      if (transaction.user.firstName) return transaction.user.firstName
+      if (transaction.user.email) return transaction.user.email
+    }
+    
+    // Check nested franchise object
+    if (transaction.franchise) {
+      if (transaction.franchise.agencyName) return transaction.franchise.agencyName
+      if (transaction.franchise.name) return transaction.franchise.name
+    }
+    
+    // Fallback to userId if nothing else found
+    return transaction.userId || "-"
+  }
+
   const quickAmounts = [1, 10, 50, 100, 500, 1000]
 
   return (
@@ -62,7 +143,7 @@ const WalletPage: FC = () => {
       <div className="px-4 pt-6">
         <div className="mb-4">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-            Wallet
+            {isAdmin ? "Franchise Wallet Transactions" : "Wallet"}
           </h1>
         </div>
 
@@ -75,48 +156,75 @@ const WalletPage: FC = () => {
           </Card>
         )}
 
-        {/* Wallet Balance Card */}
-        <Card className="mb-6">
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Spinner size="lg" />
+        {/* Admin Summary Card - Show franchise recharge statistics */}
+        {isAdmin && !loading && (
+          <Card className="mb-6">
+            <div className="mb-4">
+              <h2 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                Franchise Wallets Overview
+              </h2>
             </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-lg font-medium text-gray-700 dark:text-gray-300">
-                    Current Balance
-                  </h2>
-                  <p className="text-3xl font-bold text-orange-600">
-                    ₹ {(balance || 0).toFixed(2)}
-                  </p>
-                </div>
-                <Button
-                  color="dark"
-                  onClick={() => setShowRechargeModal(true)}
-                  className="bg-gray-800 hover:bg-gray-900"
-                >
-                  <HiCurrencyRupee className="mr-2 h-5 w-5" />
-                  Recharge Wallet
-                </Button>
+            <div className="flex gap-8">
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Total Recharges</p>
+                <p className="text-2xl font-semibold text-blue-600">{recharges.length}</p>
               </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Total Credit Amount</p>
+                <p className="text-2xl font-semibold text-green-600">₹{totalCredit.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Total Debit Amount</p>
+                <p className="text-2xl font-semibold text-red-600">₹{totalDebit.toFixed(2)}</p>
+              </div>
+            </div>
+          </Card>
+        )}
 
-              {activeTab === 0 && (
-                <div className="flex gap-8 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        {/* Wallet Balance Card - Only show for non-admin users */}
+        {!isAdmin && (
+          <Card className="mb-6">
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <Spinner size="lg" />
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Credit</p>
-                    <p className="text-lg font-semibold text-green-600">₹{totalCredit.toFixed(2)}</p>
+                    <h2 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                      Current Balance
+                    </h2>
+                    <p className="text-3xl font-bold text-orange-600">
+                      ₹ {(balance || 0).toFixed(2)}
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Debit</p>
-                    <p className="text-lg font-semibold text-red-600">₹{totalDebit.toFixed(2)}</p>
-                  </div>
+                  <Button
+                    color="dark"
+                    onClick={() => setShowRechargeModal(true)}
+                    className="bg-gray-800 hover:bg-gray-900"
+                  >
+                    <HiCurrencyRupee className="mr-2 h-5 w-5" />
+                    Recharge Wallet
+                  </Button>
                 </div>
-              )}
-            </>
-          )}
-        </Card>
+
+                {activeTab === 0 && (
+                  <div className="flex gap-8 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Total Credit</p>
+                      <p className="text-lg font-semibold text-green-600">₹{totalCredit.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Total Debit</p>
+                      <p className="text-lg font-semibold text-red-600">₹{totalDebit.toFixed(2)}</p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </Card>
+        )}
 
         {/* Tabs for Transactions and Recharges */}
         <Card>
@@ -217,7 +325,8 @@ const WalletPage: FC = () => {
                     <tr>
                       <th className="px-4 py-3">Transaction ID</th>
                       <th className="px-4 py-3">Transaction Date</th>
-                      <th className="px-4 py-3">Bank's Transaction ID</th>
+                      {isAdmin && <th className="px-4 py-3">Franchise / User</th>}
+                      <th className="px-4 py-3">Payment Method</th>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Transaction Amount</th>
                     </tr>
@@ -225,7 +334,7 @@ const WalletPage: FC = () => {
                   <tbody>
                     {recharges.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="text-center py-8">
+                        <td colSpan={isAdmin ? 6 : 5} className="text-center py-8">
                           No Records Found
                         </td>
                       </tr>
@@ -236,6 +345,11 @@ const WalletPage: FC = () => {
                           <td className="px-4 py-3">
                             {new Date(recharge.createdAt).toLocaleString()}
                           </td>
+                          {isAdmin && (
+                            <td className="px-4 py-3">
+                              {getUserDisplayName(recharge)}
+                            </td>
+                          )}
                           <td className="px-4 py-3">{recharge.paymentMethod || "-"}</td>
                           <td className="px-4 py-3">
                             <span

@@ -11,6 +11,22 @@ interface Transaction {
   createdAt: string
   orderId?: string
   paymentMethod?: string
+  userId?: string
+  userName?: string
+  franchiseName?: string
+  user?: {
+    _id?: string
+    name?: string
+    firstName?: string
+    lastName?: string
+    email?: string
+    agencyName?: string
+  }
+  franchise?: {
+    _id?: string
+    agencyName?: string
+    name?: string
+  }
 }
 
 interface WalletState {
@@ -23,6 +39,8 @@ interface WalletState {
   // Actions
   fetchBalance: () => Promise<void>
   fetchTransactions: () => Promise<void>
+  fetchAllFranchiseTransactions: () => Promise<void>
+  fetchAllFranchiseRecharges: () => Promise<void>
   createPaymentOrder: (amount: number, paymentMethod: string) => Promise<any>
   verifyPayment: (orderId: string, paymentId?: string) => Promise<void>
   addMoneyToWallet: (amount: number, transactionId: string) => Promise<void>
@@ -54,6 +72,47 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       set({ transactions: response.data?.transactions || [], loading: false })
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || "Failed to fetch transactions"
+      set({ error: errorMsg, loading: false })
+    }
+  },
+
+  fetchAllFranchiseTransactions: async () => {
+    set({ loading: true, error: null })
+    try {
+      // Admin users: Fetch all franchise transactions from backend
+      // Backend automatically returns all franchise data for admin users
+      const response = await httpRequest.get("/wallet/transactions", {
+        params: { 
+          page: 1,
+          limit: 50  // Get more records to show all franchises
+        }
+      })
+      console.log('Admin franchise transactions response:', response.data)
+      set({ transactions: response.data?.transactions || [], loading: false })
+    } catch (error: any) {
+      console.error('Fetch franchise transactions error:', error)
+      const errorMsg = error.response?.data?.message || "Failed to fetch franchise transactions"
+      set({ error: errorMsg, loading: false })
+    }
+  },
+
+  fetchAllFranchiseRecharges: async () => {
+    set({ loading: true, error: null })
+    try {
+      // Admin users: Fetch only credit transactions (recharges) from all franchises
+      // Backend automatically returns all franchise data for admin users
+      const response = await httpRequest.get("/wallet/transactions", {
+        params: { 
+          type: 'credit',
+          page: 1,
+          limit: 20
+        }
+      })
+      console.log('Admin franchise recharges response:', response.data)
+      set({ transactions: response.data?.transactions || [], loading: false })
+    } catch (error: any) {
+      console.error('Fetch franchise recharges error:', error)
+      const errorMsg = error.response?.data?.message || "Failed to fetch franchise recharges"
       set({ error: errorMsg, loading: false })
     }
   },

@@ -39,9 +39,24 @@ const Sidebar: FC<SidebarProps> = ({
 }) => {
   const location = useLocation()
   const navigate = useNavigate()
-const [openMenus, setOpenMenus] = useState<string[]>([])
+  const [openMenus, setOpenMenus] = useState<string[]>([])
+  
   // Get login type from session storage
   const loginType = sessionStorage.getItem("loginType") || "admin"
+  
+  // Get user role to determine if admin
+  const getProfileData = () => {
+    try {
+      const profileData = sessionStorage.getItem("profileData")
+      return profileData ? JSON.parse(profileData) : null
+    } catch (error) {
+      return null
+    }
+  }
+
+  const profileData = getProfileData()
+  const userRole = profileData?.role?.name?.toLowerCase() || ""
+  const isAdmin = userRole === "admin" || userRole === "super admin"
   
   // Admin menu items
   const adminMenuItems: MenuItem[] = [
@@ -157,10 +172,12 @@ const [openMenus, setOpenMenus] = useState<string[]>([])
       title: "Wallet",
       icon: <HiCurrencyRupee className="h-5 w-5" />,
       path: "/wallet",
-      submenu: [
-        { title: "Add Money", path: "/wallet/add" },
-        { title: "Transaction details", path: "/wallet" },
-      ],
+      submenu: isAdmin 
+        ? [{ title: "Transaction details", path: "/wallet" }]
+        : [
+            { title: "Add Money", path: "/wallet/add" },
+            { title: "Transaction details", path: "/wallet" },
+          ],
     },
     {
       title: "Invoice",

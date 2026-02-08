@@ -35,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Forward to actual backend
-    const backendUrl = process.env.BACKEND_API_URL || 'https://freightrekapi.vercel.app';
+    const backendUrl = process.env['BACKEND_API_URL'] || 'https://freightrekapi.vercel.app';
     const payload: any = { orderId };
     if (paymentId) {
       payload.paymentId = paymentId;
@@ -51,7 +51,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     );
 
-    res.status(200).json(response.data);
+    return res.status(200).json(response.data);
   } catch (error: any) {
     console.error('Verify payment error:', {
       status: error.response?.status,
@@ -60,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       orderId: req.body?.orderId,
       paymentId: req.body?.paymentId
     });
-    res.status(error.response?.status || 500).json({
+    return res.status(error.response?.status || 500).json({
       success: false,
       message: error.response?.data?.message || 'Failed to verify payment',
       error: error.response?.data || error.message
