@@ -45,7 +45,31 @@ const FranchiseAddEditStaffPage: FC = () => {
 
   useEffect(() => {
     fetchRoles()
-    fetchAgencies()
+    
+    // Check if franchise user - auto-populate their franchise
+    const loginType = sessionStorage.getItem("loginType")
+    const isFranchise = loginType === "franchise" || loginType === "staff"
+    
+    if (isFranchise) {
+      // For franchise users, get their franchise from profile
+      const profileData = sessionStorage.getItem("profileData")
+      if (profileData) {
+        try {
+          const profile = JSON.parse(profileData)
+          const franchiseId = profile.franchiseId || profile.franchise?._id || profile.franchise
+          if (franchiseId) {
+            setFormData(prev => ({ ...prev, franchiseId }))
+          }
+          console.log("Auto-populated franchise for franchise user:", franchiseId)
+        } catch (error) {
+          console.error("Error parsing profile data:", error)
+        }
+      }
+    } else {
+      // For admin users, fetch all franchises
+      fetchAgencies()
+    }
+    
     if (isEditMode && id) {
       fetchStaffData(id)
     }
@@ -54,7 +78,13 @@ const FranchiseAddEditStaffPage: FC = () => {
   const fetchStaffData = async (staffId: string) => {
     setFetchLoading(true)
     try {
-      const response = await http.get(`/admin/staff/${staffId}`)
+      // Check login type to use correct endpoint
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      const endpoint = isFranchise ? `/admin/franchise/staff/${staffId}` : `/admin/staff/${staffId}`
+      
+      console.log(`Fetching staff from ${endpoint} (loginType: ${loginType})`)
+      const response = await http.get(endpoint)
       const staff = response.data?.data
       
       if (staff) {
@@ -80,19 +110,32 @@ const FranchiseAddEditStaffPage: FC = () => {
 
   const fetchRoles = async () => {
     try {
-      const response = await http.get("/admin/role")
-      setRoles(response.data?.data || [])
+      // Check login type to use correct endpoint
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      const endpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
+      
+      console.log(`Fetching roles from ${endpoint} (loginType: ${loginType})`)
+      const response = await http.get(endpoint)
+      const rolesData = response.data?.data || []
+      console.log("Roles fetched:", rolesData)
+      setRoles(rolesData)
     } catch (error) {
       console.error("Error fetching roles:", error)
+      toast.error("Failed to load roles")
     }
   }
 
   const fetchAgencies = async () => {
     try {
+      // Only admin users need to fetch franchises list
       const response = await http.get("/admin/franchise")
-      setAgencies(response.data?.data || [])
+      const franchiseData = response.data?.data || []
+      console.log("Fetched franchises:", franchiseData)
+      setAgencies(franchiseData)
     } catch (error) {
       console.error("Error fetching agencies:", error)
+      toast.error("Failed to load franchises")
     }
   }
 
@@ -144,11 +187,19 @@ const FranchiseAddEditStaffPage: FC = () => {
 
     setLoading(true)
     try {
+      // Check login type to use correct endpoint
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      
       if (isEditMode && id) {
-        await http.put(`/admin/staff/${id}`, payload)
+        const endpoint = isFranchise ? `/admin/franchise/staff/${id}` : `/admin/staff/${id}`
+        console.log(`Updating staff at ${endpoint}`)
+        await http.put(endpoint, payload)
         toast.success("Staff updated successfully")
       } else {
-        await http.post("/admin/staff", payload)
+        const endpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
+        console.log(`Creating staff at ${endpoint}`)
+        await http.post(endpoint, payload)
         toast.success("Staff added successfully")
       }
       navigate("/franchise-staff")
@@ -250,20 +301,30 @@ const FranchiseAddEditStaffPage: FC = () => {
                   <Label htmlFor="franchiseId">
                     Franchise<span className="text-red-500">*</span>
                   </Label>
-                  <Select
-                    id="franchiseId"
-                    name="franchiseId"
-                    value={formData.franchiseId}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Select Franchise</option>
-                    {agencies.map((agency) => (
-                      <option key={agency._id} value={agency._id}>
-                        {agency.agencyName || agency.franchiseName}
-                      </option>
-                    ))}
-                  </Select>
+                  {sessionStorage.getItem("loginType") === "franchise" || sessionStorage.getItem("loginType") === "staff" ? (
+                    <TextInput
+                      id="franchiseId"
+                      name="franchiseId"
+                      value="Current Franchise (Auto-selected)"
+                      disabled
+                      className="bg-gray-100"
+                    />
+                  ) : (
+                    <Select
+                      id="franchiseId"
+                      name="franchiseId"
+                      value={formData.franchiseId}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">Select Franchise</option>
+                      {agencies.map((agency) => (
+                        <option key={agency._id} value={agency._id}>
+                          {agency.agencyName || agency.franchiseName}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="status">

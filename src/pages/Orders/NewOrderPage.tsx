@@ -836,7 +836,7 @@ const NewOrderPage: FC = () => {
                 >
                   <option value="">Select Payment Mode</option>
                   <option value="Prepaid">Prepaid</option>
-                  <option value="COD">Cash on Delivery (COD)</option>
+                  {/* <option value="COD">Cash on Delivery (COD)</option> */}
                 </Select>
               </div>
 

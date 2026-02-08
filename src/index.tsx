@@ -50,6 +50,7 @@ const OrderDetailsPage = lazy(() => import("./pages/Orders/OrderDetailsPage"))
 const BulkOrderPage = lazy(() => import("./pages/Orders/BulkOrderPage"))
 const CompletedOrdersPage = lazy(() => import("./pages/Orders/CompletedOrdersPage"))
 const ForwardOrdersPage = lazy(() => import("./pages/Orders/ForwardOrdersPage"))
+const ForwardOrderDetailPage = lazy(() => import("./pages/Orders/ForwardOrderDetailPage"))
 
 // Pickup Requests
 const CreatePickupRequestPage = lazy(() => import("./pages/PickupRequest/CreatePickupRequestPage"))
@@ -306,6 +307,15 @@ root.render(
             element={
               <ProtectedRoute>
                 <ForwardOrdersPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/orders/forward/:id"
+            element={
+              <ProtectedRoute>
+                <ForwardOrderDetailPage />
               </ProtectedRoute>
             }
           />
