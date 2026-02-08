@@ -13,7 +13,8 @@ interface Staff {
   name: string
   email: string
   phone: string
-  role: any
+  role?: any
+  roleId?: string | any
   status: boolean | string
   username?: string
 }
@@ -21,7 +22,8 @@ interface Staff {
 interface Role {
   _id: string
   roleName: string
-  roleType: string
+  roleType?: string
+  status?: boolean
 }
 
 interface Agency {
@@ -213,10 +215,20 @@ const FranchiseStaffListPage: FC = () => {
   }
 
   const getRoleName = (staff: Staff) => {
-    if (!staff.role) return "-"
-    if (typeof staff.role === 'object' && staff.role.roleType) {
-      return staff.role.roleType
+    // Check if role is populated as an object
+    if (staff.role && typeof staff.role === 'object') {
+      return staff.role.roleName || staff.role.roleType || "-"
     }
+    
+    // If roleId exists (as string), find the role from the roles array
+    if (staff.roleId) {
+      const roleIdString = typeof staff.roleId === 'object' ? staff.roleId._id : staff.roleId
+      const foundRole = roles.find(r => r._id === roleIdString)
+      if (foundRole) {
+        return foundRole.roleName || foundRole.roleType || "-"
+      }
+    }
+    
     return "-"
   }
 
