@@ -115,8 +115,8 @@ const DashboardPage: FC = () => {
   const fetchTopFranchises = async () => {
     try {
       console.log("Fetching top franchises...")
-      const response = await http.get("/admin/dashboard/top-franchises", {
-        params: { limit: 5 }
+      const response = await http.get("/admin/dashboard", {
+        params: { type: 'top-franchises', limit: 5 }
       })
       console.log("Top Franchises response:", response.data)
       
@@ -130,7 +130,9 @@ const DashboardPage: FC = () => {
   const fetchWalletStatistics = async () => {
     try {
       console.log("Fetching wallet statistics...")
-      const response = await http.get("/admin/dashboard/wallet-statistics")
+      const response = await http.get("/admin/dashboard", {
+        params: { type: 'wallet-statistics' }
+      })
       console.log("Wallet Statistics response:", response.data)
       
       const data = response.data?.data || response.data

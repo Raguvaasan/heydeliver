@@ -2,12 +2,12 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import axios from 'axios';
 
 /**
- * API Proxy: Admin Dashboard Statistics
+ * API Proxy: Admin Dashboard Statistics (Consolidated)
  * 
- * Frontend: GET /api/admin/dashboard?period=week
- * Backend: GET https://freightrekapi.vercel.app/admin/dashboard?period=week
- * 
- * Fetches admin dashboard statistics with optional period filter
+ * Endpoints:
+ * - GET /api/admin/dashboard?period=week (main dashboard)
+ * - GET /api/admin/dashboard?type=top-franchises&limit=5
+ * - GET /api/admin/dashboard?type=wallet-statistics
  */
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   // Enable CORS
@@ -41,13 +41,24 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
 
     // Get query parameters
-    const { period = 'week' } = request.query;
+    const { type, period = 'week', limit = '5' } = request.query;
 
-    // Backend API endpoint
-    const backendUrl = `https://freightrekapi.vercel.app/admin/dashboard`;
+    // Determine backend URL based on type
+    let backendUrl = 'https://freightrekapi.vercel.app/admin/dashboard';
+    const params: any = {};
+
+    if (type === 'top-franchises') {
+      backendUrl += '/top-franchises';
+      params.limit = limit;
+    } else if (type === 'wallet-statistics') {
+      backendUrl += '/wallet-statistics';
+    } else {
+      // Main dashboard
+      params.period = period;
+    }
 
     console.log('[Admin Dashboard API] Forwarding request to:', backendUrl);
-    console.log('[Admin Dashboard API] Period:', period);
+    console.log('[Admin Dashboard API] Params:', params);
 
     // Forward request to backend API
     const backendResponse = await axios.get(backendUrl, {
@@ -55,9 +66,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         'Authorization': authHeader,
         'Content-Type': 'application/json',
       },
-      params: {
-        period: period
-      },
+      params,
       timeout: 30000,
       validateStatus: (status) => status < 500,
     });
@@ -88,6 +97,14 @@ export default async function handler(request: VercelRequest, response: VercelRe
           message: 'Failed to fetch admin dashboard data' 
         }
       );
+    }
+
+    return response.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
+    });
+  }
+}
     }
 
     return response.status(500).json({ 
