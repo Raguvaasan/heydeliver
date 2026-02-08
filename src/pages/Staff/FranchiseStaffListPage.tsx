@@ -41,14 +41,18 @@ const FranchiseStaffListPage: FC = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<"headquarters" | "franchise">("headquarters")
 
   const fetchStaffs = async () => {
     setLoading(true)
     try {
+      // Check if franchise user - use franchise-specific endpoint
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      const endpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
+      
       console.log("=== FRANCHISE STAFF FETCH DEBUG ===")
-      console.log("Making API call to /admin/staff...")
-      const response = await http.get("/admin/staff")
+      console.log(`Making API call to ${endpoint}... (loginType: ${loginType})`)
+      const response = await http.get(endpoint)
       console.log("API Response Status:", response.status)
       console.log("API Response Full:", response)
       console.log("Response data object:", response.data)
@@ -102,7 +106,13 @@ const FranchiseStaffListPage: FC = () => {
 
   const fetchRoles = async () => {
     try {
-      const response = await http.get("/admin/role")
+      // Check if franchise user - use franchise-specific endpoint
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      const endpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
+      
+      console.log(`Fetching roles from ${endpoint} (loginType: ${loginType})`)
+      const response = await http.get(endpoint)
       setRoles(response.data?.data || [])
     } catch (error) {
       console.error("Error fetching roles:", error)
@@ -152,7 +162,12 @@ const FranchiseStaffListPage: FC = () => {
     validationSchema,
     onSubmit: async (values) => {
       try {
-        await http.post("/admin/staff", values)
+        // Check if franchise user - use franchise-specific endpoint
+        const loginType = sessionStorage.getItem("loginType")
+        const isFranchise = loginType === "franchise" || loginType === "staff"
+        const endpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
+        
+        await http.post(endpoint, values)
         toast.success("Staff added successfully")
         setAddModalOpen(false)
         formik.resetForm()
@@ -181,7 +196,12 @@ const FranchiseStaffListPage: FC = () => {
     if (!staffToDelete) return
     
     try {
-      await http.delete(`/admin/staff/${staffToDelete._id}`)
+      // Check if franchise user - use franchise-specific endpoint
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      const endpoint = isFranchise ? `/admin/franchise/staff/${staffToDelete._id}` : `/admin/staff/${staffToDelete._id}`
+      
+      await http.delete(endpoint)
       toast.success("Staff deleted successfully")
       setDeleteModalOpen(false)
       setStaffToDelete(null)
@@ -205,12 +225,7 @@ const FranchiseStaffListPage: FC = () => {
       staff.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.phone?.includes(searchTerm)
     
-    // Filter by tab - Check for franchiseId presence
-    const matchesTab = activeTab === "headquarters" 
-      ? !staff.franchiseId || staff.franchiseId === null || staff.franchiseId === ""  // HQ staff have no franchiseId
-      : staff.franchiseId && staff.franchiseId !== null && staff.franchiseId !== ""  // Franchise staff have franchiseId
-    
-    return matchesSearch && matchesTab
+    return matchesSearch
   }) : []
 
   return (
@@ -233,32 +248,6 @@ const FranchiseStaffListPage: FC = () => {
             >
               ADD STAFF
             </Button> */}
-          </div>
-
-          {/* Tabs */}
-          <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex gap-8">
-              <button
-                onClick={() => setActiveTab("headquarters")}
-                className={`pb-3 px-1 font-medium transition-colors ${
-                  activeTab === "headquarters"
-                    ? "text-orange-500 border-b-2 border-orange-500"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                }`}
-              >
-                Head Quarters
-              </button>
-              <button
-                onClick={() => setActiveTab("franchise")}
-                className={`pb-3 px-1 font-medium transition-colors ${
-                  activeTab === "franchise"
-                    ? "text-orange-500 border-b-2 border-orange-500"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                }`}
-              >
-                Franchise
-              </button>
-            </div>
           </div>
 
           <div className="mb-4">
@@ -285,11 +274,7 @@ const FranchiseStaffListPage: FC = () => {
                     <th className="px-4 py-3">NAME</th>
                     <th className="px-4 py-3">EMAIL</th>
                     <th className="px-4 py-3">PHONE</th>
-                    {activeTab === "headquarters" ? (
-                      <th className="px-4 py-3">ROLE</th>
-                    ) : (
-                      <th className="px-4 py-3">FRANCHISE</th>
-                    )}
+                    <th className="px-4 py-3">ROLE</th>
                     <th className="px-4 py-3">STATUS</th>
                     <th className="px-4 py-3 text-center">ACTION</th>
                   </tr>
@@ -303,12 +288,7 @@ const FranchiseStaffListPage: FC = () => {
                         </td>
                         <td className="px-4 py-3">{staff.email}</td>
                         <td className="px-4 py-3">{staff.phone}</td>
-                        <td className="px-4 py-3">
-                          {activeTab === "headquarters" 
-                            ? getRoleName(staff)
-                            : (typeof staff.franchiseId === 'object' ? (staff.franchiseId as any)?.agencyName : staff.franchise) || "-"
-                          }
-                        </td>
+                        <td className="px-4 py-3">{getRoleName(staff)}</td>
                         <td className="px-4 py-3">
                           <Badge color={staff.status === "Active" || staff.status === true ? "success" : "failure"}>
                             {staff.status === "Active" || staff.status === true ? "Active" : "Inactive"}

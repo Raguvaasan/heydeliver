@@ -180,7 +180,14 @@ export const agencyValidationSchema = Yup.object({
     .min(3, "Agency name must be at least 3 characters")
     .max(100, "Agency name must not exceed 100 characters")
     .required("Agency name is required"),
-  contactPerson: nameValidation,
+  agencyOwner: Yup.string()
+    .min(2, "Owner name must be at least 2 characters")
+    .max(100, "Owner name must not exceed 100 characters")
+    .optional(),
+  contactPerson: Yup.string()
+    .min(2, "Contact person must be at least 2 characters")
+    .max(100, "Contact person must not exceed 100 characters")
+    .optional(),
   email: emailValidation,
   phone: phoneValidation,
   address: Yup.string()
@@ -196,11 +203,18 @@ export const agencyValidationSchema = Yup.object({
   panNumber: Yup.string()
     .matches(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Invalid PAN number format")
     .optional(),
+  username: Yup.string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username must not exceed 30 characters")
+    .optional(),
+  password: Yup.string()
+    .min(6, "Password must be at least 6 characters")
+    .optional(),
   commissionRate: Yup.number()
     .min(0, "Commission rate cannot be negative")
     .max(100, "Commission rate cannot exceed 100%")
     .optional(),
-  status: Yup.string().oneOf(["active", "inactive"]).required(),
+  status: Yup.string().oneOf(["Active", "Inactive", "active", "inactive"]).required(),
 })
 
 // ==================== PROFILE VALIDATIONS ====================

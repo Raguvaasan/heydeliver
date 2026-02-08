@@ -15,10 +15,8 @@ const PaymentCallbackPage: FC = () => {
 
   useEffect(() => {
     const orderId = searchParams.get("order_id")
-    const paymentId = searchParams.get("payment_id") || searchParams.get("cf_payment_id")
-    const txStatus = searchParams.get("txStatus") || searchParams.get("payment_status")
 
-    console.log('💳 Payment callback received:', { orderId, paymentId, txStatus, allParams: Object.fromEntries(searchParams.entries()) })
+    console.log('💳 Payment callback received:', { orderId })
 
     if (!orderId) {
       console.error('❌ No order_id in URL')
@@ -28,21 +26,12 @@ const PaymentCallbackPage: FC = () => {
       return
     }
 
-    // Check if Cashfree indicated failure in the callback
-    if (txStatus && (txStatus.toLowerCase() === 'failed' || txStatus.toLowerCase() === 'cancelled')) {
-      console.log('⚠️ Payment status from callback:', txStatus)
-      toast.error(`Payment ${txStatus.toLowerCase()}`)
-      setVerifying(false)
-      setPaymentStatus("failed")
-      return
-    }
-
     const verifyPaymentStatus = async () => {
       try {
-        console.log('🔍 Starting payment verification for:', orderId, paymentId)
+        console.log('🔍 Starting payment verification for:', orderId)
         
-        // Call verify payment with paymentId
-        await verifyPayment(orderId, paymentId || undefined)
+        // Call verify payment - paymentId is now optional
+        await verifyPayment(orderId)
         
         // Refresh balance
         await fetchBalance()
@@ -55,8 +44,9 @@ const PaymentCallbackPage: FC = () => {
         setPaymentStatus("failed")
         
         // Show specific error message if available
-        const errorMessage = error.response?.data?.message || error.message || "Payment verification failed"
-        toast.error(errorMessage)
+        if (error.response?.data?.message) {
+          toast.error(error.response.data.message)
+        }
       } finally {
         setVerifying(false)
       }
@@ -66,11 +56,11 @@ const PaymentCallbackPage: FC = () => {
   }, [searchParams, verifyPayment, fetchBalance])
 
   const handleGoToWallet = () => {
-    navigate("/wallet")
+    navigate("/admin/wallet")
   }
 
   const handleTryAgain = () => {
-    navigate("/wallet/add")
+    navigate("/admin/wallet/add")
   }
 
   if (verifying) {
@@ -122,7 +112,7 @@ const PaymentCallbackPage: FC = () => {
                     color="gray"
                     size="lg"
                     className="w-full"
-                    onClick={() => navigate("/dashboard")}
+                    onClick={() => navigate("/admin/dashboard")}
                   >
                     Go to Dashboard
                   </Button>

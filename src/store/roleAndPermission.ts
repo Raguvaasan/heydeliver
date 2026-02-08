@@ -42,6 +42,14 @@ interface RoleState {
   clearSelectedRole: () => void
 }
 
+// Helper function to get correct endpoint based on login type
+const getRoleEndpoint = (path: string = '') => {
+  const loginType = sessionStorage.getItem("loginType")
+  const isFranchise = loginType === "franchise" || loginType === "staff"
+  const baseEndpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
+  return path ? `${baseEndpoint}${path}` : baseEndpoint
+}
+
 export const useRoleStore = create<RoleState>((set, get) => ({
   roles: [],
   modules: [],
@@ -53,7 +61,12 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   fetchRoles: async (page = 1, limit = 10) => {
     set({ loading: true, error: null })
     try {
-      const res = await http.get("/admin/role", {
+      // Use helper function to get correct endpoint
+      const endpoint = getRoleEndpoint()
+      const loginType = sessionStorage.getItem("loginType")
+      console.log(`Fetching roles from ${endpoint} (loginType: ${loginType})`)
+      
+      const res = await http.get(endpoint, {
         params: { page, limit }
       })
       console.log("Roles API response:", res.data)
@@ -85,7 +98,9 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   getRoleById: async (id: string) => {
     set({ loading: true, error: null })
     try {
-      const res = await http.get(`/admin/role/${id}`)
+      const endpoint = getRoleEndpoint(`/${id}`)
+      console.log(`Getting role from ${endpoint}`)
+      const res = await http.get(endpoint)
       const roleData = res.data?.data || res.data
       set({
         selectedRole: roleData || null,
@@ -101,7 +116,9 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   addRole: async (data) => {
     set({ loading: true, error: null })
     try {
-      await http.post("/admin/role", data)
+      const endpoint = getRoleEndpoint()
+      console.log(`Adding role to ${endpoint}`)
+      await http.post(endpoint, data)
       await get().fetchRoles()
       toast.success("Role added successfully!")
       set({ loading: false })
@@ -117,7 +134,9 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   updateRole: async (id, data) => {
     set({ loading: true, error: null })
     try {
-      await http.put(`/admin/role/${id}`, data)
+      const endpoint = getRoleEndpoint(`/${id}`)
+      console.log(`Updating role at ${endpoint}`)
+      await http.put(endpoint, data)
       await get().fetchRoles()
       toast.success("Role updated successfully!")
       set({ loading: false })
@@ -133,7 +152,9 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   deleteRole: async (id) => {
     set({ loading: true, error: null })
     try {
-      await http.delete(`/admin/role/${id}`)
+      const endpoint = getRoleEndpoint(`/${id}`)
+      console.log(`Deleting role from ${endpoint}`)
+      await http.delete(endpoint)
       await get().fetchRoles()
       set({ loading: false })
     } catch (err: any) {
@@ -147,7 +168,14 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   fetchModules: async () => {
     set({ loading: true, error: null })
     try {
-      const res = await http.get("/admin/modules")
+      // Use different endpoint for franchise users
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      const endpoint = isFranchise ? "/admin/franchise/modules" : "/admin/modules"
+      
+      console.log(`Fetching modules from ${endpoint} (loginType: ${loginType})`)
+      
+      const res = await http.get(endpoint)
       const modules = res.data?.data
         ? (Object.values(res.data.data) as string[])
         : []

@@ -29,6 +29,8 @@ const StaffPage = lazy(() => import("./pages/AccessManagement/StaffPage"))
 
 // Franchise Role
 const FranchiseRolePage = lazy(() => import("./pages/Role/FranchiseRolePage"))
+const FranchiseAddRolePage = lazy(() => import("./pages/Role/FranchiseAddRolePage"))
+const FranchiseEditRolePage = lazy(() => import("./pages/Role/FranchiseEditRolePage"))
 
 // Agency Management
 const AgencyManagementPage = lazy(() => import("./pages/AgencyManagement/AgencyManagementPage"))
@@ -186,7 +188,7 @@ root.render(
             path="/franchise-role/roleform"
             element={
               <ProtectedRoute>
-                <AddRolePage />
+                <FranchiseAddRolePage />
               </ProtectedRoute>
             }
           />
@@ -195,7 +197,7 @@ root.render(
             path="/franchise-role/editrole/:id"
             element={
               <ProtectedRoute>
-                <EditRolePage />
+                <FranchiseEditRolePage />
               </ProtectedRoute>
             }
           />

@@ -43,7 +43,13 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
   fetchStaffs: async () => {
     set({ loading: true, error: null })
     try {
-      const response = await httpPublic.get("/admin/staff")
+      // Check if franchise user - use franchise-specific endpoint
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      const endpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
+      
+      console.log(`Fetching staffs from ${endpoint} (loginType: ${loginType})`)
+      const response = await http.get(endpoint)
       const staffData = response.data?.data || []
       console.log("Fetched staffs:", staffData)
       set({ staffs: staffData, loading: false })
@@ -56,7 +62,13 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
   fetchRoles: async () => {
     set({ loading: true, error: null })
     try {
-      const response = await http.get("/admin/role")
+      // Check if franchise user - use franchise-specific endpoint
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      const endpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
+      
+      console.log(`Fetching roles from ${endpoint} (loginType: ${loginType})`)
+      const response = await http.get(endpoint)
       const roleData = response.data?.data || []
       console.log("Fetched roles:", roleData)
       set({ roles: roleData, loading: false })
@@ -69,7 +81,12 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
   getStaffById: async (id: string) => {
     set({ loading: true, error: null })
     try {
-      const response = await http.get(`/admin/staff/${id}`)
+      // Check if franchise user - use franchise-specific endpoint
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      const endpoint = isFranchise ? `/admin/franchise/staff/${id}` : `/admin/staff/${id}`
+      
+      const response = await http.get(endpoint)
       set({ selectedStaff: response.data?.data, loading: false })
     } catch (error: any) {
       console.error("Error fetching staff by id:", error)
@@ -80,12 +97,12 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
   addStaff: async (data: any) => {
     set({ loading: true, error: null })
     try {
-      // Ensure type is set to franchise for franchise staff
-      const payload = {
-        ...data,
-        type: "franchise"
-      }
-      await http.post("/admin/staff", payload)
+      // Check if franchise user - use franchise-specific endpoint
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      const endpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
+      
+      await http.post(endpoint, data)
       set({ loading: false })
     } catch (error: any) {
       console.error("Error adding staff:", error)
@@ -97,12 +114,12 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
   updateStaff: async (id: string, data: any) => {
     set({ loading: true, error: null })
     try {
-      // Ensure type is set to franchise for franchise staff
-      const payload = {
-        ...data,
-        type: "franchise"
-      }
-      await http.put(`/admin/staff/${id}`, payload)
+      // Check if franchise user - use franchise-specific endpoint
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      const endpoint = isFranchise ? `/admin/franchise/staff/${id}` : `/admin/staff/${id}`
+      
+      await http.put(endpoint, data)
       set({ loading: false })
     } catch (error: any) {
       console.error("Error updating staff:", error)
@@ -114,7 +131,12 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
   deleteStaff: async (id: string) => {
     set({ loading: true, error: null })
     try {
-      await http.delete(`/admin/staff/${id}`)
+      // Check if franchise user - use franchise-specific endpoint
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      const endpoint = isFranchise ? `/admin/franchise/staff/${id}` : `/admin/staff/${id}`
+      
+      await http.delete(endpoint)
       set({ loading: false })
     } catch (error: any) {
       console.error("Error deleting staff:", error)
