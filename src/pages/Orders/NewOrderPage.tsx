@@ -273,6 +273,7 @@ const NewOrderPage: FC = () => {
 
       // Use first box dimensions (you can calculate volumetric weight if needed)
       const firstBox = boxes[0]
+      const selectedRate = formData.shippingMode === "Express" ? expressRate : surfaceRate
 
       const shipmentData = {
         name: formData.customerName,
@@ -294,7 +295,7 @@ const NewOrderPage: FC = () => {
         hsn_code: formData.hsnCode || "",
         cod_amount: formData.paymentMode === "COD" ? formData.codAmount : "",
         order_date: formData.orderDate || null,
-        total_amount: formData.totalAmount || "",
+        total_amount: selectedRate?.toString() || formData.totalAmount || formData.codAmount,
         seller_add: formData.sellerAddress || "",
         seller_name: formData.sellerName || "",
         seller_inv: formData.sellerInvoice || "",
