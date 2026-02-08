@@ -7,12 +7,19 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "")
   const apiProxyTarget =
     env["VITE_API_PROXY_TARGET"] || "https://freightrekapi.vercel.app"
+  const invoiceProxyTarget =
+    env["VITE_INVOICE_PROXY_TARGET"] || "http://localhost:3000"
 
   return {
     plugins: [svgr(), react()],
     base: "/admin/",
     server: {
       proxy: {
+        "/api/shipment/invoice": {
+          target: invoiceProxyTarget,
+          changeOrigin: true,
+          rewrite: (path) => path,
+        },
         "/api/shipment": {
           target: "https://freightrekapi.vercel.app",
           changeOrigin: true,
