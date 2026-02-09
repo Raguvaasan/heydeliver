@@ -222,7 +222,7 @@ const OrdersPage: FC = () => {
                   disabled={ordersList.length === 0}
                 />
               </th>
-              <th className="px-4 py-3">BOOKING ID</th>
+              <th className="px-4 py-3">Order ID</th>
               <th className="px-4 py-3">BOOKING DATE & TIME</th>
               <th className="px-4 py-3">CUSTOMER</th>
               <th className="px-4 py-3">CUSTOMER NUMBER</th>
@@ -368,7 +368,7 @@ const OrdersPage: FC = () => {
                     : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   }`}
               >
-                Active Orders
+                Pickup Requests
               </button>
             </div>
           </div>

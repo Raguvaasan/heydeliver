@@ -40,14 +40,10 @@ const PickupRequestsPage: FC = () => {
   return (
     <NavbarSidebarLayout>
       <div className="px-4 pt-6">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Pickup Requests
+           Active Orders
           </h1>
-          <Button color="dark" onClick={handleCreatePickup}>
-            <HiPlus className="mr-2 h-5 w-5" />
-            Create Pickup Request
-          </Button>
         </div>
 
         <Card>
@@ -104,17 +100,6 @@ const PickupRequestsPage: FC = () => {
                         <p className="text-gray-500 font-medium text-lg">
                           No pickup requests found
                         </p>
-                        <p className="text-gray-400 text-sm mt-2">
-                          Create your first pickup request to get started
-                        </p>
-                        <Button
-                          color="dark"
-                          className="mt-4"
-                          onClick={handleCreatePickup}
-                        >
-                          <HiPlus className="mr-2 h-5 w-5" />
-                          Create Pickup Request
-                        </Button>
                       </div>
                     </Table.Cell>
                   </Table.Row>

@@ -41,20 +41,27 @@ interface DelhiveryResponse {
 }
 
 interface PincodeStoreState {
-  pincodeData: PostalCode | null
-  loading: boolean
-  error: string | null
-  fetchPincodeData: (pincode: string) => Promise<void>
+  pickupPincodeData: PostalCode | null
+  deliveryPincodeData: PostalCode | null
+  pickupLoading: boolean
+  deliveryLoading: boolean
+  pickupError: string | null
+  deliveryError: string | null
+  fetchPickupPincode: (pincode: string) => Promise<void>
+  fetchDeliveryPincode: (pincode: string) => Promise<void>
   clearData: () => void
 }
 
-export const usePincodeStore = create<PincodeStoreState>((set) => ({
-  pincodeData: null,
-  loading: false,
-  error: null,
+export const usePincodeStore = create<PincodeStoreState>((set, get) => ({
+  pickupPincodeData: null,
+  deliveryPincodeData: null,
+  pickupLoading: false,
+  deliveryLoading: false,
+  pickupError: null,
+  deliveryError: null,
 
-  fetchPincodeData: async (pincode: string) => {
-    set({ loading: true, error: null, pincodeData: null })
+  fetchPickupPincode: async (pincode: string) => {
+    set({ pickupLoading: true, pickupError: null, pickupPincodeData: null })
 
     try {
       // Call through serverless function proxy
@@ -75,18 +82,18 @@ export const usePincodeStore = create<PincodeStoreState>((set) => ({
         
         if (pincodeInfo.postal_code) {
           set({
-            pincodeData: pincodeInfo,
-            loading: false,
-            error: null,
+            pickupPincodeData: pincodeInfo,
+            pickupLoading: false,
+            pickupError: null,
           })
           return
         }
       }
       
       set({
-        loading: false,
-        error: "Pincode not found or not serviceable",
-        pincodeData: null,
+        pickupLoading: false,
+        pickupError: "Pincode not found or not serviceable",
+        pickupPincodeData: null,
       })
       
     } catch (err: any) {
@@ -117,14 +124,92 @@ export const usePincodeStore = create<PincodeStoreState>((set) => ({
       console.error("Pincode fetch error:", err)
       
       set({
-        loading: false,
-        error: errorMessage,
-        pincodeData: null,
+        pickupLoading: false,
+        pickupError: errorMessage,
+        pickupPincodeData: null,
+      })
+    }
+  },
+
+  fetchDeliveryPincode: async (pincode: string) => {
+    set({ deliveryLoading: true, deliveryError: null, deliveryPincodeData: null })
+
+    try {
+      // Call through serverless function proxy
+      const apiUrl = `/delhivery-api/c/api/pin-codes/json?filter_codes=${pincode}`
+      
+      const response = await axios.get<DelhiveryResponse>(
+        apiUrl,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 15000,
+        }
+      )
+
+      if (response.data?.delivery_codes && response.data.delivery_codes.length > 0) {
+        const pincodeInfo = response.data.delivery_codes[0]
+        
+        if (pincodeInfo.postal_code) {
+          set({
+            deliveryPincodeData: pincodeInfo,
+            deliveryLoading: false,
+            deliveryError: null,
+          })
+          return
+        }
+      }
+      
+      set({
+        deliveryLoading: false,
+        deliveryError: "Pincode not found or not serviceable",
+        deliveryPincodeData: null,
+      })
+      
+    } catch (err: any) {
+      let errorMessage = "Failed to fetch pincode data"
+      
+      if (err.code === "ECONNABORTED") {
+        errorMessage = "Request timeout - API took too long to respond"
+      } else if (err.response?.status === 404) {
+        errorMessage = "Pincode not found"
+      } else if (err.response?.status === 401) {
+        errorMessage = "Authentication failed - Invalid API token"
+      } else if (err.response?.status === 403) {
+        errorMessage = "Access forbidden"
+      } else if (err.response?.status === 500) {
+        errorMessage = "Delhivery server error"
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error
+      } else if (err.message === "Network Error") {
+        errorMessage = "Cannot connect to Delhivery API. Please check your internet connection."
+      } else if (err.message?.includes("CORS")) {
+        errorMessage = "CORS error - API blocked by browser security policy"
+      } else if (err.message) {
+        errorMessage = err.message
+      }
+      
+      console.error("Pincode fetch error:", err)
+      
+      set({
+        deliveryLoading: false,
+        deliveryError: errorMessage,
+        deliveryPincodeData: null,
       })
     }
   },
 
   clearData: () => {
-    set({ pincodeData: null, error: null, loading: false })
+    set({ 
+      pickupPincodeData: null, 
+      deliveryPincodeData: null, 
+      pickupError: null, 
+      deliveryError: null, 
+      pickupLoading: false, 
+      deliveryLoading: false 
+    })
   },
 }))

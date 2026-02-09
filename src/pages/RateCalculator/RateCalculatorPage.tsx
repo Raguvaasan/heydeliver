@@ -1,10 +1,11 @@
-import { FC, useState, useEffect } from "react"
+import { FC, useState, useEffect, useCallback } from "react"
 import { Button, Card, Label, Select, TextInput, Radio, Spinner, Alert } from "flowbite-react"
 import { HiInformationCircle, HiCalculator } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useRateCalculatorStore } from "../../store/rateCalculatorStore"
 import { useMarkupStore } from "../../store/markupStore"
 import { useRateCardStore } from "../../store/rateCardStore"
+import { usePincodeStore } from "../../store/pincodeStore"
 import toast from "react-hot-toast"
 
 interface RateDetails {
@@ -32,11 +33,38 @@ const RateCalculatorPage: FC = () => {
   const { rateData, loading, error, calculateRate, clearData } = useRateCalculatorStore()
   const { rateCardMarkup, fetchRateCardMarkup } = useMarkupStore()
   const { calculateRateFromCard } = useRateCardStore()
+  const { 
+    pickupPincodeData, 
+    deliveryPincodeData, 
+    pickupLoading, 
+    deliveryLoading,
+    fetchPickupPincode, 
+    fetchDeliveryPincode 
+  } = usePincodeStore()
 
   // Fetch rate card markup on component mount
   useEffect(() => {
     fetchRateCardMarkup()
   }, [])
+
+  // Debounce pincode fetching
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (pickupPincode.length === 6) {
+        fetchPickupPincode(pickupPincode)
+      }
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [pickupPincode])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (deliveryPincode.length === 6) {
+        fetchDeliveryPincode(deliveryPincode)
+      }
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [deliveryPincode])
 
   const calculateVolumetricWeight = () => {
     const l = parseFloat(length) || 0
@@ -56,7 +84,7 @@ const RateCalculatorPage: FC = () => {
     if (pickupPincode.length === 6 && deliveryPincode.length === 6 && parseFloat(packageWeight) > 0) {
       handleCalculateRate()
     }
-  }, [shippingType, deliveryMode, paymentMode])
+  }, [shippingType, deliveryMode, paymentMode, pickupPincode, deliveryPincode, packageWeight])
 
   const handleCalculateRate = async () => {
     // Validation
@@ -206,14 +234,29 @@ const RateCalculatorPage: FC = () => {
                         onChange={(e) => setPickupPincode(e.target.value)}
                         className="pl-8"
                         placeholder="Pickup pincode"
+                        maxLength={6}
                       />
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                          TN
-                        </span>
-                      </div>
+                      {pickupLoading && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <Spinner size="sm" />
+                        </div>
+                      )}
+                      {pickupPincodeData && !pickupLoading && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                            {pickupPincodeData.postal_code.state_code}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1 ml-8">Chennai, Tamil nadu</p>
+                    {pickupPincodeData && (
+                      <p className="text-xs text-gray-500 mt-1 ml-8">
+                        {pickupPincodeData.postal_code.district || pickupPincodeData.postal_code.city}
+                      </p>
+                    )}
+                    {pickupPincode.length === 6 && !pickupLoading && !pickupPincodeData && (
+                      <p className="text-xs text-red-500 mt-1 ml-8">Invalid pincode</p>
+                    )}
                   </div>
 
                   <div className="flex-shrink-0">
@@ -231,14 +274,29 @@ const RateCalculatorPage: FC = () => {
                         onChange={(e) => setDeliveryPincode(e.target.value)}
                         className="pl-8"
                         placeholder="Delivery pincode"
+                        maxLength={6}
                       />
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                          TN
-                        </span>
-                      </div>
+                      {deliveryLoading && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <Spinner size="sm" />
+                        </div>
+                      )}
+                      {deliveryPincodeData && !deliveryLoading && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                            {deliveryPincodeData.postal_code.state_code}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1 ml-8">Chennai, Tamil nadu</p>
+                    {deliveryPincodeData && (
+                      <p className="text-xs text-gray-500 mt-1 ml-8">
+                        {deliveryPincodeData.postal_code.district || deliveryPincodeData.postal_code.city}
+                      </p>
+                    )}
+                    {deliveryPincode.length === 6 && !deliveryLoading && !deliveryPincodeData && (
+                      <p className="text-xs text-red-500 mt-1 ml-8">Invalid pincode</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -424,7 +482,7 @@ const RateCalculatorPage: FC = () => {
                 >
                   Forward
                 </button>
-                <button
+                {/* <button
                   onClick={() => setShippingType("rto")}
                   className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                     shippingType === "rto"
@@ -443,7 +501,7 @@ const RateCalculatorPage: FC = () => {
                   }`}
                 >
                   Reverse
-                </button>
+                </button> */}
               </div>
 
               {/* Delivery Mode Tabs */}
