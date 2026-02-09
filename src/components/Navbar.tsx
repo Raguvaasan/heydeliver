@@ -1,6 +1,7 @@
 import { FC, useMemo, useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { HiMenu, HiSearch, HiBell, HiChevronDown, HiLogout } from "react-icons/hi"
+import { HiMenu, HiSearch, HiBell, HiChevronDown, HiLogout, HiCurrencyRupee } from "react-icons/hi"
+import { useWalletStore } from "../store/walletStore"
 
 interface NavbarProps {
   isMobileOpen: boolean
@@ -12,8 +13,12 @@ const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
   const [userName, setUserName] = useState("Admin")
   const [userInitial, setUserInitial] = useState("A")
   const [userRole, setUserRole] = useState("Admin")
+  const [loginType, setLoginType] = useState("admin")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  
+  // Wallet store for franchise users
+  const { balance, fetchBalance } = useWalletStore()
 
   useEffect(() => {
     // Get user data from sessionStorage
@@ -40,13 +45,19 @@ const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
         setUserInitial(name.charAt(0).toUpperCase())
         
         // Get user role from loginType in sessionStorage
-        const loginType = sessionStorage.getItem("loginType")
-        if (loginType) {
+        const loginTypeValue = sessionStorage.getItem("loginType") || "admin"
+        setLoginType(loginTypeValue)
+        if (loginTypeValue) {
           // Capitalize first letter for display
-          const role = loginType.charAt(0).toUpperCase() + loginType.slice(1)
+          const role = loginTypeValue.charAt(0).toUpperCase() + loginTypeValue.slice(1)
           setUserRole(role)
         } else {
           setUserRole("Admin")
+        }
+        
+        // Fetch wallet balance for franchise users
+        if (loginTypeValue === "franchise" || loginTypeValue === "staff") {
+          fetchBalance()
         }
       }
     } catch (error) {
@@ -101,11 +112,23 @@ const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
 
         {/* Right Section */}
         <div className="flex items-center gap-3">
-          {/* Notifications */}
-          <button className="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-            <HiBell className="h-6 w-6" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+          {/* Wallet Balance (Franchise) or Notifications (Admin) */}
+          {loginType === "franchise" || loginType === "staff" ? (
+            <div 
+              onClick={() => navigate("/admin/wallet")}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
+            >
+              <HiCurrencyRupee className="h-5 w-5" />
+              <span className="font-semibold text-sm">
+                ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          ) : (
+            <button className="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+              <HiBell className="h-6 w-6" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+          )}
 
           {/* User Profile */}
           <div className="relative" ref={dropdownRef}>

@@ -264,7 +264,7 @@ const Sidebar: FC<SidebarProps> = ({
           {/* Logo Section */}
           <div className="h-16 flex items-center justify-between px-4 border-b border-gray-700">
             <Link to="/dashboard" className="flex items-center gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center">
                 <span className="text-yellow-500 font-bold text-xl">Hey</span>
                 <span className="text-white font-bold text-xl">Deliver</span>
               </div>

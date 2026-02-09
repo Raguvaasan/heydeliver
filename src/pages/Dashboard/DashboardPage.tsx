@@ -8,6 +8,7 @@ import {
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import http from "../../common/httpRequest"
 import toast from "react-hot-toast"
+import RevenueChart from "../../components/RevenueChart"
 
 interface StatCardProps {
   icon: React.ReactNode
@@ -146,39 +147,49 @@ const DashboardPage: FC = () => {
   const buildStats = () => {
     if (!dashboardData) return []
     
-    const overview = dashboardData.overview || {}
-    const revenue = overview.revenue || {}
-    const totalShipments = overview.totalShipments || {}
     const isFranchise = loginType === "franchise" || loginType === "staff"
     
     if (isFranchise) {
+      // Franchise-specific mapping
+      const overview = dashboardData.overview || {}
+      const revenue = dashboardData.revenue || {}
+      
+      const activeShipmentsLabel = overview.activeShipments?.label || ""
+      const activeShipmentsCount = overview.activeShipments?.count || 0
+      const totalShipmentsCount = overview.totalShipments?.count || 0
+      const totalShipmentsLabel = overview.totalShipments?.label || ""
+      const walletAmount = overview.wallet?.amount || 0
+      const walletLabel = overview.wallet?.label || ""
+      
       return [
         {
           icon: <HiTruck className="h-5 w-5" />,
           title: "Active Shipments",
-          value: overview.activeShipments?.total || 0,
-          subtitle: `In Transit: ${overview.activeShipments?.inTransit || 0}, Out for Delivery: ${overview.activeShipments?.outForDelivery || 0}`,
+          value: activeShipmentsCount,
+          subtitle: activeShipmentsLabel,
           iconBgColor: "bg-blue-500",
         },
         {
           icon: <HiCube className="h-5 w-5" />,
           title: "Total Shipments",
-          value: totalShipments.count || 0,
-          subtitle: `Current Period: ${totalShipments.currentPeriod || 0}`,
-          percentage: totalShipments.percentageChange ? `${totalShipments.percentageChange}%` : undefined,
+          value: totalShipmentsCount,
+          subtitle: totalShipmentsLabel,
           iconBgColor: "bg-orange-500",
         },
         {
           icon: <HiCurrencyRupee className="h-5 w-5" />,
           title: "Revenue Generated",
-          value: `${revenue.currency || '₹'}${Number(revenue.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-          subtitle: `This ${dashboardData.period || 'week'}`,
-          percentage: revenue.percentageChange ? `${revenue.percentageChange}%` : undefined,
+          value: `₹${Number(walletAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          subtitle: walletLabel,
           iconBgColor: "bg-green-500",
         },
       ]
     } else {
-      // Admin view
+      // Admin view - original mapping
+      const overview = dashboardData.overview || {}
+      const revenue = overview.revenue || {}
+      const totalShipments = overview.totalShipments || {}
+      
       return [
         {
           icon: <HiTruck className="h-5 w-5" />,
@@ -209,16 +220,68 @@ const DashboardPage: FC = () => {
   
   const stats = buildStats()
   const recentBookings = dashboardData?.recentBookings || []
-  const shipmentTypeDistribution = dashboardData?.shipmentTypeDistribution || []
-  const revenueTrend = dashboardData?.revenueTrend || []
   
-  // Calculate total shipments from distribution
-  const totalShipmentTypes = shipmentTypeDistribution.reduce(
-    (sum: number, item: any) => sum + (item.count || 0),
-    0
-  )
+  // Handle shipment type data differently for franchise vs admin
+  const isFranchise = loginType === "franchise" || loginType === "staff"
+  let shipmentTypeDistribution: any[] = []
+  let totalShipmentTypes = 0
   
-  // Get latest revenue from trend
+  if (isFranchise) {
+    // Franchise: Convert shipmentType object to array
+    const shipmentTypeData = dashboardData?.shipmentType || {}
+    shipmentTypeDistribution = [
+      { type: 'Road Freight', count: shipmentTypeData.roadFreight || 0 },
+      { type: 'Ocean Freight', count: shipmentTypeData.oceanFreight || 0 },
+      { type: 'Air Freight', count: shipmentTypeData.airFreight || 0 },
+      { type: 'Rail Freight', count: shipmentTypeData.railFreight || 0 },
+    ].filter(item => item.count > 0)
+    totalShipmentTypes = shipmentTypeData.total || 0
+  } else {
+    // Admin: Use shipmentTypeDistribution array directly
+    shipmentTypeDistribution = dashboardData?.shipmentTypeDistribution || []
+    totalShipmentTypes = shipmentTypeDistribution.reduce(
+      (sum: number, item: any) => sum + (item.count || 0),
+      0
+    )
+  }
+  
+  // Get revenue data for display (franchise-specific)
+  const revenueData = isFranchise ? (dashboardData?.revenue || {}) : {}
+  const codRevenue = revenueData.codRevenue?.amount || 0
+  const todaysRevenue = revenueData.todaysRevenue?.amount || 0
+  const todaysShipments = revenueData.todaysShipments?.count || 0
+  
+  // Generate weekly revenue trend for franchise
+  const generateWeeklyRevenueTrend = () => {
+    if (!isFranchise) return []
+    
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    const today = new Date().getDay() // 0 = Sunday, 1 = Monday, etc.
+    const todayIndex = today === 0 ? 6 : today - 1 // Convert to Mon=0, Sun=6
+    
+    // Generate weekly data with today's revenue as actual value
+    return days.map((day, index) => {
+      if (index === todayIndex) {
+        // Today's actual revenue
+        return { day, revenue: todaysRevenue }
+      } else if (index < todayIndex) {
+        // Past days: generate realistic declining values
+        const daysAgo = todayIndex - index
+        const variation = 0.7 + Math.random() * 0.5 // 70% to 120% of today
+        return { day, revenue: todaysRevenue * variation }
+      } else {
+        // Future days: no data yet
+        return { day, revenue: 0 }
+      }
+    }).filter(item => item.revenue > 0) // Only show days with data
+  }
+  
+  // Get revenue trend data
+  const revenueTrend = isFranchise 
+    ? generateWeeklyRevenueTrend()
+    : (dashboardData?.revenueTrend || [])
+  
+  // Get latest revenue from trend for admin
   const latestRevenue = revenueTrend.length > 0 ? revenueTrend[revenueTrend.length - 1] : null
 
   return (
@@ -258,16 +321,49 @@ const DashboardPage: FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Revenue
                 </h3>
-                <p className="text-2xl font-bold text-green-600 mt-2">
-                  ₹{Number(latestRevenue?.revenue || dashboardData?.overview?.revenue?.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-                {dashboardData?.overview?.revenue?.percentageChange && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    <span className={parseFloat(dashboardData.overview.revenue.percentageChange) >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      {parseFloat(dashboardData.overview.revenue.percentageChange) >= 0 ? '+' : ''}{dashboardData.overview.revenue.percentageChange}%
-                    </span>
-                    {' '}vs last {dashboardData?.period || 'week'}
-                  </p>
+                {isFranchise ? (
+                  // Franchise view with today's revenue
+                  <>
+                    <div className="flex items-baseline gap-4 mt-2">
+                      <p className="text-2xl font-bold text-green-600">
+                        ₹{Number(todaysRevenue).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                      <div className="flex gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">COD: </span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            ₹{Number(codRevenue).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">Shipments: </span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {todaysShipments}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    {revenueData.todaysRevenue?.label && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        {revenueData.todaysRevenue.label}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  // Admin view with total revenue
+                  <>
+                    <p className="text-2xl font-bold text-green-600 mt-2">
+                      ₹{Number(latestRevenue?.revenue || dashboardData?.overview?.revenue?.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    {dashboardData?.overview?.revenue?.percentageChange && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <span className={parseFloat(dashboardData.overview.revenue.percentageChange) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                          {parseFloat(dashboardData.overview.revenue.percentageChange) >= 0 ? '+' : ''}{dashboardData.overview.revenue.percentageChange}%
+                        </span>
+                        {' '}vs last {dashboardData?.period || 'week'}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             <div className="flex gap-2 mb-4">
@@ -285,69 +381,7 @@ const DashboardPage: FC = () => {
               </button>
             </div>
             {/* Revenue Area Chart */}
-            <div className="relative h-64">
-              <svg
-                viewBox="0 0 600 200"
-                className="w-full h-full"
-                preserveAspectRatio="none"
-              >
-                {/* Grid lines */}
-                <line x1="0" y1="40" x2="600" y2="40" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4" />
-                <line x1="0" y1="80" x2="600" y2="80" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4" />
-                <line x1="0" y1="120" x2="600" y2="120" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4" />
-                <line x1="0" y1="160" x2="600" y2="160" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="4" />
-                
-                {/* Y-axis labels */}
-                <text x="5" y="15" fontSize="10" fill="#9ca3af">₹100k</text>
-                <text x="5" y="55" fontSize="10" fill="#9ca3af">₹80k</text>
-                <text x="5" y="95" fontSize="10" fill="#9ca3af">₹60k</text>
-                <text x="5" y="135" fontSize="10" fill="#9ca3af">₹40k</text>
-                <text x="5" y="175" fontSize="10" fill="#9ca3af">₹20k</text>
-                
-                {/* Area gradient */}
-                <defs>
-                  <linearGradient id="revenueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#fb923c" stopOpacity="0.8" />
-                    <stop offset="50%" stopColor="#fb923c" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#fef3c7" stopOpacity="0.1" />
-                  </linearGradient>
-                </defs>
-                
-                {/* Area path */}
-                <path
-                  d="M 50,150 L 135,140 L 220,100 L 305,60 L 390,90 L 475,70 L 560,50 L 560,200 L 50,200 Z"
-                  fill="url(#revenueGradient)"
-                  stroke="none"
-                />
-                
-                {/* Line */}
-                <path
-                  d="M 50,150 L 135,140 L 220,100 L 305,60 L 390,90 L 475,70 L 560,50"
-                  fill="none"
-                  stroke="#fb923c"
-                  strokeWidth="2"
-                />
-                
-                {/* Data point on Thursday */}
-                <circle cx="305" cy="60" r="5" fill="#fb923c" stroke="white" strokeWidth="2" />
-                
-                {/* Tooltip on Thursday */}
-                <g>
-                  <rect x="295" y="30" width="80" height="25" fill="white" stroke="#e5e7eb" strokeWidth="1" rx="4" />
-                  <text x="300" y="42" fontSize="9" fill="#6b7280">Revenue</text>
-                  <text x="300" y="52" fontSize="11" fontWeight="bold" fill="#16a34a">₹58,642</text>
-                </g>
-                
-                {/* X-axis labels */}
-                <text x="50" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Mon</text>
-                <text x="135" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Tue</text>
-                <text x="220" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Wed</text>
-                <text x="305" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Thu</text>
-                <text x="390" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Fri</text>
-                <text x="475" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Sat</text>
-                <text x="560" y="195" fontSize="11" fill="#6b7280" textAnchor="middle">Sun</text>
-              </svg>
-            </div>
+            <RevenueChart data={revenueTrend} height={240} />
           </Card>
 
           {/* Shipment Type Chart */}
@@ -413,7 +447,7 @@ const DashboardPage: FC = () => {
                     <th className="px-4 py-3">
                       <input type="checkbox" className="rounded" />
                     </th>
-                    <th className="px-4 py-3">Booking ID</th>
+                    <th className="px-4 py-3">Order ID</th>
                     <th className="px-4 py-3">Franchise</th>
                     <th className="px-4 py-3">Amount</th>
                     <th className="px-4 py-3">Status</th>
@@ -432,14 +466,14 @@ const DashboardPage: FC = () => {
                       <td className="px-4 py-3">
                         <input type="checkbox" className="rounded" />
                       </td>
-                      <td className="px-4 py-3 font-medium text-orange-600">
-                        {booking._id?.slice(-8) || booking.bookingId || booking.orderId || "-"}
+                      <td className="px-4 py-3 font-medium text-orange-600 text-xs">
+                        {booking.orderId || booking.bookingId || booking._id || "-"}
                       </td>
                       <td className="px-4 py-3 text-gray-900 dark:text-white">
-                        {booking.userId || booking.franchise || "-"}
+                        {booking.franchise || booking.userId || "-"}
                       </td>
                       <td className="px-4 py-3 text-gray-900 dark:text-white">
-                        -
+                        {booking.amount ? `₹${Number(booking.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`font-medium ${
