@@ -7,14 +7,20 @@ import { usePincodeStore } from "../../store/pincodeStore"
 
 const ServiceAvailabilityPage: FC = () => {
   const [pincode, setPincode] = useState("")
-  const { pincodeData, loading, error, fetchPincodeData, clearData } = usePincodeStore()
+  const { 
+    deliveryPincodeData, 
+    deliveryLoading, 
+    deliveryError, 
+    fetchDeliveryPincode, 
+    clearData 
+  } = usePincodeStore()
 
   const handleCheckServiceability = () => {
     if (!pincode.trim() || pincode.length !== 6) {
       toast.error("Please enter a valid 6-digit pincode")
       return
     }
-    fetchPincodeData(pincode)
+    fetchDeliveryPincode(pincode)
   }
 
   const handleExportFile = () => {
@@ -77,9 +83,9 @@ const ServiceAvailabilityPage: FC = () => {
                 </div>
                 <Button
                   onClick={handleCheckServiceability}
-                  disabled={loading || pincode.length !== 6}
+                  disabled={deliveryLoading || pincode.length !== 6}
                   className="bg-gray-900 hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700"
-                  isProcessing={loading}
+                  isProcessing={deliveryLoading}
                 >
                   Check Serviceability
                 </Button>
@@ -87,7 +93,7 @@ const ServiceAvailabilityPage: FC = () => {
             </div>
 
             {/* Results Section */}
-            {pincodeData && (
+            {deliveryPincodeData && (
               <div className="mt-8 space-y-6">
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -99,19 +105,19 @@ const ServiceAvailabilityPage: FC = () => {
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Pincode</div>
                       <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {pincodeData.postal_code.pin}
+                        {deliveryPincodeData.postal_code.pin}
                       </div>
                     </div>
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">City</div>
                       <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {pincodeData.postal_code.city}
+                        {deliveryPincodeData.postal_code.city}
                       </div>
                     </div>
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg col-span-2">
                       <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">State</div>
                       <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {pincodeData.postal_code.state_code}
+                        {deliveryPincodeData.postal_code.state_code}
                       </div>
                     </div>
                   </div>
@@ -120,41 +126,41 @@ const ServiceAvailabilityPage: FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className={`h-3 w-3 rounded-full ${pincodeData.postal_code.pre_paid === "Y" || pincodeData.postal_code.cod === "Y" ? "bg-green-500" : "bg-red-500"}`}></div>
+                        <div className={`h-3 w-3 rounded-full ${deliveryPincodeData.postal_code.pre_paid === "Y" || deliveryPincodeData.postal_code.cod === "Y" ? "bg-green-500" : "bg-red-500"}`}></div>
                         <span className="font-medium text-gray-900 dark:text-white">Serviceable</span>
                       </div>
-                      <span className={`text-sm font-semibold ${pincodeData.postal_code.pre_paid === "Y" || pincodeData.postal_code.cod === "Y" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                        {pincodeData.postal_code.pre_paid === "Y" || pincodeData.postal_code.cod === "Y" ? "Available" : "Not Available"}
+                      <span className={`text-sm font-semibold ${deliveryPincodeData.postal_code.pre_paid === "Y" || deliveryPincodeData.postal_code.cod === "Y" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                        {deliveryPincodeData.postal_code.pre_paid === "Y" || deliveryPincodeData.postal_code.cod === "Y" ? "Available" : "Not Available"}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className={`h-3 w-3 rounded-full ${pincodeData.postal_code.pre_paid === "Y" ? "bg-green-500" : "bg-red-500"}`}></div>
+                        <div className={`h-3 w-3 rounded-full ${deliveryPincodeData.postal_code.pre_paid === "Y" ? "bg-green-500" : "bg-red-500"}`}></div>
                         <span className="font-medium text-gray-900 dark:text-white">Express Delivery</span>
                       </div>
-                      <span className={`text-sm font-semibold ${pincodeData.postal_code.pre_paid === "Y" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                        {pincodeData.postal_code.pre_paid === "Y" ? "Available" : "Not Available"}
+                      <span className={`text-sm font-semibold ${deliveryPincodeData.postal_code.pre_paid === "Y" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                        {deliveryPincodeData.postal_code.pre_paid === "Y" ? "Available" : "Not Available"}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className={`h-3 w-3 rounded-full ${pincodeData.postal_code.pickup === "Y" ? "bg-green-500" : "bg-red-500"}`}></div>
+                        <div className={`h-3 w-3 rounded-full ${deliveryPincodeData.postal_code.pickup === "Y" ? "bg-green-500" : "bg-red-500"}`}></div>
                         <span className="font-medium text-gray-900 dark:text-white">Pickup Service</span>
                       </div>
-                      <span className={`text-sm font-semibold ${pincodeData.postal_code.pickup === "Y" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                        {pincodeData.postal_code.pickup === "Y" ? "Available" : "Not Available"}
+                      <span className={`text-sm font-semibold ${deliveryPincodeData.postal_code.pickup === "Y" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                        {deliveryPincodeData.postal_code.pickup === "Y" ? "Available" : "Not Available"}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className={`h-3 w-3 rounded-full ${pincodeData.postal_code.cod === "Y" ? "bg-green-500" : "bg-red-500"}`}></div>
+                        <div className={`h-3 w-3 rounded-full ${deliveryPincodeData.postal_code.cod === "Y" ? "bg-green-500" : "bg-red-500"}`}></div>
                         <span className="font-medium text-gray-900 dark:text-white">Cash on Delivery (COD)</span>
                       </div>
-                      <span className={`text-sm font-semibold ${pincodeData.postal_code.cod === "Y" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                        {pincodeData.postal_code.cod === "Y" ? "Available" : "Not Available"}
+                      <span className={`text-sm font-semibold ${deliveryPincodeData.postal_code.cod === "Y" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                        {deliveryPincodeData.postal_code.cod === "Y" ? "Available" : "Not Available"}
                       </span>
                     </div>
                   </div>
@@ -162,8 +168,20 @@ const ServiceAvailabilityPage: FC = () => {
               </div>
             )}
 
+            {/* Error State */}
+            {deliveryError && !deliveryPincodeData && (
+              <div className="text-center py-8">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
+                  <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <p className="text-red-600 dark:text-red-400 font-medium">{deliveryError}</p>
+              </div>
+            )}
+
             {/* Empty State */}
-            {!pincodeData && (
+            {!deliveryPincodeData && !deliveryError && (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 <svg
                   className="mx-auto h-12 w-12 text-gray-400"
