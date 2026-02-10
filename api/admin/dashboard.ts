@@ -77,17 +77,17 @@ export default async function handler(request: VercelRequest, response: VercelRe
     if (backendResponse.status === 401 || backendResponse.status === 403) {
       console.log('[Admin Dashboard API] Auth error from backend, returning mock data');
       
-      const { type } = request.query;
+      const { type, period = 'week' } = request.query;
       
       if (type === 'top-franchises') {
         return response.status(200).json({
           success: true,
           data: [
-            { name: "Mumbai Franchise", shipments: 245, revenue: 125000, id: "1" },
-            { name: "Delhi Franchise", shipments: 198, revenue: 98000, id: "2" },
-            { name: "Bangalore Franchise", shipments: 176, revenue: 87500, id: "3" },
-            { name: "Chennai Franchise", shipments: 142, revenue: 71000, id: "4" },
-            { name: "Pune Franchise", shipments: 128, revenue: 64000, id: "5" }
+            { franchiseId: "1", franchiseName: "Mumbai Franchise", shipmentCount: 245, totalRevenue: 125000 },
+            { franchiseId: "2", franchiseName: "Delhi Franchise", shipmentCount: 198, totalRevenue: 98000 },
+            { franchiseId: "3", franchiseName: "Bangalore Franchise", shipmentCount: 176, totalRevenue: 87500 },
+            { franchiseId: "4", franchiseName: "Chennai Franchise", shipmentCount: 142, totalRevenue: 71000 },
+            { franchiseId: "5", franchiseName: "Pune Franchise", shipmentCount: 128, totalRevenue: 64000 }
           ]
         });
       }
@@ -96,36 +96,46 @@ export default async function handler(request: VercelRequest, response: VercelRe
         return response.status(200).json({
           success: true,
           data: {
-            totalBalance: 850000,
-            totalRecharges: 1250000,
-            totalDeductions: 400000,
-            activeUsers: 48,
-            averageBalance: 17708.33
+            totalBalance: 184.6,
+            totalWallets: 5,
+            credits: {
+              amount: 308,
+              count: 11
+            },
+            debits: {
+              amount: 123.4,
+              count: 3
+            }
           }
         });
       }
       
-      // Main dashboard
+      // Main dashboard - matching backend structure
       return response.status(200).json({
         success: true,
         data: {
           overview: {
-            activeShipments: 0,
-            inTransit: 0,
-            outForDelivery: 0,
-            totalShipments: 0,
-            currentPeriod: 0
+            activeShipments: {
+              total: 0,
+              inTransit: 0,
+              outForDelivery: 0
+            },
+            totalShipments: {
+              count: 0,
+              currentPeriod: 0,
+              percentageChange: "0.0"
+            },
+            revenue: {
+              total: 0,
+              percentageChange: "0.0",
+              currency: "₹"
+            },
+            activeAgencies: 0
           },
-          revenue: {
-            total: 0,
-            period: 'week',
-            dailyRevenue: [],
-            weeklyRevenue: [],
-            monthlyRevenue: [],
-            yearlyRevenue: []
-          },
+          revenueTrend: [],
+          shipmentTypeDistribution: [],
           recentBookings: [],
-          shipmentTypeDistribution: []
+          period: period
         }
       });
     }
@@ -145,16 +155,16 @@ export default async function handler(request: VercelRequest, response: VercelRe
     
     const { type, period = 'week', limit = '5' } = request.query;
     
-    // Mock data for different endpoints
+    // Mock data for different endpoints - matching backend structure
     if (type === 'top-franchises') {
       return response.status(200).json({
         success: true,
         data: [
-          { name: "Mumbai Franchise", shipments: 245, revenue: 125000, id: "1" },
-          { name: "Delhi Franchise", shipments: 198, revenue: 98000, id: "2" },
-          { name: "Bangalore Franchise", shipments: 176, revenue: 87500, id: "3" },
-          { name: "Chennai Franchise", shipments: 142, revenue: 71000, id: "4" },
-          { name: "Pune Franchise", shipments: 128, revenue: 64000, id: "5" }
+          { franchiseId: "1", franchiseName: "Mumbai Franchise", shipmentCount: 245, totalRevenue: 125000 },
+          { franchiseId: "2", franchiseName: "Delhi Franchise", shipmentCount: 198, totalRevenue: 98000 },
+          { franchiseId: "3", franchiseName: "Bangalore Franchise", shipmentCount: 176, totalRevenue: 87500 },
+          { franchiseId: "4", franchiseName: "Chennai Franchise", shipmentCount: 142, totalRevenue: 71000 },
+          { franchiseId: "5", franchiseName: "Pune Franchise", shipmentCount: 128, totalRevenue: 64000 }
         ]
       });
     }
@@ -163,45 +173,47 @@ export default async function handler(request: VercelRequest, response: VercelRe
       return response.status(200).json({
         success: true,
         data: {
-          totalBalance: 850000,
-          totalRecharges: 1250000,
-          totalDeductions: 400000,
-          activeUsers: 48,
-          averageBalance: 17708.33
+          totalBalance: 184.6,
+          totalWallets: 5,
+          credits: {
+            amount: 308,
+            count: 11
+          },
+          debits: {
+            amount: 123.4,
+            count: 3
+          }
         }
       });
     }
     
-    // Main dashboard data
+    // Main dashboard data - matching backend structure
     return response.status(200).json({
       success: true,
       data: {
         overview: {
-          activeShipments: 0,
-          inTransit: 0,
-          outForDelivery: 0,
-          totalShipments: 0,
-          currentPeriod: 0
+          activeShipments: {
+            total: 0,
+            inTransit: 0,
+            outForDelivery: 0
+          },
+          totalShipments: {
+            count: 0,
+            currentPeriod: 0,
+            percentageChange: "0.0"
+          },
+          revenue: {
+            total: 0,
+            percentageChange: "0.0",
+            currency: "₹"
+          },
+          activeAgencies: 0
         },
-        revenue: {
-          total: 0,
-          period: period,
-          dailyRevenue: [],
-          weeklyRevenue: [],
-          monthlyRevenue: [],
-          yearlyRevenue: []
-        },
+        revenueTrend: [],
+        shipmentTypeDistribution: [],
         recentBookings: [],
-        shipmentTypeDistribution: []
+        period: period
       }
-    });
-  }
-}
-    }
-
-    return response.status(500).json({ 
-      success: false, 
-      message: error.message || 'Failed to fetch admin dashboard data' 
     });
   }
 }

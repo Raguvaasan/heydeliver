@@ -56,11 +56,11 @@ const PaymentCallbackPage: FC = () => {
   }, [searchParams, verifyPayment, fetchBalance])
 
   const handleGoToWallet = () => {
-    navigate("/admin/wallet")
+    navigate("/wallet")
   }
 
   const handleTryAgain = () => {
-    navigate("/admin/wallet/add")
+    navigate("/wallet/add")
   }
 
   if (verifying) {
@@ -112,7 +112,7 @@ const PaymentCallbackPage: FC = () => {
                     color="gray"
                     size="lg"
                     className="w-full"
-                    onClick={() => navigate("/admin/dashboard")}
+                    onClick={() => navigate("/dashboard")}
                   >
                     Go to Dashboard
                   </Button>

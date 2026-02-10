@@ -64,22 +64,26 @@ export default async function handler(request: VercelRequest, response: VercelRe
         success: true,
         data: {
           overview: {
-            activeShipments: 0,
-            inTransit: 0,
-            outForDelivery: 0,
-            totalShipments: 0,
-            currentPeriod: 0
+            activeShipments: {
+              total: 0,
+              inTransit: 0,
+              outForDelivery: 0
+            },
+            totalShipments: {
+              count: 0,
+              currentPeriod: 0,
+              percentageChange: "0.0"
+            },
+            revenue: {
+              total: 0,
+              percentageChange: "0.0",
+              currency: "₹"
+            }
           },
-          revenue: {
-            total: 0,
-            period: 'week',
-            dailyRevenue: [],
-            weeklyRevenue: [],
-            monthlyRevenue: [],
-            yearlyRevenue: []
-          },
+          revenueTrend: [],
+          shipmentTypeDistribution: [],
           recentBookings: [],
-          shipmentTypeDistribution: []
+          period: 'week'
         }
       });
     }
@@ -105,22 +109,26 @@ export default async function handler(request: VercelRequest, response: VercelRe
       success: true,
       data: {
         overview: {
-          activeShipments: 0,
-          inTransit: 0,
-          outForDelivery: 0,
-          totalShipments: 0,
-          currentPeriod: 0
+          activeShipments: {
+            total: 0,
+            inTransit: 0,
+            outForDelivery: 0
+          },
+          totalShipments: {
+            count: 0,
+            currentPeriod: 0,
+            percentageChange: "0.0"
+          },
+          revenue: {
+            total: 0,
+            percentageChange: "0.0",
+            currency: "₹"
+          }
         },
-        revenue: {
-          total: 0,
-          period: 'week',
-          dailyRevenue: [],
-          weeklyRevenue: [],
-          monthlyRevenue: [],
-          yearlyRevenue: []
-        },
+        revenueTrend: [],
+        shipmentTypeDistribution: [],
         recentBookings: [],
-        shipmentTypeDistribution: []
+        period: 'week'
       }
     });
   }

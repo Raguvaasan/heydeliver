@@ -115,7 +115,7 @@ const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
           {/* Wallet Balance (Franchise) or Notifications (Admin) */}
           {loginType === "franchise" || loginType === "staff" ? (
             <div 
-              onClick={() => navigate("/admin/wallet")}
+              onClick={() => navigate("/wallet")}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
             >
               <HiCurrencyRupee className="h-5 w-5" />
