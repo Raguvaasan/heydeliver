@@ -390,11 +390,11 @@ const WalletPage: FC = () => {
       <Modal
         show={showRechargeModal}
         onClose={() => setShowRechargeModal(false)}
-        size="lg"
+        // size="lg"
       >
         <Modal.Header>Recharge Wallet</Modal.Header>
         <Modal.Body>
-          <div className="space-y-6">
+          <div className="space-y-6 h-[48vh] overflow-auto">
             <div className="text-center py-4">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-lg mb-3">
                 <HiCurrencyRupee className="w-10 h-10 text-gray-600" />

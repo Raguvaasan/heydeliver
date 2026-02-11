@@ -307,6 +307,18 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   createDelhiveryShipment: async (shipmentData: DelhiveryShipment, pickupLocation: string) => {
     set({ loading: true, error: null })
     try {
+      const loginType = sessionStorage.getItem("loginType") || "admin"
+      const dashboardEndpoint = loginType === "admin" ? "/admin/dashboard" : "/dashboard"
+      const dashboardParams = loginType === "admin" ? { period: "week" } : {}
+
+      const dashboardResponse = await http.get(dashboardEndpoint, { params: dashboardParams })
+      const dashboardData = dashboardResponse.data?.data || dashboardResponse.data
+      const walletAmount = Number(dashboardData?.overview?.wallet?.amount || 0)
+
+      if (walletAmount <= 50) {
+        throw new Error("Insufficient balance")
+      }
+
       const formData = new URLSearchParams()
       formData.append('format', 'json')
       formData.append('data', JSON.stringify({

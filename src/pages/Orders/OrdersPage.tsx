@@ -54,7 +54,7 @@ const OrdersPage: FC = () => {
     }
   }, [deleteOrder])
 
-  const handleInvoice = useCallback(async (orderId: string) => {
+   const handleInvoice = useCallback(async (orderId: string) => {
     try {
       const authToken = sessionStorage.getItem("authToken")
       if (!authToken) {
@@ -89,12 +89,26 @@ const OrdersPage: FC = () => {
 
       const senderName = pickupLocation?.name || "Sender"
       const senderAddress = order?.pickupLocation?.address || order?.senderAddress || ""
+      const senderPhone = order?.pickupLocation?.phone || order?.senderPhone || ""
+
       const receiverName = consignee?.name || "Receiver"
       const receiverAddress = consignee?.address || ""
       const receiverCity = consignee?.city || ""
       const receiverState = consignee?.state || ""
       const receiverPin = consignee?.pin || ""
       const receiverPhone = consignee?.phone || ""
+
+      const customerName = order?.customerName || order?.customer || ""
+      const customerPhone = order?.customerNumber || order?.phone || ""
+      const customerAddress =
+        order?.customerAddress ||
+        order?.deliveryAddress ||
+        order?.consignee?.address ||
+        ""
+      const amount = order?.amount || order?.totalAmount || ""
+      const franchiseGstin = order?.gstNumber || order?.gstin || ""
+      const orderDate = order?.createdAt || order?.updatedAt || ""
+      const orderDateText = orderDate ? new Date(orderDate).toLocaleDateString() : ""
 
       const doc = new jsPDF({
         orientation: "portrait",
@@ -106,7 +120,8 @@ const OrdersPage: FC = () => {
       const marginY = 0.2
       const labelWidth = 4
       const labelHeight = 6
-      let y = 0.5
+      const centerX = labelWidth / 2
+      let y = 0.4
 
       // Outer border
       doc.setDrawColor(0)
@@ -115,44 +130,72 @@ const OrdersPage: FC = () => {
 
       // Header
       doc.setFont("helvetica", "bold")
-      doc.setFontSize(11)
-      doc.text("SHIPPING LABEL", marginX + 0.1, y)
+      doc.setFontSize(12)
+      const heyText = "Hey"
+      const deliverText = "Deliver"
+      const heyWidth = doc.getTextWidth(heyText)
+      const deliverWidth = doc.getTextWidth(deliverText)
+      const logoStartX = centerX - (heyWidth + deliverWidth) / 2
+      doc.setTextColor(245, 158, 11)
+      doc.text(heyText, logoStartX, y)
+      doc.setTextColor(0, 0, 0)
+      doc.text(deliverText, logoStartX + heyWidth, y)
+      doc.setFont("helvetica", "normal")
+      doc.setFontSize(9)
+      const franchiseLines = [
+        senderName,
+        senderAddress,
+        `Phone: ${senderPhone || ""}`,
+        `GSTIN: ${franchiseGstin || ""}`,
+      ].filter((line) => line !== "")
+      const franchiseStartY = y + 0.16
+      doc.text(franchiseLines, centerX, franchiseStartY, { align: "center" })
+      const headerEndY = franchiseStartY + (franchiseLines.length * 0.16)
+      y = headerEndY + 0.08
 
       // AWB box
-      y += 0.28
+      y += 0.2
       doc.setLineWidth(0.02)
       doc.rect(marginX + 0.1, y, labelWidth - (marginX * 2) - 0.2, 0.42)
       doc.setFontSize(12)
-      doc.text(`Order ID: ${awb}`, marginX + 0.2, y + 0.28)
+      doc.text(`AWB / Tracking: ${awb}`, marginX + 0.2, y + 0.28)
+      doc.setFont("helvetica", "normal")
+      doc.setFontSize(9)
+      doc.text(orderDateText ? `Date: ${orderDateText}` : "Date:", labelWidth - marginX - 0.1, headerEndY + 0.04, { align: "right" })
 
-      // Sender block
+      // Customer details
       y += 0.7
       doc.setFontSize(10)
       doc.setFont("helvetica", "bold")
-      doc.text("SENDER", marginX + 0.1, y)
+      doc.text("CUSTOMER DETAILS", marginX + 0.1, y)
       y += 0.16
       doc.setFont("helvetica", "normal")
-      const senderLines = doc.splitTextToSize(
-        `${senderName}${senderAddress ? `, ${senderAddress}` : ""}`,
-        3.5
-      )
-      doc.text(senderLines, marginX + 0.1, y)
-      y += senderLines.length * 0.16 + 0.08
+      const customerLines = [
+        `Name: `,
+        `Address: `,
+        `Phone: `,
+      ]
+      doc.text(customerLines, marginX + 0.1, y)
+      y += customerLines.length * 0.16 + 0.1
 
       // Receiver block
       doc.setFont("helvetica", "bold")
       doc.text("RECEIVER", marginX + 0.1, y)
       y += 0.16
       doc.setFont("helvetica", "normal")
-      const receiverLines = doc.splitTextToSize(
-        `${receiverName}, ${receiverAddress}, ${receiverCity}, ${receiverState} ${receiverPin}`,
-        3.5
-      )
-      doc.text(receiverLines, marginX + 0.1, y)
-      y += receiverLines.length * 0.16 + 0.08
-      if (receiverPhone) {
-        doc.text(`Phone: ${receiverPhone}`, marginX + 0.1, y)
-        y += 0.2
+      const receiverLines = [
+        `${receiverName || ""}`,
+        `${receiverAddress || ""}`,
+        `${receiverCity || ""}`,
+        `${receiverState || ""}`,
+        `${receiverPin || ""}`,
+        `Phone: ${receiverPhone || ""}`,
+      ]
+      if (receiverLines.length > 0) {
+        doc.text(receiverLines, marginX + 0.1, y)
+        y += receiverLines.length * 0.16 + 0.1
+      } else {
+        y += 0.24
       }
 
       // Shipment details block
@@ -160,23 +203,21 @@ const OrdersPage: FC = () => {
       doc.text("SHIPMENT DETAILS", marginX + 0.1, y)
       y += 0.16
       doc.setFont("helvetica", "normal")
-      const shipmentLine = [
-        shipmentDetails?.shippingMode ? `Mode: ${shipmentDetails.shippingMode}` : "",
-        shipmentDetails?.paymentMode ? `Payment: ${shipmentDetails.paymentMode}` : "",
-        shipmentDetails?.weight ? `Weight: ${shipmentDetails.weight}` : "",
-      ].filter(Boolean).join(" | ")
-      if (shipmentLine) {
-        doc.text(shipmentLine, marginX + 0.1, y)
-        y += 0.18
-      }
       const dims = shipmentDetails?.dimensions || {}
-      const dimensionLine =
-        dims?.width || dims?.height
-          ? `Dimensions: ${dims.width || "-"} x ${dims.height || "-"}`
-          : ""
-      if (dimensionLine) {
-        doc.text(dimensionLine, marginX + 0.1, y)
-      }
+      const shipmentLines = [
+        `Payment: ${shipmentDetails?.paymentMode || ""}`,
+        `Mode: ${shipmentDetails?.shippingMode || ""}`,
+        `Weight: ${shipmentDetails?.weight || ""}`,
+      ]
+      doc.text(shipmentLines, marginX + 0.1, y)
+      y += shipmentLines.length * 0.16 + 0.1
+
+      // Amount block
+      doc.setFont("helvetica", "bold")
+      doc.text("AMOUNT", marginX + 0.1, y)
+      y += 0.16
+      doc.setFont("helvetica", "normal")
+      doc.text(amount ? `₹ ${amount}` : "", marginX + 0.1, y)
 
       const pdfUrl = doc.output("bloburl")
       window.open(pdfUrl, "_blank", "noopener,noreferrer")
@@ -185,7 +226,6 @@ const OrdersPage: FC = () => {
       toast.error(error?.message || "Failed to generate invoice")
     }
   }, [])
-
   const getStatusColor = useCallback((status: string) => {
     const statusLower = status?.toLowerCase()
     if (statusLower === "delivered") return "success"

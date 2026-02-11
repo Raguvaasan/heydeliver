@@ -86,26 +86,12 @@ const DashboardPage: FC = () => {
   const fetchDashboardData = async () => {
     setLoading(true)
     try {
-      console.log("Fetching dashboard data...")
-      
-      // Use admin endpoint for admin users, regular endpoint for franchise
       const endpoint = loginType === "admin" ? "/admin/dashboard" : "/dashboard"
       const params = loginType === "admin" ? { period: "week" } : {}
-      
-      console.log(`Calling ${endpoint} with params:`, params)
       const response = await http.get(endpoint, { params })
-      console.log("Dashboard API response:", response.data)
-      
       const data = response.data?.data || response.data
-      console.log("Parsed dashboard data:", data)
-      console.log("Overview:", data?.overview)
-      console.log("Revenue:", data?.revenue)
-      console.log("Total Shipments:", data?.totalShipments)
-      console.log("Recent Bookings:", data?.recentBookings)
-      console.log("Shipment Type Distribution:", data?.shipmentTypeDistribution)
       setDashboardData(data)
     } catch (error: any) {
-      console.error("Error fetching dashboard data:", error)
       toast.error("Failed to load dashboard data")
       setDashboardData({})
     } finally {
