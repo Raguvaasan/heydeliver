@@ -40,7 +40,7 @@ export const useMarkupStore = create<MarkupState>((set) => ({
   fetchRateCalculatorMarkup: async () => {
     set({ loading: true, error: null })
     try {
-      const response = await http.get("/api/v1/settings/rate-calculator-markup")
+      const response = await http.get("/settings/rate-calculator-markup")
       
       if (response.data.success) {
         set({
@@ -76,7 +76,7 @@ export const useMarkupStore = create<MarkupState>((set) => ({
   saveRateCalculatorMarkup: async (markupType: "percentage" | "fixed", markupValue: number) => {
     set({ loading: true, error: null })
     try {
-      const response = await http.post("/api/v1/settings/rate-calculator-markup", {
+      const response = await http.post("/settings/rate-calculator-markup", {
         markup_type: markupType,
         markup_value: markupValue,
       })
@@ -103,7 +103,7 @@ export const useMarkupStore = create<MarkupState>((set) => ({
   fetchRateCardMarkup: async () => {
     set({ loading: true, error: null })
     try {
-      const response = await http.get("/api/v1/settings/rate-card-markup")
+      const response = await http.get("/settings/rate-card-markup")
       
       if (response.data.success) {
         set({
@@ -137,7 +137,7 @@ export const useMarkupStore = create<MarkupState>((set) => ({
   saveRateCardMarkup: async (markupType: "percentage" | "fixed", markupValue: number) => {
     set({ loading: true, error: null })
     try {
-      const response = await http.post("/api/v1/settings/rate-card-markup", {
+      const response = await http.post("/settings/rate-card-markup", {
         markup_type: markupType,
         markup_value: markupValue,
       })

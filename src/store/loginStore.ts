@@ -6,22 +6,36 @@ export const loginAdminUser = (
   password: string,
   captchaToken?: string
 ) => {
-  // Leading slash ensures axios joins with baseURL correctly (e.g., /api + /admin/...)
-  return http.post("/admin/auth/login", { email, password, captchaToken })
+  const payload: any = {
+    email: email,
+    password: password
+  }
+  if (captchaToken) {
+    payload.captchaToken = captchaToken
+  }
+  return http.post("/admin/auth/login", payload)
 }
 
 export const loginFranchiseUser = (
   username: string,
   password: string
 ) => {
-  return http.post("/admin/agency/login", { username, password })
+  const payload = {
+    username: username.trim(),
+    password: password.trim()
+  }
+  return http.post("/admin/agency/login", payload)
 }
 
 export const loginStaffUser = (
   username: string,
   password: string
 ) => {
-  return http.post("/admin/staff/login", { username, password })
+  const payload = {
+    username: username.trim(),
+    password: password.trim()
+  }
+  return http.post("/admin/staff/login/headquarter", payload)
 }
 
 interface Profile {
