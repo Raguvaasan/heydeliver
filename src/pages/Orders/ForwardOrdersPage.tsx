@@ -1,6 +1,6 @@
 import { FC, useEffect, useState } from "react";
 import { Badge, Button, Card, Table, TextInput, Spinner, Select } from "flowbite-react";
-import { HiSearch, HiEye } from "react-icons/hi";
+import { HiSearch, HiEye, HiRefresh } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar";
 import http from "../../common/httpRequest";
@@ -44,6 +44,7 @@ const ForwardOrdersPage: FC = () => {
   const [limit] = useState(20);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [totalOrders, setTotalOrders] = useState(0);
+  const [recallingOrderId, setRecallingOrderId] = useState<string | null>(null);
 
   const fetchForwardOrders = async () => {
     setLoading(true);
@@ -121,6 +122,64 @@ const ForwardOrdersPage: FC = () => {
     fetchForwardOrders();
   }, [page, limit, statusFilter]);
 
+  const handleRecallOrder = async (order: any) => {
+    const rawOrderId = order.orderId || order.bookingId || order._id || order.id;
+    if (!rawOrderId) {
+      toast.error("Order ID not found");
+      return;
+    }
+    const orderId = String(rawOrderId);
+    const idParts = orderId.split("_");
+    const apiOrderId = idParts[idParts.length - 1] || orderId;
+
+    setRecallingOrderId(orderId);
+    try {
+      const detailRes = await http.get(`/shipment/order/${encodeURIComponent(apiOrderId)}`);
+      const data = detailRes.data?.data || detailRes.data || {};
+      const consignee = data.consignee || {};
+      const shipmentDetails = data.shipmentDetails || {};
+
+      const payload = {
+        name: data.name || consignee.name || order.name || order.customer || order.customerName || order.consigneeName || "",
+        add: data.add || consignee.address || order.add || order.address || order.deliveryAddress || "",
+        pin: data.pin || consignee.pin || order.pin || order.pincode || "",
+        city: data.city || consignee.city || order.city || order.deliveryCity || "",
+        state: data.state || consignee.state || order.state || order.deliveryState || "",
+        country: data.country || consignee.country || order.country || order.deliveryCountry || "India",
+        phone: data.phone || consignee.phone || order.phone || order.customerNumber || "",
+        paymentMode: data.paymentMode || shipmentDetails.paymentMode || order.paymentMode || order.payment_mode || "Prepaid",
+        status: "active",
+        fromName: data.fromName || "",
+        fromAdd: data.fromAdd || "",
+        fromPin: data.fromPin || "",
+        fromCity: data.fromCity || "",
+        fromState: data.fromState || "",
+        fromCountry: data.fromCountry || "India",
+        fromPhone: data.fromPhone || "",
+        returnPin: data.returnPin || data.return_pin || "",
+        returnCity: data.returnCity || data.return_city || "",
+        returnPhone: data.returnPhone || data.return_phone || "",
+        returnAdd: data.returnAdd || data.return_add || "",
+        returnState: data.returnState || data.return_state || "",
+        returnCountry: data.returnCountry || data.return_country || "India",
+        productsDesc: data.productsDesc || data.products_desc || "",
+        codAmount: String(data.codAmount || data.cod_amount || "0"),
+        totalAmount: String(data.totalAmount || data.total_amount || data.amount || order.totalAmount || order.total_amount || order.amount || "0"),
+        weight: String(data.weight || ""),
+        shippingMode: data.shippingMode || data.shipping_mode || "Surface",
+      };
+
+      await http.put(`/shipment/order/${encodeURIComponent(apiOrderId)}`, payload);
+      toast.success("Order recalled and set to active");
+      await fetchForwardOrders();
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || "Failed to recall order";
+      toast.error(errorMsg);
+    } finally {
+      setRecallingOrderId(null);
+    }
+  };
+
   const filteredOrders = orders.filter(
     (order: any) =>
       String(order.bookingId || order.orderId || order._id || "")
@@ -161,6 +220,7 @@ const ForwardOrdersPage: FC = () => {
               className="w-full md:w-48"
             >
               <option value="all">All Status</option>
+              <option value="active">Active</option>
               <option value="pending">Pending</option>
               <option value="in-transit">In Transit</option>
               <option value="delivered">Delivered</option>
@@ -270,18 +330,33 @@ const ForwardOrdersPage: FC = () => {
                         </div>
                       </Table.Cell>
                       <Table.Cell>
-                        <Button
-                          size="sm"
-                          color="light"
-                          onClick={() => {
-                            const orderId = order.orderId || order._id || order.id;
-                            console.log("Navigating to forward order:", orderId);
-                            navigate(`/orders/forward/${orderId}`);
-                          }}
-                        >
-                          <HiEye className="mr-2 h-4 w-4" />
-                          View
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            color="light"
+                            onClick={() => {
+                              const orderId = order.orderId || order._id || order.id;
+                              console.log("Navigating to forward order:", orderId);
+                              navigate(`/orders/forward/${orderId}`);
+                            }}
+                          >
+                            <HiEye className="mr-2 h-4 w-4" />
+                            View
+                          </Button>
+                          <Button
+                            size="sm"
+                            color="gray"
+                            title="Recall order"
+                            onClick={() => handleRecallOrder(order)}
+                            disabled={loading || recallingOrderId === String(order.orderId || order.bookingId || order._id || order.id)}
+                          >
+                            {recallingOrderId === String(order.orderId || order.bookingId || order._id || order.id) ? (
+                              <Spinner size="sm" />
+                            ) : (
+                              <HiRefresh className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
                       </Table.Cell>
                     </Table.Row>
                   ))

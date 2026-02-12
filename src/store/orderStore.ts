@@ -59,8 +59,23 @@ interface FreightrekShipmentRequest {
   phone: string
   order: string
   paymentMode: string
+  fromName?: string
+  fromAdd?: string
+  fromPin?: string
+  fromCity?: string
+  fromState?: string
+  fromCountry?: string
+  fromPhone?: string
+  returnPin?: string
+  returnCity?: string
+  returnPhone?: string
+  returnAdd?: string
+  returnState?: string
+  returnCountry?: string
   productsDesc?: string
   hsnCode?: string
+  codAmount?: string
+  orderDate?: string | null
   totalAmount?: string
   sellerName?: string
   sellerAdd?: string
@@ -110,7 +125,11 @@ interface OrderState {
   fetchActiveOrders: (page?: number, limit?: number) => Promise<void>
   getOrderById: (id: string) => Promise<void>
   addOrder: (data: Partial<Order>) => Promise<void>
-  createDelhiveryShipment: (shipmentData: DelhiveryShipment, pickupLocation: string) => Promise<DelhiveryResponse>
+  createDelhiveryShipment: (
+    shipmentData: DelhiveryShipment,
+    pickupLocation: string,
+    freightrekExtras?: Omit<FreightrekShipmentRequest, "pickupLocation" | "name" | "add" | "pin" | "city" | "state" | "country" | "phone" | "order" | "paymentMode">
+  ) => Promise<DelhiveryResponse>
   updateOrder: (id: string, data: Partial<Order>) => Promise<void>
   deleteOrder: (id: string) => Promise<void>
   clearSelectedOrder: () => void
@@ -259,19 +278,19 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       const shipmentData = shipmentRes.data?.data || shipmentRes.data
       const normalizedShipment = shipmentData
         ? {
-            ...shipmentData,
-            _id: shipmentData?.orderId,
-            bookingId: shipmentData?.orderId,
-            customer: shipmentData?.consignee?.name ?? "",
-            customerNumber: shipmentData?.consignee?.phone ?? "",
-            amount: shipmentData?.amount ?? shipmentData?.totalAmount ?? 0,
-            paymentMode: shipmentData?.shipmentDetails?.paymentMode ?? "",
-            deliveryAddress: shipmentData?.consignee?.address ?? "",
-            deliveryCity: shipmentData?.consignee?.city ?? "",
-            deliveryState: shipmentData?.consignee?.state ?? "",
-            deliveryPincode: shipmentData?.consignee?.pin ?? "",
-            bookingDate: shipmentData?.createdAt ?? "",
-          }
+          ...shipmentData,
+          _id: shipmentData?.orderId,
+          bookingId: shipmentData?.orderId,
+          customer: shipmentData?.consignee?.name ?? "",
+          customerNumber: shipmentData?.consignee?.phone ?? "",
+          amount: shipmentData?.amount ?? shipmentData?.totalAmount ?? 0,
+          paymentMode: shipmentData?.shipmentDetails?.paymentMode ?? "",
+          deliveryAddress: shipmentData?.consignee?.address ?? "",
+          deliveryCity: shipmentData?.consignee?.city ?? "",
+          deliveryState: shipmentData?.consignee?.state ?? "",
+          deliveryPincode: shipmentData?.consignee?.pin ?? "",
+          bookingDate: shipmentData?.createdAt ?? "",
+        }
         : null
 
       set({
@@ -304,7 +323,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-  createDelhiveryShipment: async (shipmentData: DelhiveryShipment, pickupLocation: string) => {
+  createDelhiveryShipment: async (shipmentData: DelhiveryShipment, pickupLocation: string, freightrekExtras) => {
     set({ loading: true, error: null })
     try {
       const loginType = sessionStorage.getItem("loginType") || "admin"
@@ -315,9 +334,9 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       const dashboardData = dashboardResponse.data?.data || dashboardResponse.data
       const walletAmount = Number(dashboardData?.overview?.wallet?.amount || 0)
 
-      if (walletAmount <= 50) {
-        throw new Error("Insufficient balance")
-      }
+      // if (walletAmount <= 50) {
+      //   throw new Error("Insufficient balance")
+      // }
 
       const formData = new URLSearchParams()
       formData.append('format', 'json')
@@ -329,7 +348,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       }))
 
       const response = await axios.post<DelhiveryResponse>(
-        '/delhivery-api/api/cmu/create.json',
+        // '/delhivery-api/api/cmu/create.json',
         formData.toString(),
         {
           headers: {
@@ -352,8 +371,23 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           phone: shipmentData.phone,
           order: shipmentData.order,
           paymentMode: shipmentData.payment_mode,
+          fromName: freightrekExtras?.fromName || "",
+          fromAdd: freightrekExtras?.fromAdd || "",
+          fromPin: freightrekExtras?.fromPin || "",
+          fromCity: freightrekExtras?.fromCity || "",
+          fromState: freightrekExtras?.fromState || "",
+          fromCountry: freightrekExtras?.fromCountry || "",
+          fromPhone: freightrekExtras?.fromPhone || "",
+          returnPin: freightrekExtras?.returnPin || shipmentData.return_pin || "",
+          returnCity: freightrekExtras?.returnCity || shipmentData.return_city || "",
+          returnPhone: freightrekExtras?.returnPhone || shipmentData.return_phone || "",
+          returnAdd: freightrekExtras?.returnAdd || shipmentData.return_add || "",
+          returnState: freightrekExtras?.returnState || shipmentData.return_state || "",
+          returnCountry: freightrekExtras?.returnCountry || shipmentData.return_country || "",
           productsDesc: shipmentData.products_desc || "",
           hsnCode: shipmentData.hsn_code || "",
+          codAmount: freightrekExtras?.codAmount || shipmentData.cod_amount || "0",
+          orderDate: freightrekExtras?.orderDate || shipmentData.order_date || null,
           totalAmount: shipmentData.total_amount || "",
           sellerName: shipmentData.seller_name || "",
           sellerAdd: shipmentData.seller_add || "",

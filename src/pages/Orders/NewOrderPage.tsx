@@ -33,7 +33,6 @@ const NewOrderPage: FC = () => {
   const loginType = sessionStorage.getItem("loginType")
   const profileDataStr = sessionStorage.getItem("profileData")
   const profileData = profileDataStr ? JSON.parse(profileDataStr) : null
-  console.log("swe", profileData)
   const [formData, setFormData] = useState({
     // Customer Details
     customerName: "",
@@ -57,6 +56,13 @@ const NewOrderPage: FC = () => {
     sellerName: "",
     sellerAddress: "",
     sellerInvoice: "",
+    fromName: "",
+    fromAdd: "",
+    fromPin: "",
+    fromCity: "",
+    fromState: "",
+    fromCountry: "India",
+    fromPhone: "",
     returnAddress: "",
     returnCity: "",
     returnState: "",
@@ -103,6 +109,7 @@ const NewOrderPage: FC = () => {
 
   const [showSellerDetails, setShowSellerDetails] = useState(false)
   const [showCustomerDetails, setShowCustomerDetails] = useState(false)
+  const [showFromDetails, setShowFromDetails] = useState(false)
   const [chargeableWeight, setChargeableWeight] = useState<number | null>(null)
   const [expressRate, setExpressRate] = useState<number | null>(null)
   const [surfaceRate, setSurfaceRate] = useState<number | null>(null)
@@ -308,11 +315,23 @@ const NewOrderPage: FC = () => {
         address_type: formData.addressType || "",
       }
 
-      const response = await createDelhiveryShipment(shipmentData, formData.pickupLocation)
-      
-      console.log("Shipment created:", response)
-      
-      // Navigate to orders page on success
+      const response = await createDelhiveryShipment(shipmentData, formData.pickupLocation, {
+        fromName: formData.fromName,
+        fromAdd: formData.fromAdd,
+        fromPin: formData.fromPin,
+        fromCity: formData.fromCity,
+        fromState: formData.fromState,
+        fromCountry: formData.fromCountry,
+        fromPhone: formData.fromPhone,
+        returnPin: formData.returnPincode || "",
+        returnCity: formData.returnCity || "",
+        returnPhone: formData.returnPhone || "",
+        returnAdd: formData.returnAddress || "",
+        returnState: formData.returnState || "",
+        returnCountry: formData.returnCountry || "",
+        codAmount: formData.paymentMode === "COD" ? formData.codAmount : "0",
+        orderDate: formData.orderDate || new Date().toISOString(),
+      })
       setTimeout(() => {
         navigate("/orders")
       }, 1500)
@@ -342,14 +361,14 @@ const NewOrderPage: FC = () => {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {/* Order Details */}
             <Card>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <span className="text-orange-500">📋</span> Order Details
               </h3>
 
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="channelName">
                     Select Channel Name <span className="text-gray-400">ⓘ</span>
@@ -418,7 +437,7 @@ const NewOrderPage: FC = () => {
                 </Button>
 
                 {showSellerDetails && (
-                  <div className="space-y-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="sellerName">Seller Name</Label>
                       <TextInput
@@ -463,7 +482,7 @@ const NewOrderPage: FC = () => {
                 </Button>
 
                 {showCustomerDetails && (
-                  <div className="space-y-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                       <Label htmlFor="customerName">Customer Name *</Label>
                       <TextInput
@@ -510,51 +529,135 @@ const NewOrderPage: FC = () => {
                         required
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="deliveryCity">City</Label>
-                        <TextInput
-                          id="deliveryCity"
-                          name="deliveryCity"
-                          value={formData.deliveryCity}
-                          onChange={handleChange}
-                          placeholder="City"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="deliveryState">State</Label>
-                        <TextInput
-                          id="deliveryState"
-                          name="deliveryState"
-                          value={formData.deliveryState}
-                          onChange={handleChange}
-                          placeholder="State"
-                        />
-                      </div>
+                    <div>
+                      <Label htmlFor="deliveryCity">City</Label>
+                      <TextInput
+                        id="deliveryCity"
+                        name="deliveryCity"
+                        value={formData.deliveryCity}
+                        onChange={handleChange}
+                        placeholder="City"
+                      />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="deliveryPincode">Pincode *</Label>
-                        <TextInput
-                          id="deliveryPincode"
-                          name="deliveryPincode"
-                          value={formData.deliveryPincode}
-                          onChange={handleChange}
-                          placeholder="6 digit pincode"
-                          maxLength={6}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="deliveryCountry">Country</Label>
-                        <TextInput
-                          id="deliveryCountry"
-                          name="deliveryCountry"
-                          value={formData.deliveryCountry}
-                          onChange={handleChange}
-                          placeholder="Country"
-                        />
-                      </div>
+                    <div>
+                      <Label htmlFor="deliveryState">State</Label>
+                      <TextInput
+                        id="deliveryState"
+                        name="deliveryState"
+                        value={formData.deliveryState}
+                        onChange={handleChange}
+                        placeholder="State"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="deliveryPincode">Pincode *</Label>
+                      <TextInput
+                        id="deliveryPincode"
+                        name="deliveryPincode"
+                        value={formData.deliveryPincode}
+                        onChange={handleChange}
+                        placeholder="6 digit pincode"
+                        maxLength={6}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="deliveryCountry">Country</Label>
+                      <TextInput
+                        id="deliveryCountry"
+                        name="deliveryCountry"
+                        value={formData.deliveryCountry}
+                        onChange={handleChange}
+                        placeholder="Country"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  color="gray"
+                  size="sm"
+                  className="w-full border-orange-500 text-orange-500"
+                  onClick={() => setShowFromDetails(!showFromDetails)}
+                >
+                  🏬 {showFromDetails ? "Hide" : "Add"} From Address Details
+                </Button>
+
+                {showFromDetails && (
+                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="fromName">From Name</Label>
+                      <TextInput
+                        id="fromName"
+                        name="fromName"
+                        value={formData.fromName}
+                        onChange={handleChange}
+                        placeholder="Enter sender/store name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="fromPhone">From Phone</Label>
+                      <TextInput
+                        id="fromPhone"
+                        name="fromPhone"
+                        type="tel"
+                        value={formData.fromPhone}
+                        onChange={handleChange}
+                        placeholder="10 digit mobile number"
+                        maxLength={10}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="fromPin">From Pincode</Label>
+                      <TextInput
+                        id="fromPin"
+                        name="fromPin"
+                        value={formData.fromPin}
+                        onChange={handleChange}
+                        placeholder="6 digit pincode"
+                        maxLength={6}
+                      />
+                    </div>
+                    <div className="lg:col-span-3">
+                      <Label htmlFor="fromAdd">From Address</Label>
+                      <TextInput
+                        id="fromAdd"
+                        name="fromAdd"
+                        value={formData.fromAdd}
+                        onChange={handleChange}
+                        placeholder="Enter complete from address"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="fromCity">From City</Label>
+                      <TextInput
+                        id="fromCity"
+                        name="fromCity"
+                        value={formData.fromCity}
+                        onChange={handleChange}
+                        placeholder="City"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="fromState">From State</Label>
+                      <TextInput
+                        id="fromState"
+                        name="fromState"
+                        value={formData.fromState}
+                        onChange={handleChange}
+                        placeholder="State"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="fromCountry">From Country</Label>
+                      <TextInput
+                        id="fromCountry"
+                        name="fromCountry"
+                        value={formData.fromCountry}
+                        onChange={handleChange}
+                        placeholder="Country"
+                      />
                     </div>
                   </div>
                 )}
