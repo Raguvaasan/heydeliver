@@ -87,7 +87,6 @@ const FranchiseAddRolePage: FC = () => {
         status
       }
       
-      console.log("Submitting franchise role data:", roleData)
       await addRole(roleData)
       navigate("/franchise-role")
     } catch (error) {

@@ -47,9 +47,6 @@ const FranchiseEditRolePage: FC = () => {
         })
       )
       setPermissions(formattedPermissions)
-      
-      console.log("Selected Franchise Role:", selectedRole)
-      console.log("Formatted Permissions:", formattedPermissions)
     }
   }, [selectedRole])
 
@@ -69,10 +66,6 @@ const FranchiseEditRolePage: FC = () => {
   // Always show all modules from API, fallback to default if API fails
   // This ensures all modules are displayed, not just the ones with permissions
   const displayModules = modules.length > 0 ? modules : defaultModules
-  
-  console.log("Display Modules:", displayModules)
-  console.log("Modules from API:", modules)
-  console.log("Permissions:", permissions)
 
   const handleCheckboxChange = (moduleName: string, key: string) => {
     setPermissions((prevPermissions) => {
@@ -128,7 +121,6 @@ const FranchiseEditRolePage: FC = () => {
         status
       }
       
-      console.log("Updating franchise role data:", roleData)
       if (id) {
         await updateRole(id, roleData)
         navigate("/franchise-role")

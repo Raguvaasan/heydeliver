@@ -34,9 +34,6 @@ const WalletPage: FC = () => {
                  userRole === "super admin" ||
                  roleName === "admin" ||
                  roleName === "super admin"
-  
-  // Debug log
-  console.log("WalletPage: loginType =", loginType, ", userRole =", userRole, ", roleName =", roleName, ", isAdmin =", isAdmin)
 
   // Get data from wallet store
   const { balance, transactions, loading, error, fetchBalance, fetchTransactions, fetchAllFranchiseTransactions, fetchAllFranchiseRecharges } = useWalletStore()
@@ -68,10 +65,7 @@ const WalletPage: FC = () => {
 
   // Fetch data on mount - admin gets all franchise transactions, others get their own
   useEffect(() => {
-    console.log('WalletPage: isAdmin =', isAdmin)
     if (isAdmin) {
-      console.log('WalletPage: Fetching franchise data for tab', activeTab)
-      // Admin users see all franchise wallet data based on active tab
       if (activeTab === 0) {
         // Transactions tab: fetch all types
         fetchAllFranchiseTransactions()
@@ -80,8 +74,6 @@ const WalletPage: FC = () => {
         fetchAllFranchiseRecharges()
       }
     } else {
-      console.log('WalletPage: Fetching user balance and transactions')
-      // Regular users see only their own transactions
       fetchBalance()
       fetchTransactions()
     }
@@ -89,10 +81,6 @@ const WalletPage: FC = () => {
 
   // Debug log for transactions
   useEffect(() => {
-    console.log('WalletPage: transactions =', transactions)
-    console.log('WalletPage: recharges =', recharges)
-    console.log('WalletPage: Total credit =', totalCredit)
-    // Log first transaction to see data structure
     if (transactions.length > 0) {
       console.log('WalletPage: First transaction structure =', transactions[0])
     }

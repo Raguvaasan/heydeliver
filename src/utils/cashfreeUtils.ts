@@ -40,7 +40,6 @@ export const loadCashfreeSDK = (): Promise<void> => {
     script.async = true
 
     script.onload = () => {
-      console.log("Cashfree SDK loaded successfully")
       resolve()
     }
 

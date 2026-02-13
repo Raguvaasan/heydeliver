@@ -61,9 +61,6 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   createPaymentOrder: async (amount: number, paymentMethod: string) => {
     set({ paymentLoading: true, error: null })
     try {
-      console.log('Creating payment order:', { amount, paymentMethod })
-      
-      // Validate amount
       if (!amount || amount <= 0) {
         throw new Error('Invalid amount')
       }
@@ -76,8 +73,6 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         amount,
         paymentMethod,
       })
-      
-      console.log('Payment order response:', response.data)
       set({ paymentLoading: false })
       return response.data
     } catch (error: any) {
@@ -91,17 +86,12 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
   verifyPayment: async (orderId: string, paymentId?: string) => {
     try {
-      console.log('🔍 Verifying payment:', { orderId, paymentId })
-      
       const payload: any = { orderId }
       if (paymentId) {
         payload.paymentId = paymentId
       }
       
       const response = await httpRequest.post("/wallet/verify-payment", payload)
-      
-      console.log('✅ Verify response:', response.data)
-      
       if (response.data?.success && response.data?.status === "SUCCESS") {
         // Refresh balance after successful payment
         await get().fetchBalance()

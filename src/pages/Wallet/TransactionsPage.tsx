@@ -25,7 +25,6 @@ const TransactionsPage: FC = () => {
 
   // Fetch data on mount
   useEffect(() => {
-    console.log('TransactionsPage: Fetching balance and transactions')
     fetchBalance()
     fetchTransactions()
   }, [fetchBalance, fetchTransactions])

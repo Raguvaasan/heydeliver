@@ -44,7 +44,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
     // Backend API endpoint
     const backendUrl = `https://freightrekapi.vercel.app/api/shipment/order/${encodeURIComponent(id)}`;
 
-    console.log('[Shipment Order API] Forwarding request to backend:', backendUrl);
 
     // Forward request to backend API
     const backendResponse = await axios.get(backendUrl, {
@@ -56,7 +55,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
       validateStatus: (status) => status < 500, // Don't throw on 4xx errors
     });
 
-    console.log('[Shipment Order API] Backend response status:', backendResponse.status);
 
     // Return backend response
     return response.status(backendResponse.status).json(backendResponse.data);

@@ -89,7 +89,6 @@ const RoleFormPage: FC = () => {
       roleType,
       permissions,
     }
-    console.log("Submitted Role Data:", roleData)
     navigate("/role")
   }
 

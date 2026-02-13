@@ -4,7 +4,6 @@ import { Card, Button } from "flowbite-react"
 // import { useFranchiseStaffStore } from "../../store/franchiseStaffStore"
 
 const TestFranchiseStaffPage: FC = () => {
-  console.log("TestFranchiseStaffPage loaded successfully!")
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   
   // DON'T call the store yet - testing if import itself causes issue

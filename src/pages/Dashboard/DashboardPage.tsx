@@ -101,11 +101,9 @@ const DashboardPage: FC = () => {
   
   const fetchTopFranchises = async () => {
     try {
-      console.log("Fetching top franchises...")
       const response = await http.get("/admin/dashboard", {
         params: { type: 'top-franchises', limit: 5 }
       })
-      console.log("Top Franchises response:", response.data)
       
       const data = response.data?.data || response.data?.franchises || []
       setTopFranchises(data)
@@ -116,11 +114,9 @@ const DashboardPage: FC = () => {
   
   const fetchWalletStatistics = async () => {
     try {
-      console.log("Fetching wallet statistics...")
       const response = await http.get("/admin/dashboard", {
         params: { type: 'wallet-statistics' }
       })
-      console.log("Wallet Statistics response:", response.data)
       
       const data = response.data?.data || response.data
       setWalletStats(data)
@@ -442,7 +438,6 @@ const DashboardPage: FC = () => {
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {recentBookings.map((booking: any, idx: number) => {
                     if (idx === 0) {
-                      console.log("First booking sample:", booking)
                     }
                     return (
                     <tr

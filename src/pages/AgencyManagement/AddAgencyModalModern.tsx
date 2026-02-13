@@ -1,8 +1,18 @@
-import { FC } from "react"
+import { FC, useState } from "react"
 import { Modal } from "flowbite-react"
 import { useAgencyStore } from "../../store/agencyStore"
-import { HiX, HiOfficeBuilding, HiLocationMarker, HiLockClosed, HiUser, HiMail, HiPhone } from "react-icons/hi"
-import { Formik, Form } from "formik"
+import {
+  HiX,
+  HiOfficeBuilding,
+  HiLocationMarker,
+  HiLockClosed,
+  HiUser,
+  HiMail,
+  HiPhone,
+  HiEye,
+  HiEyeOff,
+} from "react-icons/hi"
+import { Formik, Form, useField } from "formik"
 import { FormInput, FormSelect, FormTextarea } from "../../components/FormComponents"
 import { SaveButton, FormSection } from "../../components/FormHelpers"
 import { agencyValidationSchema } from "../../utils/validationSchemas"
@@ -11,6 +21,84 @@ import { sanitizeText } from "../../utils/sanitize"
 interface AddAgencyModalProps {
   isOpen: boolean
   onClose: () => void
+}
+
+const PasswordInputField: FC<{
+  name: string
+  label: string
+  helperText?: string
+  required?: boolean
+}> = ({ name, label, helperText, required = false }) => {
+  const [field, meta] = useField(name)
+  const [showPassword, setShowPassword] = useState(false)
+  const hasError = meta.touched && meta.error
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+          <HiLockClosed />
+        </div>
+        <input
+          {...field}
+          id={name}
+          type={showPassword ? "text" : "password"}
+          className={`
+            peer w-full px-4 py-3 pl-10 pr-10
+            border-2 rounded-lg
+            bg-white dark:bg-gray-800
+            text-gray-900 dark:text-white
+            placeholder-transparent
+            transition-all duration-200
+            focus:outline-none focus:ring-2 focus:ring-offset-0
+            ${
+              hasError
+                ? "border-red-500 focus:border-red-500 focus:ring-red-200"
+                : "border-gray-300 dark:border-gray-600 focus:border-orange-500 focus:ring-orange-200"
+            }
+          `}
+          placeholder={label}
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword((prev) => !prev)}
+          className="absolute inset-y-0 right-0 z-10 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          {!showPassword ? (
+            <HiEyeOff className="h-5 w-5" />
+          ) : (
+            <HiEye className="h-5 w-5" />
+          )}
+        </button>
+        <label
+          htmlFor={name}
+          className={`
+            absolute left-10 -top-2.5 px-1
+            bg-white dark:bg-gray-800
+            text-sm font-medium
+            transition-all duration-200
+            peer-placeholder-shown:text-base peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-gray-400
+            peer-focus:-top-2.5 peer-focus:text-sm
+            ${
+              hasError
+                ? "text-red-600 dark:text-red-400 peer-focus:text-red-600"
+                : "text-gray-700 dark:text-gray-300 peer-focus:text-orange-600"
+            }
+          `}
+        >
+          {label}
+          {required && <span className="ml-1 text-red-500">*</span>}
+        </label>
+      </div>
+      {hasError && (
+        <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{meta.error}</p>
+      )}
+      {!hasError && helperText && (
+        <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">{helperText}</p>
+      )}
+    </div>
+  )
 }
 
 const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
@@ -110,14 +198,12 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                       name="agencyName"
                       label="Franchise Name"
                       required
-                      icon={<HiOfficeBuilding />}
                       helperText="Official franchise name"
                     />
                     <FormInput
                       name="agencyOwner"
                       label="Franchise Owner Name"
                       required
-                      icon={<HiUser />}
                       helperText="Owner's full name"
                     />
                     <FormInput
@@ -125,7 +211,6 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                       label="Mobile Number"
                       type="tel"
                       required
-                      icon={<HiPhone />}
                       helperText="10-digit mobile number"
                     />
                     <FormInput
@@ -133,7 +218,6 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                       label="Email Address"
                       type="email"
                       required
-                      icon={<HiMail />}
                       helperText="Valid email address"
                     />
                     <FormInput
@@ -199,15 +283,12 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                       name="username"
                       label="Username"
                       required
-                      icon={<HiUser />}
                       helperText="Unique username for login"
                     />
-                    <FormInput
+                    <PasswordInputField
                       name="password"
                       label="Password"
-                      type="password"
                       required
-                      icon={<HiLockClosed />}
                       helperText="Strong password"
                     />
                   </div>

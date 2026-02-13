@@ -51,16 +51,7 @@ const FranchiseStaffListPage: FC = () => {
       const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
       const endpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
-      
-      console.log("=== FRANCHISE STAFF FETCH DEBUG ===")
-      console.log(`Making API call to ${endpoint}... (loginType: ${loginType})`)
       const response = await http.get(endpoint)
-      console.log("API Response Status:", response.status)
-      console.log("API Response Full:", response)
-      console.log("Response data object:", response.data)
-      console.log("Response data.data:", response.data?.data)
-      
-      // Handle different possible response structures
       let staffData = []
       if (response.data?.data) {
         // If data is nested under data property
@@ -74,17 +65,13 @@ const FranchiseStaffListPage: FC = () => {
         // If data is at root level
         staffData = response.data
       }
-      
-      console.log("Parsed staff data array:", staffData)
-      console.log("Staff count:", staffData.length)
-      
+
       if (staffData.length > 0) {
         console.log("First staff object:", staffData[0])
       }
-      
+
       setStaffs(staffData)
       setErrorMessage(null)
-      console.log("Staffs state updated")
     } catch (error: any) {
       console.error("=== ERROR FETCHING STAFFS ===")
       console.error("Error object:", error)
@@ -92,13 +79,13 @@ const FranchiseStaffListPage: FC = () => {
       console.error("Error response:", error.response)
       console.error("Error response status:", error.response?.status)
       console.error("Error response data:", error.response?.data)
-      
+
       if (error.response?.status === 401) {
         setErrorMessage("Access Denied: You don't have permission to access staff data.")
       } else {
         setErrorMessage("Failed to load staff data. Please try again.")
       }
-      
+
       // Always ensure staffs is an array
       setStaffs([])
     } finally {
@@ -112,8 +99,6 @@ const FranchiseStaffListPage: FC = () => {
       const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
       const endpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
-      
-      console.log(`Fetching roles from ${endpoint} (loginType: ${loginType})`)
       const response = await http.get(endpoint)
       setRoles(response.data?.data || [])
     } catch (error) {
@@ -168,7 +153,7 @@ const FranchiseStaffListPage: FC = () => {
         const loginType = sessionStorage.getItem("loginType")
         const isFranchise = loginType === "franchise" || loginType === "staff"
         const endpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
-        
+
         await http.post(endpoint, values)
         toast.success("Staff added successfully")
         setAddModalOpen(false)
@@ -196,13 +181,13 @@ const FranchiseStaffListPage: FC = () => {
 
   const handleDelete = async () => {
     if (!staffToDelete) return
-    
+
     try {
       // Check if franchise user - use franchise-specific endpoint
       const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
       const endpoint = isFranchise ? `/admin/franchise/staff/${staffToDelete._id}` : `/admin/staff/${staffToDelete._id}`
-      
+
       await http.delete(endpoint)
       toast.success("Staff deleted successfully")
       setDeleteModalOpen(false)
@@ -219,7 +204,7 @@ const FranchiseStaffListPage: FC = () => {
     if (staff.role && typeof staff.role === 'object') {
       return staff.role.roleName || staff.role.roleType || "-"
     }
-    
+
     // If roleId exists (as string), find the role from the roles array
     if (staff.roleId) {
       const roleIdString = typeof staff.roleId === 'object' ? staff.roleId._id : staff.roleId
@@ -228,7 +213,7 @@ const FranchiseStaffListPage: FC = () => {
         return foundRole.roleName || foundRole.roleType || "-"
       }
     }
-    
+
     return "-"
   }
 
@@ -236,7 +221,7 @@ const FranchiseStaffListPage: FC = () => {
     const matchesSearch = staff.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.phone?.includes(searchTerm)
-    
+
     return matchesSearch
   }) : []
 

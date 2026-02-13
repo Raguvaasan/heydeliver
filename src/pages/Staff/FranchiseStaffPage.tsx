@@ -16,7 +16,6 @@ import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { toast, ToastContainer } from "react-toastify"
 
 const FranchiseStaffPage: FC = function () {
-  console.log("FranchiseStaffPage rendering...")
   
   try {
     const {
@@ -30,8 +29,6 @@ const FranchiseStaffPage: FC = function () {
       loading,
     } = useFranchiseStaffStore()
 
-    console.log("Staff store loaded:", { staffs, roles, loading })
-
   const navigate = useNavigate()
   const location = useLocation()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -41,7 +38,6 @@ const FranchiseStaffPage: FC = function () {
   const [searchTerm, setSearchTerm] = useState("")
 
   useEffect(() => {
-    console.log("Fetching staffs and roles...")
     fetchStaffs()
     fetchRoles()
   }, [fetchStaffs, fetchRoles])

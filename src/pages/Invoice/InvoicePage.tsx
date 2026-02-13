@@ -31,7 +31,6 @@ const InvoicePage: FC = () => {
     setLoading(true)
     try {
       const response = await http.get("/admin/invoice")
-      console.log("Invoice response:", response.data)
       setInvoices(response.data?.data || [])
     } catch (error: any) {
       console.error("Error fetching invoices:", error)

@@ -32,11 +32,6 @@ export default async function handler(
       })
     }
 
-    console.log('=== SHIPMENT ORDERS PROXY ===')
-    console.log('Method:', request.method)
-    console.log('Query params:', { page, limit, status })
-    console.log('Auth header present:', !!authHeader)
-
     // Build query params
     const params: any = { page, limit }
     if (status && status !== 'all') {
@@ -45,7 +40,6 @@ export default async function handler(
 
     // Forward request to backend API
     const backendUrl = `${BACKEND_API_URL}/api/shipment/orders`
-    console.log('Calling backend:', backendUrl)
 
     const backendResponse = await axios.get(backendUrl, {
       headers: {
@@ -55,9 +49,6 @@ export default async function handler(
       params,
       timeout: 30000
     })
-
-    console.log('Backend response status:', backendResponse.status)
-    console.log('Backend response data:', JSON.stringify(backendResponse.data).substring(0, 200))
 
     return response.status(200).json(backendResponse.data)
   } catch (error: any) {

@@ -64,19 +64,11 @@ export const useRoleStore = create<RoleState>((set, get) => ({
       // Use helper function to get correct endpoint
       const endpoint = getRoleEndpoint()
       const loginType = sessionStorage.getItem("loginType")
-      console.log(`Fetching roles from ${endpoint} (loginType: ${loginType})`)
-      
       const res = await http.get(endpoint, {
         params: { page, limit }
       })
-      console.log("Roles API response:", res.data)
-      
-      // Handle response structure: { success: true, data: [...] }
       const rolesData = res.data?.data || []
       const rolesArray = Array.isArray(rolesData) ? rolesData : []
-      
-      console.log("Parsed roles:", rolesArray)
-      
       const pagination = res.data?.pagination || null
       
       set({ 
@@ -99,7 +91,6 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const endpoint = getRoleEndpoint(`/${id}`)
-      console.log(`Getting role from ${endpoint}`)
       const res = await http.get(endpoint)
       const roleData = res.data?.data || res.data
       set({
@@ -117,7 +108,6 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const endpoint = getRoleEndpoint()
-      console.log(`Adding role to ${endpoint}`)
       await http.post(endpoint, data)
       await get().fetchRoles()
       toast.success("Role added successfully!")
@@ -135,7 +125,6 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const endpoint = getRoleEndpoint(`/${id}`)
-      console.log(`Updating role at ${endpoint}`)
       await http.put(endpoint, data)
       await get().fetchRoles()
       toast.success("Role updated successfully!")
@@ -153,7 +142,6 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const endpoint = getRoleEndpoint(`/${id}`)
-      console.log(`Deleting role from ${endpoint}`)
       await http.delete(endpoint)
       await get().fetchRoles()
       set({ loading: false })
@@ -172,9 +160,6 @@ export const useRoleStore = create<RoleState>((set, get) => ({
       const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
       const endpoint = isFranchise ? "/admin/franchise/modules" : "/admin/modules"
-      
-      console.log(`Fetching modules from ${endpoint} (loginType: ${loginType})`)
-      
       const res = await http.get(endpoint)
       const modules = res.data?.data
         ? (Object.values(res.data.data) as string[])

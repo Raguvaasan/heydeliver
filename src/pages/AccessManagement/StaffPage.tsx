@@ -55,7 +55,7 @@ const StaffDetail = () => {
 
   return (
     <NavbarSidebarLayout isFooter={false}>
-      <div className="px-4 pt-6 pb-6">
+      <div className="px-4 pb-6">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -74,32 +74,6 @@ const StaffDetail = () => {
           >
             EDIT
           </Button>
-        </div>
-
-        {/* Tabs */}
-        <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex gap-8">
-            <button
-              onClick={() => setActiveTab("franchise")}
-              className={`pb-3 font-medium transition-colors ${
-                activeTab === "franchise"
-                  ? "text-orange-500 border-b-2 border-orange-500"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
-            >
-              Franchise
-            </button>
-            <button
-              onClick={() => setActiveTab("goxpress")}
-              className={`pb-3 font-medium transition-colors ${
-                activeTab === "goxpress"
-                  ? "text-orange-500 border-b-2 border-orange-500"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
-            >
-              Go Xpress
-            </button>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -122,7 +96,7 @@ const StaffDetail = () => {
                   Phone Number
                 </p>
                 <p className="text-base font-medium text-gray-900 dark:text-white mt-1">
-                  {staff.mobile}
+                  {staff.phone}
                 </p>
               </div>
               <div>

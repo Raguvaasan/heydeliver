@@ -57,9 +57,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
       params.period = period;
     }
 
-    console.log('[Admin Dashboard API] Forwarding request to:', backendUrl);
-    console.log('[Admin Dashboard API] Params:', params);
-
     // Forward request to backend API
     const backendResponse = await axios.get(backendUrl, {
       headers: {
@@ -71,11 +68,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
       validateStatus: (status) => status < 500,
     });
 
-    console.log('[Admin Dashboard API] Backend response status:', backendResponse.status);
 
     // If backend returns 401, return mock data instead of blocking
     if (backendResponse.status === 401 || backendResponse.status === 403) {
-      console.log('[Admin Dashboard API] Auth error from backend, returning mock data');
       
       const { type, period = 'week' } = request.query;
       
@@ -149,9 +144,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
       status: error.response?.status,
       data: error.response?.data,
     });
-
-    // Return mock data if backend is unavailable
-    console.log('[Admin Dashboard API] Backend unavailable, returning mock data');
     
     const { type, period = 'week', limit = '5' } = request.query;
     

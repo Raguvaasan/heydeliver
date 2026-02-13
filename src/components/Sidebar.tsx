@@ -258,7 +258,7 @@ const Sidebar: FC<SidebarProps> = ({
       <aside
         className={`fixed top-0 left-0 z-50 h-screen transition-transform duration-300 ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 ${isExpanded ? "w-64" : "w-20"}`}
+        } lg:translate-x-0 ${isExpanded ? "w-64 lg:w-[20%]" : "w-20 lg:w-20"}`}
       >
         <div className="h-full bg-[#2c2c2c] dark:bg-[#1a1a1a] flex flex-col">
           {/* Logo Section */}
@@ -272,7 +272,7 @@ const Sidebar: FC<SidebarProps> = ({
           </div>
 
           {/* Menu Items */}
-          <nav className="flex-1 overflow-y-auto py-4 px-3">
+          <nav className="flex-1 overflow-y-auto py-4 px-3 [scrollbar-width:thin] [scrollbar-color:#64748b_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500/70 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80">
             <div className="space-y-1">
               {menuItems.map((item, index) => (
                 <div key={index}>

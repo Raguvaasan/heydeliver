@@ -42,9 +42,6 @@ const ForwardOrderDetailPage: FC = () => {
   const fetchOrderDetail = async (orderId: string) => {
     setLoading(true);
     try {
-      console.log("Fetching order detail for:", orderId);
-      
-      // Try to fetch from the orders list and find the specific order
       const response = await http.get("/shipment/orders", { 
         params: { limit: 100 } // Fetch more to find the order
       });

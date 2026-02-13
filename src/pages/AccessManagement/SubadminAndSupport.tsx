@@ -101,7 +101,6 @@ const UserPage: FC = function () {
   // Debug: Log first staff to see structure
   useEffect(() => {
     if (staffs.length > 0) {
-      console.log("First staff object:", staffs[0])
       console.log("First staff role:", staffs[0]?.role)
     }
   }, [staffs])
@@ -388,7 +387,7 @@ const AddStaffModal: FC<{
   return (
     <Modal show={isOpen} size="2xl" onClose={onClose}>
       <Modal.Header>Add Staff</Modal.Header>
-      <Modal.Body>
+      <Modal.Body className="max-h-[calc(100vh-12rem)] overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#64748b_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500/70 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80">
         {/* Tabs */}
         <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex gap-8">
@@ -558,15 +557,15 @@ const AddStaffModal: FC<{
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    className="pr-10"
+                    className="[&_input]:pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswordAdd(!showPasswordAdd)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    className="absolute inset-y-0 right-0 z-10 flex items-center pr-3 text-gray-500 focus:outline-none"
                     aria-label={showPasswordAdd ? "Hide password" : "Show password"}
                   >
-                    {showPasswordAdd ? (
+                    {!showPasswordAdd ? (
                       <HiEyeOff className="h-5 w-5" />
                     ) : (
                       <HiEye className="h-5 w-5" />
@@ -695,7 +694,7 @@ const EditStaffModal: FC<{
   return (
     <Modal show={isOpen} size="2xl" onClose={onClose}>
       <Modal.Header>Edit Staff</Modal.Header>
-      <Modal.Body>
+      <Modal.Body className="max-h-[calc(100vh-12rem)] overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#64748b_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500/70 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80">
         {/* Tabs - Only show the tab for the staff type */}
         <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex gap-8">
@@ -858,15 +857,15 @@ const EditStaffModal: FC<{
                     placeholder="Leave blank to keep unchanged"
                     value={formData.password}
                     onChange={handleChange}
-                    className="pr-10"
+                    className="[&_input]:pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswordEdit(!showPasswordEdit)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    className="absolute inset-y-0 right-0 z-10 flex items-center pr-3 text-gray-500 focus:outline-none"
                     aria-label={showPasswordEdit ? "Hide password" : "Show password"}
                   >
-                    {showPasswordEdit ? (
+                    {!showPasswordEdit ? (
                       <HiEyeOff className="h-5 w-5" />
                     ) : (
                       <HiEye className="h-5 w-5" />

@@ -18,11 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Log request for debugging
-    console.log('Request body:', req.body);
-    console.log('Request headers:', req.headers);
-    
-    const { amount, paymentMethod } = req.body;
+   const { amount, paymentMethod } = req.body;
 
     // Validate input
     if (!amount || !paymentMethod) {
@@ -42,9 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Get auth token from header
-    console.log('Authorization header:', req.headers.authorization);
     const authToken = req.headers.authorization?.replace('Bearer ', '');
-    console.log('Extracted token:', authToken ? `${authToken.substring(0, 20)}...` : 'NO TOKEN');
     
     if (!authToken) {
       return res.status(401).json({ success: false, message: 'Unauthorized - No token provided' });
@@ -53,9 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Forward to actual backend
     const backendUrl = process.env['BACKEND_API_URL'] || 'https://freightrekapi.vercel.app';
     const requestPayload = { amount, paymentMethod };
-    console.log('Forwarding to backend:', `${backendUrl}/api/wallet/create-payment-order`);
-    console.log('Request payload:', requestPayload);
-    
+   
     const response = await axios.post(
       `${backendUrl}/api/wallet/create-payment-order`,
       requestPayload,
@@ -67,7 +59,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     );
     
-    console.log('Backend response:', response.data);
 
     return res.status(200).json(response.data);
   } catch (error: any) {

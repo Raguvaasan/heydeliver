@@ -15,9 +15,6 @@ const PaymentCallbackPage: FC = () => {
 
   useEffect(() => {
     const orderId = searchParams.get("order_id")
-
-    console.log('💳 Payment callback received:', { orderId })
-
     if (!orderId) {
       console.error('❌ No order_id in URL')
       toast.error("Invalid payment response")
@@ -28,15 +25,8 @@ const PaymentCallbackPage: FC = () => {
 
     const verifyPaymentStatus = async () => {
       try {
-        console.log('🔍 Starting payment verification for:', orderId)
-        
-        // Call verify payment - paymentId is now optional
         await verifyPayment(orderId)
-        
-        // Refresh balance
         await fetchBalance()
-        
-        console.log('✅ Payment verified successfully')
         setPaymentStatus("success")
         
       } catch (error: any) {

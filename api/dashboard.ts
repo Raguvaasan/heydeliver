@@ -43,7 +43,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
     // Backend API endpoint
     const backendUrl = 'https://freightrekapi.vercel.app/api/dashboard';
 
-    console.log('[Dashboard API] Forwarding request to backend:', backendUrl);
 
     // Forward request to backend API
     const backendResponse = await axios.get(backendUrl, {
@@ -55,11 +54,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
       validateStatus: (status) => status < 500, // Don't throw on 4xx errors
     });
 
-    console.log('[Dashboard API] Backend response status:', backendResponse.status);
 
     // If backend returns 401, return mock data instead of blocking
     if (backendResponse.status === 401 || backendResponse.status === 403) {
-      console.log('[Dashboard API] Auth error from backend, returning mock data');
       return response.status(200).json({
         success: true,
         data: {
@@ -101,9 +98,6 @@ export default async function handler(request: VercelRequest, response: VercelRe
         method: error.config?.method,
       }
     });
-
-    // Return mock data if backend is unavailable
-    console.log('[Dashboard API] Backend unavailable, returning mock data');
     
     return response.status(200).json({
       success: true,

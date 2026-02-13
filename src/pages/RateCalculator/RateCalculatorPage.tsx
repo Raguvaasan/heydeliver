@@ -130,16 +130,6 @@ const RateCalculatorPage: FC = () => {
     // Calculate rate using Rate Card values based on zone and weight
     const mode = deliveryMode === "E" ? "express" : "surface"
     const baseRate = calculateRateFromCard(mode, zone, charged_weight, shippingType)
-
-    console.log('Rate Calculation Debug:', {
-      zone,
-      charged_weight,
-      mode,
-      shippingType,
-      baseRate
-    })
-
-    // Apply rate card markup if configured
     const markupValue = rateCardMarkup?.markup_value || 0
     const markupType = rateCardMarkup?.markup_type || "percentage"
 

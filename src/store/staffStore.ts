@@ -53,7 +53,6 @@ export const useStaffStore = create<StaffState>((set, get) => ({
         _id: item._id || item.id,
         roleType: item.roleName || item.name || item.roleType
       }))
-      console.log("Fetched roles:", rolesList) // Debug log
       set({ roles: rolesList, loading: false })
     } catch (error) {
       console.error("Error fetching roles:", error)
@@ -68,12 +67,8 @@ export const useStaffStore = create<StaffState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const response = await httpPublic.get(`/admin/staff`)
-      console.log("Staff API Response:", response.data) // Debug log
       const staffArray = response.data?.data?.staff || []
-      console.log("Staff Array:", staffArray) // Debug log
       if (staffArray.length > 0) {
-        console.log("First staff from API:", staffArray[0])
-        console.log("First staff roleId:", staffArray[0].roleId)
       }
       const staffList = staffArray.map((item: any) => ({
         _id: item._id || item.id,
@@ -87,7 +82,6 @@ export const useStaffStore = create<StaffState>((set, get) => ({
         username: item.username,
         franchise: typeof item.franchiseId === 'object' ? (item.franchiseId?.agencyName || item.franchiseId?.name) : item.franchise
       }))
-      console.log("Mapped Staff List:", staffList) // Debug log
       set({
         staffs: staffList,
         loading: false,

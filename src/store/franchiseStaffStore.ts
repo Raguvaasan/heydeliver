@@ -47,11 +47,8 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
       const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
       const endpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
-      
-      console.log(`Fetching staffs from ${endpoint} (loginType: ${loginType})`)
       const response = await http.get(endpoint)
       const staffData = response.data?.data || []
-      console.log("Fetched staffs:", staffData)
       set({ staffs: staffData, loading: false })
     } catch (error: any) {
       console.error("Error fetching staffs:", error)
@@ -66,11 +63,8 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
       const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
       const endpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
-      
-      console.log(`Fetching roles from ${endpoint} (loginType: ${loginType})`)
       const response = await http.get(endpoint)
       const roleData = response.data?.data || []
-      console.log("Fetched roles:", roleData)
       set({ roles: roleData, loading: false })
     } catch (error: any) {
       console.error("Error fetching roles:", error)

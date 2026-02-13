@@ -6,9 +6,14 @@ import { useWalletStore } from "../store/walletStore"
 interface NavbarProps {
   isMobileOpen: boolean
   setIsMobileOpen: (value: boolean) => void
+  isSidebarExpanded: boolean
 }
 
-const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
+const Navbar: FC<NavbarProps> = ({
+  isMobileOpen,
+  setIsMobileOpen,
+  isSidebarExpanded,
+}) => {
   const navigate = useNavigate()
   const [userName, setUserName] = useState("Admin")
   const [userInitial, setUserInitial] = useState("A")
@@ -86,7 +91,11 @@ const Navbar: FC<NavbarProps> = ({ isMobileOpen, setIsMobileOpen }) => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-white dark:bg-[#2c2c2c] border-b border-gray-200 dark:border-gray-700">
-      <div className="h-full px-4 lg:px-6 flex items-center justify-between lg:ml-64">
+      <div
+        className={`h-full px-4 lg:px-6 flex items-center justify-between transition-all duration-300 ${
+          isSidebarExpanded ? "lg:ml-[20%]" : "lg:ml-20"
+        }`}
+      >
         {/* Left Section */}
         <div className="flex items-center gap-4">
           {/* Mobile Menu Toggle */}

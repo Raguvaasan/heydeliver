@@ -29,9 +29,19 @@ const NavbarSidebarLayout: FC<NavbarSidebarLayoutProps> = ({
       />
 
       {/* Main Content Section */}
-      <div className="flex-1 lg:ml-64 transition-all duration-300">
+      <div
+        className={`transition-all duration-300 ${
+          isSidebarExpanded
+            ? "lg:ml-[20%] lg:w-[80%]"
+            : "lg:ml-20 lg:w-[calc(100%-5rem)]"
+        }`}
+      >
         {/* Navbar */}
-        <Navbar isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
+        <Navbar
+          isMobileOpen={isMobileOpen}
+          setIsMobileOpen={setIsMobileOpen}
+          isSidebarExpanded={isSidebarExpanded}
+        />
 
         {/* Main Content */}
         <MainContent isFooter={isFooter}>{children}</MainContent>

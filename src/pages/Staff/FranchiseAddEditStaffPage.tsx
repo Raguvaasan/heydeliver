@@ -60,7 +60,6 @@ const FranchiseAddEditStaffPage: FC = () => {
           if (franchiseId) {
             setFormData(prev => ({ ...prev, franchiseId }))
           }
-          console.log("Auto-populated franchise for franchise user:", franchiseId)
         } catch (error) {
           console.error("Error parsing profile data:", error)
         }
@@ -82,9 +81,7 @@ const FranchiseAddEditStaffPage: FC = () => {
       const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
       const endpoint = isFranchise ? `/admin/franchise/staff/${staffId}` : `/admin/staff/${staffId}`
-      
-      console.log(`Fetching staff from ${endpoint} (loginType: ${loginType})`)
-      const response = await http.get(endpoint)
+            const response = await http.get(endpoint)
       const staff = response.data?.data
       
       if (staff) {
@@ -114,11 +111,8 @@ const FranchiseAddEditStaffPage: FC = () => {
       const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
       const endpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
-      
-      console.log(`Fetching roles from ${endpoint} (loginType: ${loginType})`)
-      const response = await http.get(endpoint)
+            const response = await http.get(endpoint)
       const rolesData = response.data?.data || []
-      console.log("Roles fetched:", rolesData)
       setRoles(rolesData)
     } catch (error) {
       console.error("Error fetching roles:", error)
@@ -131,7 +125,6 @@ const FranchiseAddEditStaffPage: FC = () => {
       // Only admin users need to fetch franchises list
       const response = await http.get("/admin/franchise")
       const franchiseData = response.data?.data || []
-      console.log("Fetched franchises:", franchiseData)
       setAgencies(franchiseData)
     } catch (error) {
       console.error("Error fetching agencies:", error)
@@ -193,12 +186,10 @@ const FranchiseAddEditStaffPage: FC = () => {
       
       if (isEditMode && id) {
         const endpoint = isFranchise ? `/admin/franchise/staff/${id}` : `/admin/staff/${id}`
-        console.log(`Updating staff at ${endpoint}`)
         await http.put(endpoint, payload)
         toast.success("Staff updated successfully")
       } else {
         const endpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
-        console.log(`Creating staff at ${endpoint}`)
         await http.post(endpoint, payload)
         toast.success("Staff added successfully")
       }

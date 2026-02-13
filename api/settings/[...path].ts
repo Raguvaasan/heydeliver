@@ -47,9 +47,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Construct backend URL - path already includes v1/settings
     const backendUrl = `${BACKEND_API_URL}/api/${apiPath}`;
-
-    console.log(`[Settings API] ${req.method} ${backendUrl}`);
-
     if (req.method === 'GET') {
       // Fetch settings
       const response = await axios.get(backendUrl, {

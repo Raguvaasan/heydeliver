@@ -86,7 +86,6 @@ const AddRolePage: FC = () => {
         status
       }
       
-      console.log("Submitting role data:", roleData)
       await addRole(roleData)
       navigate("/role")
     } catch (error) {

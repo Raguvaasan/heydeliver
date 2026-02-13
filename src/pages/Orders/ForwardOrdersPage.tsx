@@ -33,6 +33,45 @@ interface ForwardOrder {
   total_amount?: number | string;
   paymentMode?: string;
   payment_mode?: string;
+  franchiseName?: string;
+  franchise_name?: string;
+  franchise?: string;
+  pincode?: string;
+  codAmount?: number | string;
+  cod_amount?: number | string;
+  productsDesc?: string;
+  products_desc?: string;
+  add?: string;
+  address?: string;
+  deliveryAddress?: string;
+  state?: string;
+  deliveryState?: string;
+  country?: string;
+  deliveryCountry?: string;
+  phone?: string;
+  customerNumber?: string;
+  fromName?: string;
+  fromAdd?: string;
+  fromPin?: string;
+  fromCity?: string;
+  fromState?: string;
+  fromCountry?: string;
+  fromPhone?: string;
+  returnPin?: string;
+  return_pin?: string;
+  returnCity?: string;
+  return_city?: string;
+  returnPhone?: string;
+  return_phone?: string;
+  returnAdd?: string;
+  return_add?: string;
+  returnState?: string;
+  return_state?: string;
+  returnCountry?: string;
+  return_country?: string;
+  weight?: number | string;
+  shippingMode?: string;
+  shipping_mode?: string;
 }
 
 const ForwardOrdersPage: FC = () => {
@@ -49,9 +88,6 @@ const ForwardOrdersPage: FC = () => {
   const fetchForwardOrders = async () => {
     setLoading(true);
     try {
-      console.log("=== FETCHING FORWARD ORDERS ===");
-      console.log("Page:", page, "Limit:", limit, "Status:", statusFilter);
-      
       const params: any = { 
         page, 
         limit,
@@ -61,15 +97,7 @@ const ForwardOrdersPage: FC = () => {
       if (statusFilter !== "all") {
         params.status = statusFilter;
       }
-      
-      console.log("Request params:", params);
-      
-      // Call the backend API endpoint (http already has /api as baseURL)
       const response = await http.get("/shipment/orders", { params });
-      
-      console.log("API Response:", response.data);
-      
-      // Handle different response structures
       let ordersData: ForwardOrder[] = [];
       
       if (response.data?.data && Array.isArray(response.data.data)) {
@@ -81,10 +109,6 @@ const ForwardOrdersPage: FC = () => {
       } else if (Array.isArray(response.data)) {
         ordersData = response.data;
       }
-      
-      console.log("Parsed orders:", ordersData.length, "orders");
-      
-      // Normalize the order data
       const normalizedOrders = ordersData.map((order: any) => ({
         _id: order._id || order.id || order.orderId,
         orderId: order.orderId,
@@ -128,45 +152,41 @@ const ForwardOrdersPage: FC = () => {
       toast.error("Order ID not found");
       return;
     }
+
     const orderId = String(rawOrderId);
     const idParts = orderId.split("_");
     const apiOrderId = idParts[idParts.length - 1] || orderId;
 
     setRecallingOrderId(orderId);
     try {
-      const detailRes = await http.get(`/shipment/order/${encodeURIComponent(apiOrderId)}`);
-      const data = detailRes.data?.data || detailRes.data || {};
-      const consignee = data.consignee || {};
-      const shipmentDetails = data.shipmentDetails || {};
-
       const payload = {
-        name: data.name || consignee.name || order.name || order.customer || order.customerName || order.consigneeName || "",
-        add: data.add || consignee.address || order.add || order.address || order.deliveryAddress || "",
-        pin: data.pin || consignee.pin || order.pin || order.pincode || "",
-        city: data.city || consignee.city || order.city || order.deliveryCity || "",
-        state: data.state || consignee.state || order.state || order.deliveryState || "",
-        country: data.country || consignee.country || order.country || order.deliveryCountry || "India",
-        phone: data.phone || consignee.phone || order.phone || order.customerNumber || "",
-        paymentMode: data.paymentMode || shipmentDetails.paymentMode || order.paymentMode || order.payment_mode || "Prepaid",
+        name: order.name || order.customer || order.customerName || order.consigneeName || "",
+        add: order.add || order.address || order.deliveryAddress || "",
+        pin: order.pin || order.pincode || "",
+        city: order.city || order.deliveryCity || "",
+        state: order.state || order.deliveryState || "",
+        country: order.country || order.deliveryCountry || "India",
+        phone: order.phone || order.customerNumber || "",
+        paymentMode: order.paymentMode || order.payment_mode || "Prepaid",
         status: "active",
-        fromName: data.fromName || "",
-        fromAdd: data.fromAdd || "",
-        fromPin: data.fromPin || "",
-        fromCity: data.fromCity || "",
-        fromState: data.fromState || "",
-        fromCountry: data.fromCountry || "India",
-        fromPhone: data.fromPhone || "",
-        returnPin: data.returnPin || data.return_pin || "",
-        returnCity: data.returnCity || data.return_city || "",
-        returnPhone: data.returnPhone || data.return_phone || "",
-        returnAdd: data.returnAdd || data.return_add || "",
-        returnState: data.returnState || data.return_state || "",
-        returnCountry: data.returnCountry || data.return_country || "India",
-        productsDesc: data.productsDesc || data.products_desc || "",
-        codAmount: String(data.codAmount || data.cod_amount || "0"),
-        totalAmount: String(data.totalAmount || data.total_amount || data.amount || order.totalAmount || order.total_amount || order.amount || "0"),
-        weight: String(data.weight || ""),
-        shippingMode: data.shippingMode || data.shipping_mode || "Surface",
+        fromName: order.fromName || "",
+        fromAdd: order.fromAdd || "",
+        fromPin: order.fromPin || "",
+        fromCity: order.fromCity || "",
+        fromState: order.fromState || "",
+        fromCountry: order.fromCountry || "India",
+        fromPhone: order.fromPhone || "",
+        returnPin: order.returnPin || order.return_pin || "",
+        returnCity: order.returnCity || order.return_city || "",
+        returnPhone: order.returnPhone || order.return_phone || "",
+        returnAdd: order.returnAdd || order.return_add || "",
+        returnState: order.returnState || order.return_state || "",
+        returnCountry: order.returnCountry || order.return_country || "India",
+        productsDesc: order.productsDesc || order.products_desc || "",
+        codAmount: String(order.codAmount || order.cod_amount || "0"),
+        totalAmount: String(order.totalAmount || order.total_amount || order.amount || "0"),
+        weight: String(order.weight || ""),
+        shippingMode: order.shippingMode || order.shipping_mode || "Surface",
       };
 
       await http.put(`/shipment/order/${encodeURIComponent(apiOrderId)}`, payload);
@@ -193,9 +213,26 @@ const ForwardOrdersPage: FC = () => {
         .includes(searchTerm.toLowerCase())
   );
 
+  const getOrderId = (order: ForwardOrder) =>
+    order.bookingId || order.orderId || order._id || order.id || "-";
+
+  const getDisplayDate = (order: ForwardOrder) =>
+    order.forwardDate ||
+    order.bookingDate ||
+    (order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "-");
+
+  const getStatusColor = (status?: string) =>
+    status?.toLowerCase() === "delivered"
+      ? "success"
+      : status?.toLowerCase() === "pending"
+        ? "warning"
+        : status?.toLowerCase() === "cancelled"
+          ? "failure"
+          : "info";
+
   return (
     <NavbarSidebarLayout>
-      <div className="px-4 pt-6">
+      <div className="h-[calc(100vh-7rem)] md:h-full lg:h-[calc(100vh-7rem)] overflow-hidden px-4 flex flex-col">
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Forward Orders
@@ -205,7 +242,8 @@ const ForwardOrdersPage: FC = () => {
           </p>
         </div>
 
-        <Card>
+        <Card className="overflow-hidden flex-1 flex flex-col">
+          <div className="flex h-full flex-col">
           <div className="mb-4 flex flex-col md:flex-row gap-4">
             <TextInput
               icon={HiSearch}
@@ -230,13 +268,14 @@ const ForwardOrdersPage: FC = () => {
               color="gray"
               onClick={fetchForwardOrders}
               disabled={loading}
+              className="w-full md:w-auto"
             >
               Refresh
             </Button>
           </div>
 
-          <div className="overflow-x-auto">
-            <Table hoverable>
+          <div className="hidden w-full flex-1 overflow-x-auto overflow-y-auto pb-0 md:block [scrollbar-width:thin] [scrollbar-color:#64748b_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500/70 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80">
+            <Table hoverable className="min-w-max whitespace-nowrap">
               <Table.Head>
                 <Table.HeadCell>Order ID</Table.HeadCell>
                 <Table.HeadCell>Franchise Name</Table.HeadCell>
@@ -291,8 +330,8 @@ const ForwardOrdersPage: FC = () => {
                       key={order._id || order.id || order.orderId}
                       className="bg-white dark:border-gray-700 dark:bg-gray-800"
                     >
-                      <Table.Cell className="font-medium text-gray-900 dark:text-white">
-                        {order.bookingId || order.orderId || order._id || "-"}
+                      <Table.Cell className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                        {getOrderId(order)}
                       </Table.Cell>
                       <Table.Cell>
                         <span className="font-medium text-orange-600">
@@ -307,17 +346,10 @@ const ForwardOrdersPage: FC = () => {
                         {order.pin && <span className="text-xs text-gray-500 block">PIN: {order.pin}</span>}
                       </Table.Cell>
                       <Table.Cell>
-                        {order.forwardDate || order.bookingDate || (order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "-")}
+                        {getDisplayDate(order)}
                       </Table.Cell>
                       <Table.Cell>
-                        <Badge 
-                          color={
-                            order.status?.toLowerCase() === "delivered" ? "success" :
-                            order.status?.toLowerCase() === "pending" ? "warning" :
-                            order.status?.toLowerCase() === "cancelled" ? "failure" :
-                            "info"
-                          }
-                        >
+                        <Badge color={getStatusColor(order.status)}>
                           {order.status || "In Transit"}
                         </Badge>
                       </Table.Cell>
@@ -336,7 +368,6 @@ const ForwardOrdersPage: FC = () => {
                             color="light"
                             onClick={() => {
                               const orderId = order.orderId || order._id || order.id;
-                              console.log("Navigating to forward order:", orderId);
                               navigate(`/orders/forward/${orderId}`);
                             }}
                           >
@@ -364,36 +395,116 @@ const ForwardOrdersPage: FC = () => {
               </Table.Body>
             </Table>
           </div>
+
+          <div className="md:hidden flex-1 overflow-y-auto space-y-3 [scrollbar-width:thin] [scrollbar-color:#64748b_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500/70 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80">
+            {loading ? (
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex justify-center items-center gap-2">
+                  <Spinner size="lg" />
+                  <span className="text-gray-600 dark:text-gray-300">Loading orders...</span>
+                </div>
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center">
+                <p className="text-gray-500 font-medium">No forward orders found</p>
+                <p className="text-gray-400 text-sm mt-2">Forward orders will appear here</p>
+              </div>
+            ) : (
+              filteredOrders.map((order: any) => (
+                <div
+                  key={order._id || order.id || order.orderId}
+                  className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-semibold text-sm break-all text-gray-900 dark:text-white">
+                      {getOrderId(order)}
+                    </p>
+                    <Badge color={getStatusColor(order.status)}>{order.status || "In Transit"}</Badge>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                    <p className="text-gray-500">Franchise</p>
+                    <p className="font-medium text-orange-600 text-right">
+                      {order.franchiseName || "-"}
+                    </p>
+                    <p className="text-gray-500">AWB</p>
+                    <p className="text-right break-all">{order.waybill || order.awb || "-"}</p>
+                    <p className="text-gray-500">Customer</p>
+                    <p className="text-right">{order.customer || order.customerName || order.consigneeName || "-"}</p>
+                    <p className="text-gray-500">Destination</p>
+                    <p className="text-right">
+                      {order.destination || order.city || order.deliveryCity || "-"}
+                    </p>
+                    <p className="text-gray-500">Forward Date</p>
+                    <p className="text-right">{getDisplayDate(order)}</p>
+                    <p className="text-gray-500">Amount</p>
+                    <p className="text-right font-medium">
+                      ₹{Number(order.amount || order.totalAmount || 0).toFixed(2)}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      color="light"
+                      className="flex-1"
+                      onClick={() => {
+                        const orderId = order.orderId || order._id || order.id;
+                        navigate(`/orders/forward/${orderId}`);
+                      }}
+                    >
+                      <HiEye className="mr-2 h-4 w-4" />
+                      View
+                    </Button>
+                    <Button
+                      size="sm"
+                      color="gray"
+                      title="Recall order"
+                      onClick={() => handleRecallOrder(order)}
+                      disabled={loading || recallingOrderId === String(order.orderId || order.bookingId || order._id || order.id)}
+                    >
+                      {recallingOrderId === String(order.orderId || order.bookingId || order._id || order.id) ? (
+                        <Spinner size="sm" />
+                      ) : (
+                        <HiRefresh className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
           
-          {/* Pagination */}
-          {!loading && filteredOrders.length > 0 && (
-            <div className="flex items-center justify-between pt-4 border-t">
-              <div className="text-sm text-gray-500">
-                Showing {orders.length} of {totalOrders} orders
+            {/* Pagination */}
+            {!loading && filteredOrders.length > 0 && (
+              <div className="-mt-px flex flex-col gap-3 border-t pt-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm text-gray-500 text-center sm:text-left">
+                  Showing {orders.length} of {totalOrders} orders
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    color="gray"
+                    size="sm"
+                    onClick={() => setPage(page - 1)}
+                    disabled={page === 1 || loading}
+                  >
+                    Previous
+                  </Button>
+                  <span className="flex items-center px-3 text-sm text-gray-700">
+                    Page {page}
+                  </span>
+                  <Button
+                    color="gray"
+                    size="sm"
+                    onClick={() => setPage(page + 1)}
+                    disabled={orders.length < limit || loading}
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  color="gray"
-                  size="sm"
-                  onClick={() => setPage(page - 1)}
-                  disabled={page === 1 || loading}
-                >
-                  Previous
-                </Button>
-                <span className="flex items-center px-3 text-sm text-gray-700">
-                  Page {page}
-                </span>
-                <Button
-                  color="gray"
-                  size="sm"
-                  onClick={() => setPage(page + 1)}
-                  disabled={orders.length < limit || loading}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </Card>
       </div>
     </NavbarSidebarLayout>

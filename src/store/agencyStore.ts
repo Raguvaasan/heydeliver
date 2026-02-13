@@ -220,7 +220,6 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
       if (!id) {
         throw new Error("Agency ID is required")
       }
-      console.log("Deleting agency with ID:", id) // Debug log
       await http.delete(`/admin/agency/${encodeURIComponent(id)}`)
       set((state) => ({
         agencies: state.agencies.filter((a) => a.id !== id),

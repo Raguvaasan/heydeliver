@@ -47,9 +47,6 @@ const EditRolePage: FC = () => {
         })
       )
       setPermissions(formattedPermissions)
-      
-      console.log("Selected Role:", selectedRole)
-      console.log("Formatted Permissions:", formattedPermissions)
     }
   }, [selectedRole])
 
@@ -64,14 +61,7 @@ const EditRolePage: FC = () => {
     "Tracking",
     "Settings"
   ]
-  
-  // Always show all modules from API, fallback to default if API fails
-  // This ensures all modules are displayed, not just the ones with permissions
   const displayModules = modules.length > 0 ? modules : defaultModules
-  
-  console.log("Display Modules:", displayModules)
-  console.log("Modules from API:", modules)
-  console.log("Permissions:", permissions)
 
   const handleCheckboxChange = (moduleName: string, key: string) => {
     setPermissions((prevPermissions) => {
@@ -127,7 +117,6 @@ const EditRolePage: FC = () => {
         status
       }
       
-      console.log("Updating role data:", roleData)
       if (id) {
         await updateRole(id, roleData)
         navigate("/role")

@@ -26,7 +26,6 @@ const AddMoneyPage: FC = () => {
     script.async = true
     script.onload = () => {
       setCashfreeLoaded(true)
-      console.log("Cashfree SDK loaded successfully")
     }
     script.onerror = () => {
       toast.error("Failed to load payment gateway")
@@ -58,10 +57,7 @@ const AddMoneyPage: FC = () => {
 
     try {
       // Create payment order from backend
-      const orderData = await createPaymentOrder(amount, paymentType)
-      
-      console.log("Order Data:", orderData)
-      
+      const orderData = await createPaymentOrder(amount, paymentType)      
       if (!orderData?.orderId || !orderData?.sessionId) {
         toast.error("Failed to create payment order")
         return
@@ -83,23 +79,16 @@ const AddMoneyPage: FC = () => {
         paymentSessionId: orderData.sessionId,
         returnUrl: `${window.location.origin}/admin/wallet/payment-callback?order_id=${orderData.orderId}`,
       }
-
-      console.log("Redirecting to Cashfree with options:", checkoutOptions)
-
       // Trigger payment
       cashfree.checkout(checkoutOptions).then((result: any) => {
-        console.log("Cashfree result:", result)
         if (result.error) {
-          console.error("Payment error:", result.error)
           toast.error(result.error.message || "Payment failed")
         }
         if (result.redirect) {
-          console.log("Payment redirect successful")
         }
       })
 
     } catch (error: any) {
-      console.error("Recharge error:", error)
       toast.error(error.message || "Failed to process payment")
     }
   }

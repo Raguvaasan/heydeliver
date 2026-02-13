@@ -62,9 +62,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const queryString = queryParams.toString();
       delhiveryUrl = `https://track.delhivery.com/${delhiveryPath}${queryString ? `?${queryString}` : ''}`;
     }
-    
-    console.log('Proxying to Delhivery:', req.method, delhiveryUrl);
-    console.log('Request body:', req.body);
 
     const response = await fetch(delhiveryUrl, fetchOptions);
     const data = await response.json();

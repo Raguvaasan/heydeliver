@@ -14,7 +14,7 @@ interface RateCardState {
   surfaceRates: RateCardData
   expressZones: string[]
   expressRates: RateCardData
-  
+
   // Get rate for specific zone and weight
   calculateRateFromCard: (
     mode: "surface" | "express",
@@ -66,14 +66,14 @@ export const useRateCardStore = create<RateCardState>((set, get) => ({
 
     // Find zone index (flexible matching)
     let zoneIndex = zones.findIndex((z) => z.toUpperCase().trim() === normalizedZone)
-    
+
     // If exact match not found, try partial matching (e.g., "A" matches "ZONE A")
     if (zoneIndex === -1) {
-      zoneIndex = zones.findIndex((z) => 
+      zoneIndex = zones.findIndex((z) =>
         z.toUpperCase().includes(normalizedZone) || normalizedZone.includes(z.toUpperCase())
       )
     }
-    
+
     if (zoneIndex === -1) {
       console.warn(`Zone not found: "${zone}" (normalized: "${normalizedZone}")`)
       return 0
@@ -90,17 +90,6 @@ export const useRateCardStore = create<RateCardState>((set, get) => ({
     // Forward shipment calculation
     let totalCharge = 0
     const weightInKg = weightInGrams / 1000
-
-    console.log('Rate Card Calculation:', {
-      weightInGrams,
-      weightInKg,
-      zoneIndex,
-      zoneName: zones[zoneIndex],
-      baseFare: rates.baseFare[zoneIndex],
-      additional250g: rates.additional250g[zoneIndex]
-    })
-
-    // Base fare (up to 250g)
     if (weightInKg <= 0.25) {
       totalCharge = rates.baseFare[zoneIndex]
     }

@@ -311,7 +311,6 @@ app.post('/webhook/cashfree', async (req, res) => {
         paymentId
       });
 
-      console.log(`Wallet credited: User ${dbOrder.userId}, Amount ${dbOrder.amount}`);
     }
 
     res.status(200).send('OK');

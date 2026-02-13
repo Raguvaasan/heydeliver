@@ -27,7 +27,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const queryString = queryParams.toString();
   const fullUrl = `https://track.delhivery.com/${apiPath}${queryString ? `?${queryString}` : ''}`;
 
-  console.log('Proxying to:', fullUrl);
 
   try {
     const response = await fetch(fullUrl, {
