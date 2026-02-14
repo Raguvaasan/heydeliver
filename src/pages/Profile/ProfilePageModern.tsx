@@ -1,6 +1,6 @@
-import { FC, useState, useEffect } from "react"
-import { Card, Avatar, Tabs, Table, Badge } from "flowbite-react"
-import { HiUser, HiMail, HiPhone, HiLocationMarker, HiOfficeBuilding, HiKey, HiCreditCard } from "react-icons/hi"
+import { FC, useEffect, useMemo, useState } from "react"
+import { Card, Avatar, Tabs, Table, Badge, Spinner } from "flowbite-react"
+import { HiUser, HiOfficeBuilding, HiKey, HiCreditCard } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import toast from "react-hot-toast"
 import { Formik, Form } from "formik"
@@ -8,6 +8,7 @@ import { FormInput, FormTextarea } from "../../components/FormComponents"
 import { SaveButton, FormSection } from "../../components/FormHelpers"
 import { profileValidationSchema, changePasswordSchema } from "../../utils/validationSchemas"
 import { sanitizeText } from "../../utils/sanitize"
+import { useOrderStore } from "../../store/orderStore"
 
 interface ProfileData {
   firstName: string
@@ -30,7 +31,8 @@ interface ProfileData {
 }
 
 const ProfilePageModern: FC = () => {
-  const [activeTab, setActiveTab] = useState<"profile" | "orders" | "security">("profile")
+  const [, setActiveTab] = useState<"profile" | "orders" | "security">("profile")
+  const { orders, fetchOrders, loading: ordersLoading } = useOrderStore()
 
   // Get profile data from sessionStorage
   const getProfileFromSession = (): ProfileData => {
@@ -89,13 +91,15 @@ const ProfilePageModern: FC = () => {
 
   const [profileData] = useState(getProfileFromSession())
 
-  const recentOrders = [
-    { id: "ORD-12345", date: "2026-01-17", status: "Delivered", amount: 1250 },
-    { id: "ORD-12344", date: "2026-01-16", status: "In Transit", amount: 980 },
-    { id: "ORD-12343", date: "2026-01-16", status: "Delivered", amount: 1580 },
-    { id: "ORD-12342", date: "2026-01-15", status: "Delivered", amount: 2100 },
-    { id: "ORD-12341", date: "2026-01-15", status: "Delivered", amount: 890 },
-  ]
+  useEffect(() => {
+    fetchOrders(1, 50)
+  }, [fetchOrders])
+
+  const pendingOrders = useMemo(() => {
+    return orders
+      .filter((order: any) => (order?.status || "").toLowerCase() === "pending")
+      .slice(0, 10)
+  }, [orders])
 
   const handleSaveProfile = async (values: any) => {
     try {
@@ -168,13 +172,6 @@ const ProfilePageModern: FC = () => {
     }
   }
 
-  // Generate avatar initials
-  const getInitials = () => {
-    const firstInitial = profileData.firstName?.charAt(0)?.toUpperCase() || ""
-    const lastInitial = profileData.lastName?.charAt(0)?.toUpperCase() || ""
-    return (firstInitial + lastInitial) || "U"
-  }
-
   // Get full name
   const getFullName = () => {
     return `${profileData.firstName} ${profileData.lastName}`.trim() || "User"
@@ -182,7 +179,7 @@ const ProfilePageModern: FC = () => {
 
   return (
     <NavbarSidebarLayout>
-      <div className="px-4 pt-6">
+      <div className="px-4">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -195,19 +192,17 @@ const ProfilePageModern: FC = () => {
 
         {/* Profile Header Card */}
         <Card className="mb-6">
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center">
             <Avatar
-              size="xl"
+              size="lg"
               img={`https://ui-avatars.com/api/?name=${encodeURIComponent(getFullName())}&background=EB8303&color=fff&size=128`}
               rounded
-            >
-              <div className="text-4xl font-bold">{getInitials()}</div>
-            </Avatar>
+            />
             <div className="flex-1 text-center sm:text-left">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-2xl font-bold leading-tight text-gray-900 dark:text-white">
                 {getFullName()}
               </h2>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="mt-1 text-gray-600 dark:text-gray-400">
                 {profileData.franchiseName && `${profileData.franchiseName} • `}
                 {profileData.franchiseCode || profileData.email}
               </p>
@@ -218,7 +213,7 @@ const ProfilePageModern: FC = () => {
           </div>
 
           {/* Stats */}
-          <div className="mt-6 grid grid-cols-2 gap-4 border-t pt-6 md:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-3 border-t pt-4 md:grid-cols-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                 ₹{profileData.walletBalance.toLocaleString()}
@@ -278,40 +273,38 @@ const ProfilePageModern: FC = () => {
                       description="Update your personal details"
                       icon={<HiUser className="w-5 h-5" />}
                     >
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <FormInput
+                            name="firstName"
+                            label="First Name"
+                            required
+                          />
+                          <FormInput
+                            name="lastName"
+                            label="Last Name"
+                            required
+                          />
+                        </div>
                         <FormInput
-                          name="firstName"
-                          label="First Name"
+                          name="email"
+                          label="Email Address"
+                          type="email"
                           required
-                          icon={<HiUser />}
                         />
                         <FormInput
-                          name="lastName"
-                          label="Last Name"
+                          name="phone"
+                          label="Phone Number"
+                          type="tel"
                           required
-                          icon={<HiUser />}
+                          helperText="10-digit mobile number"
+                        />
+                        <FormTextarea
+                          name="address"
+                          label="Address"
+                          rows={3}
                         />
                       </div>
-                      <FormInput
-                        name="email"
-                        label="Email Address"
-                        type="email"
-                        required
-                        icon={<HiMail />}
-                      />
-                      <FormInput
-                        name="phone"
-                        label="Phone Number"
-                        type="tel"
-                        required
-                        icon={<HiPhone />}
-                        helperText="10-digit mobile number"
-                      />
-                      <FormTextarea
-                        name="address"
-                        label="Address"
-                        rows={3}
-                      />
                     </FormSection>
 
                     {/* Franchise Information */}
@@ -321,33 +314,35 @@ const ProfilePageModern: FC = () => {
                       icon={<HiOfficeBuilding className="w-5 h-5" />}
                     >
                       <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Franchise Name
-                          </label>
-                          <div className="px-4 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white">
-                            {profileData.franchiseName || "N/A"}
+                        <div className="space-y-4">
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Franchise Name
+                            </label>
+                            <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
+                              {profileData.franchiseName || "N/A"}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Franchise Code
+                            </label>
+                            <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
+                              {profileData.franchiseCode || "N/A"}
+                            </div>
                           </div>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Franchise Code
-                          </label>
-                          <div className="px-4 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white">
-                            {profileData.franchiseCode || "N/A"}
-                          </div>
-                        </div>
+                        <FormInput
+                          name="gstNumber"
+                          label="GST Number"
+                          helperText="15-character GST number"
+                        />
+                        <FormInput
+                          name="panNumber"
+                          label="PAN Number"
+                          helperText="10-character PAN number"
+                        />
                       </div>
-                      <FormInput
-                        name="gstNumber"
-                        label="GST Number"
-                        helperText="15-character GST number"
-                      />
-                      <FormInput
-                        name="panNumber"
-                        label="PAN Number"
-                        helperText="10-character PAN number"
-                      />
                     </FormSection>
 
                     {/* Bank Details */}
@@ -392,43 +387,54 @@ const ProfilePageModern: FC = () => {
                 Recent Orders
               </h3>
               <div className="overflow-x-auto">
-                <Table hoverable>
-                  <Table.Head>
-                    <Table.HeadCell>Order ID</Table.HeadCell>
-                    <Table.HeadCell>Date</Table.HeadCell>
-                    <Table.HeadCell>Status</Table.HeadCell>
-                    <Table.HeadCell>Amount</Table.HeadCell>
-                  </Table.Head>
-                  <Table.Body className="divide-y">
-                    {recentOrders.map((order) => (
-                      <Table.Row
-                        key={order.id}
-                        className="bg-white dark:border-gray-700 dark:bg-gray-800"
-                      >
-                        <Table.Cell className="whitespace-nowrap font-medium text-gray-900 dark:text-white">
-                          {order.id}
-                        </Table.Cell>
-                        <Table.Cell>{order.date}</Table.Cell>
-                        <Table.Cell>
-                          <Badge
-                            color={
-                              order.status === "Delivered"
-                                ? "success"
-                                : order.status === "In Transit"
-                                ? "warning"
-                                : "info"
-                            }
+                {ordersLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Spinner size="lg" />
+                  </div>
+                ) : (
+                  <Table hoverable>
+                    <Table.Head>
+                      <Table.HeadCell>Order ID</Table.HeadCell>
+                      <Table.HeadCell>Date</Table.HeadCell>
+                      <Table.HeadCell>Status</Table.HeadCell>
+                      <Table.HeadCell>Amount</Table.HeadCell>
+                    </Table.Head>
+                    <Table.Body className="divide-y">
+                      {pendingOrders.length === 0 ? (
+                        <Table.Row className="bg-white dark:border-gray-700 dark:bg-gray-800">
+                          <Table.Cell
+                            colSpan={4}
+                            className="py-6 text-center text-gray-500 dark:text-gray-400"
                           >
-                            {order.status}
-                          </Badge>
-                        </Table.Cell>
-                        <Table.Cell className="font-semibold">
-                          ₹{order.amount.toLocaleString()}
-                        </Table.Cell>
-                      </Table.Row>
-                    ))}
-                  </Table.Body>
-                </Table>
+                            No pending orders found
+                          </Table.Cell>
+                        </Table.Row>
+                      ) : (
+                        pendingOrders.map((order: any) => (
+                          <Table.Row
+                            key={order._id || order.orderId || order.bookingId}
+                            className="bg-white dark:border-gray-700 dark:bg-gray-800"
+                          >
+                            <Table.Cell className="whitespace-nowrap font-medium text-gray-900 dark:text-white">
+                              {order.bookingId || order.orderId || order._id}
+                            </Table.Cell>
+                            <Table.Cell>
+                              {order.bookingDate || (order.createdAt ? new Date(order.createdAt).toLocaleString() : "-")}
+                            </Table.Cell>
+                            <Table.Cell>
+                              <Badge className="inline-flex w-fit" color="warning">
+                                Pending
+                              </Badge>
+                            </Table.Cell>
+                            <Table.Cell className="font-semibold">
+                              ₹{Number(order.amount || 0).toLocaleString()}
+                            </Table.Cell>
+                          </Table.Row>
+                        ))
+                      )}
+                    </Table.Body>
+                  </Table>
+                )}
               </div>
             </Card>
           </Tabs.Item>
@@ -455,14 +461,12 @@ const ProfilePageModern: FC = () => {
                       label="Current Password"
                       type="password"
                       required
-                      icon={<HiKey />}
                     />
                     <FormInput
                       name="newPassword"
                       label="New Password"
                       type="password"
                       required
-                      icon={<HiKey />}
                       helperText="Min 8 characters with uppercase, lowercase, number & special character"
                     />
                     <FormInput
@@ -470,7 +474,6 @@ const ProfilePageModern: FC = () => {
                       label="Confirm New Password"
                       type="password"
                       required
-                      icon={<HiKey />}
                     />
                     <SaveButton loading={isSubmitting}>
                       Change Password

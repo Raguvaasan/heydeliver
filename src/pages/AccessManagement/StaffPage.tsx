@@ -192,7 +192,7 @@ const StaffDetail = () => {
                         {item.amount}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge
+                        <Badge className="inline-flex w-fit"
                           color={
                             item.status === "Delivered"
                               ? "success"

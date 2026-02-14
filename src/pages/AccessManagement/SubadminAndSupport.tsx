@@ -234,7 +234,7 @@ const UserPage: FC = function () {
                           }
                         </td>
                         <td className="px-4 py-3">
-                          <Badge color={staff.status === "Active" ? "success" : "failure"}>
+                          <Badge className="inline-flex w-fit" color={staff.status === "Active" ? "success" : "failure"}>
                             {staff.status === "Active" ? "Active" : "Inactive"}
                           </Badge>
                         </td>

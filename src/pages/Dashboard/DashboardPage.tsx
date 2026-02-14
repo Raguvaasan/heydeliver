@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from "react"
+import { FC, useEffect, useRef, useState } from "react"
 import { Card, Spinner } from "flowbite-react"
 import {
   HiTruck,
@@ -72,10 +72,21 @@ const DashboardPage: FC = () => {
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [topFranchises, setTopFranchises] = useState<any[]>([])
   const [walletStats, setWalletStats] = useState<any>(null)
+  const [selectedPeriod, setSelectedPeriod] = useState<"day" | "week" | "month" | "year">("day")
+  const [revenueLoading, setRevenueLoading] = useState(false)
+  const hasLoadedInitially = useRef(false)
   
   useEffect(() => {
-    fetchDashboardData()
-    
+    fetchDashboardData({ showPageLoader: true })
+    hasLoadedInitially.current = true
+  }, [loginType])
+
+  useEffect(() => {
+    if (!hasLoadedInitially.current) return
+    fetchDashboardData({ showRevenueLoader: true })
+  }, [selectedPeriod])
+
+  useEffect(() => {
     // Fetch admin-specific data
     if (loginType === "admin") {
       fetchTopFranchises()
@@ -83,11 +94,18 @@ const DashboardPage: FC = () => {
     }
   }, [loginType])
   
-  const fetchDashboardData = async () => {
-    setLoading(true)
+  const fetchDashboardData = async ({
+    showPageLoader = false,
+    showRevenueLoader = false,
+  }: {
+    showPageLoader?: boolean
+    showRevenueLoader?: boolean
+  } = {}) => {
+    if (showPageLoader) setLoading(true)
+    if (showRevenueLoader) setRevenueLoading(true)
     try {
       const endpoint = loginType === "admin" ? "/admin/dashboard" : "/dashboard"
-      const params = loginType === "admin" ? { period: "week" } : {}
+      const params = { period: selectedPeriod }
       const response = await http.get(endpoint, { params })
       const data = response.data?.data || response.data
       setDashboardData(data)
@@ -95,7 +113,8 @@ const DashboardPage: FC = () => {
       toast.error("Failed to load dashboard data")
       setDashboardData({})
     } finally {
-      setLoading(false)
+      if (showPageLoader) setLoading(false)
+      if (showRevenueLoader) setRevenueLoading(false)
     }
   }
   
@@ -192,7 +211,7 @@ const DashboardPage: FC = () => {
           icon: <HiCurrencyRupee className="h-5 w-5" />,
           title: "Revenue Generated",
           value: `${revenue.currency || '₹'}${Number(revenue.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-          subtitle: `This ${dashboardData.period || 'week'}`,
+          subtitle: `This ${dashboardData.period || selectedPeriod}`,
           percentage: revenue.percentageChange ? `${revenue.percentageChange}%` : undefined,
           iconBgColor: "bg-green-500",
         },
@@ -299,71 +318,78 @@ const DashboardPage: FC = () => {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-6">
             {/* Revenue Chart */}
             <Card className="lg:col-span-2">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Revenue
-                </h3>
-                {isFranchise ? (
-                  // Franchise view with today's revenue
-                  <>
-                    <div className="flex items-baseline gap-4 mt-2">
-                      <p className="text-2xl font-bold text-green-600">
-                        ₹{Number(todaysRevenue).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                      <div className="flex gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600 dark:text-gray-400">COD: </span>
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            ₹{Number(codRevenue).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </span>
+              {revenueLoading ? (
+                <div className="flex h-[340px] items-center justify-center">
+                  <Spinner size="lg" />
+                </div>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Revenue
+                    </h3>
+                    {isFranchise ? (
+                      <>
+                        <div className="flex items-baseline gap-4 mt-2">
+                          <p className="text-2xl font-bold text-green-600">
+                            ₹{Number(todaysRevenue).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                          <div className="flex gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-600 dark:text-gray-400">COD: </span>
+                              <span className="font-semibold text-gray-900 dark:text-white">
+                                ₹{Number(codRevenue).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 dark:text-gray-400">Shipments: </span>
+                              <span className="font-semibold text-gray-900 dark:text-white">
+                                {todaysShipments}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-gray-600 dark:text-gray-400">Shipments: </span>
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            {todaysShipments}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    {revenueData.todaysRevenue?.label && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {revenueData.todaysRevenue.label}
-                      </p>
+                        {revenueData.todaysRevenue?.label && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {revenueData.todaysRevenue.label}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-2xl font-bold text-green-600 mt-2">
+                          ₹{Number(latestRevenue?.revenue || dashboardData?.overview?.revenue?.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        {dashboardData?.overview?.revenue?.percentageChange && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            <span className={parseFloat(dashboardData.overview.revenue.percentageChange) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {parseFloat(dashboardData.overview.revenue.percentageChange) >= 0 ? '+' : ''}{dashboardData.overview.revenue.percentageChange}%
+                            </span>
+                            {' '}vs last {dashboardData?.period || selectedPeriod}
+                          </p>
+                        )}
+                      </>
                     )}
-                  </>
-                ) : (
-                  // Admin view with total revenue
-                  <>
-                    <p className="text-2xl font-bold text-green-600 mt-2">
-                      ₹{Number(latestRevenue?.revenue || dashboardData?.overview?.revenue?.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    {dashboardData?.overview?.revenue?.percentageChange && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        <span className={parseFloat(dashboardData.overview.revenue.percentageChange) >= 0 ? 'text-green-600' : 'text-red-600'}>
-                          {parseFloat(dashboardData.overview.revenue.percentageChange) >= 0 ? '+' : ''}{dashboardData.overview.revenue.percentageChange}%
-                        </span>
-                        {' '}vs last {dashboardData?.period || 'week'}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            <div className="flex gap-2 mb-4">
-              <button className="px-3 py-1 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                Day
-              </button>
-              <button className="px-3 py-1 text-sm rounded-lg bg-orange-500 text-white">
-                Week
-              </button>
-              <button className="px-3 py-1 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                Month
-              </button>
-              <button className="px-3 py-1 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                Year
-              </button>
-            </div>
-            {/* Revenue Area Chart */}
-            <RevenueChart data={revenueTrend} height={240} />
+                  </div>
+                  <div className="mb-4 flex gap-2">
+                    {(["day", "week", "month", "year"] as const).map((period) => (
+                      <button
+                        key={period}
+                        type="button"
+                        onClick={() => setSelectedPeriod(period)}
+                        className={`rounded-lg px-3 py-1 text-sm capitalize ${
+                          selectedPeriod === period
+                            ? "bg-[#ff5a1f] text-white"
+                            : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                        }`}
+                      >
+                        {period}
+                      </button>
+                    ))}
+                  </div>
+                  <RevenueChart data={revenueTrend} height={240} />
+                </>
+              )}
           </Card>
 
           {/* Shipment Type Chart */}

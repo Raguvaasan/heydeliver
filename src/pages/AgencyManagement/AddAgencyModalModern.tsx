@@ -15,13 +15,26 @@ import {
 import { Formik, Form, useField } from "formik"
 import { FormInput, FormSelect, FormTextarea } from "../../components/FormComponents"
 import { SaveButton, FormSection } from "../../components/FormHelpers"
-import { agencyValidationSchema } from "../../utils/validationSchemas"
+import {
+  agencyValidationSchema,
+  emailValidation,
+  passwordValidation,
+} from "../../utils/validationSchemas"
 import { sanitizeText } from "../../utils/sanitize"
+import * as Yup from "yup"
 
 interface AddAgencyModalProps {
   isOpen: boolean
   onClose: () => void
 }
+
+const addAgencyModalValidationSchema = agencyValidationSchema.shape({
+  email: emailValidation,
+  password: passwordValidation,
+  username: Yup.string()
+    .email("Please enter a valid login email")
+    .required("Login email is required"),
+})
 
 const PasswordInputField: FC<{
   name: string
@@ -150,7 +163,7 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <Modal show={isOpen} onClose={onClose} size="4xl" position="center">
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#64748b_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500/70 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-500 to-orange-600">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
@@ -182,7 +195,7 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
               password: "",
               status: "Active",
             }}
-            validationSchema={agencyValidationSchema}
+            validationSchema={addAgencyModalValidationSchema}
             onSubmit={handleSubmit}
           >
             {({ isSubmitting }) => (
@@ -281,9 +294,9 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput
                       name="username"
-                      label="Username"
+                      label="Email Address"
                       required
-                      helperText="Unique username for login"
+                      helperText="Unique email for login"
                     />
                     <PasswordInputField
                       name="password"

@@ -129,7 +129,7 @@ const Navbar: FC<NavbarProps> = ({
             >
               <HiCurrencyRupee className="h-5 w-5" />
               <span className="font-semibold text-sm">
-                ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                Wallet: ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
           ) : (

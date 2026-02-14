@@ -210,3 +210,23 @@
 .fc .fc-daygrid-day-frame {
   @apply hover:bg-gray-50 cursor-pointer !important;
 }
+
+/* Global action button color override */
+button[class*="bg-orange-500"],
+a[class*="bg-orange-500"],
+button[class*="from-orange-500"],
+a[class*="from-orange-500"] {
+  background-color: #ff5a1f !important;
+}
+
+button[class*="hover:bg-orange-600"]:hover,
+a[class*="hover:bg-orange-600"]:hover,
+button[class*="hover:from-orange-600"]:hover,
+a[class*="hover:from-orange-600"]:hover {
+  background-color: #ff5a1f !important;
+}
+
+button[class*="bg-gradient-to-r"][class*="from-orange-500"],
+a[class*="bg-gradient-to-r"][class*="from-orange-500"] {
+  background-image: none !important;
+}

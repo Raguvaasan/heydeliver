@@ -249,8 +249,8 @@ const OrdersPage: FC = () => {
     }
 
     return (
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+      <div className="w-full overflow-x-auto [scrollbar-width:thin] [scrollbar-color:#64748b_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500/70 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80">
+        <table className="min-w-[1100px] w-full text-left text-sm">
           <thead className="bg-gray-800 text-white text-xs uppercase">
             <tr>
               <th className="px-4 py-3">
@@ -262,12 +262,12 @@ const OrdersPage: FC = () => {
                   disabled={ordersList.length === 0}
                 />
               </th>
-              <th className="px-4 py-3">Order ID</th>
-              <th className="px-4 py-3">BOOKING DATE & TIME</th>
-              <th className="px-4 py-3">CUSTOMER</th>
-              <th className="px-4 py-3">CUSTOMER NUMBER</th>
-              <th className="px-4 py-3">AMOUNT</th>
-              <th className="px-4 py-3">STATUS</th>
+              <th className="px-4 py-3 whitespace-nowrap">Order ID</th>
+              <th className="px-4 py-3 whitespace-nowrap">BOOKING DATE & TIME</th>
+              <th className="px-4 py-3 whitespace-nowrap">CUSTOMER</th>
+              <th className="px-4 py-3 whitespace-nowrap">CUSTOMER NUMBER</th>
+              <th className="px-4 py-3 whitespace-nowrap">AMOUNT</th>
+              <th className="px-4 py-3 whitespace-nowrap">STATUS</th>
               <th className="px-4 py-3 text-center">ACTION</th>
             </tr>
           </thead>
@@ -287,7 +287,7 @@ const OrdersPage: FC = () => {
                       : "hover:bg-gray-50 dark:hover:bg-gray-700"
                     }`}
                 >
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <input
                       type="checkbox"
                       checked={selectedOrders.includes(order._id)}
@@ -295,7 +295,7 @@ const OrdersPage: FC = () => {
                       className="form-checkbox h-4 w-4"
                     />
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <span
                       className={`font-medium ${index === 0
                           ? "text-orange-600"
@@ -305,24 +305,24 @@ const OrdersPage: FC = () => {
                       {order.bookingId || order._id}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                  <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                     {order.bookingDate || new Date(order.createdAt).toLocaleString()}
                   </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                  <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                     {order.customer || order.customerName || "-"}
                   </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                  <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                     {order.customerNumber || order.phone || "-"}
                   </td>
-                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                  <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                     ₹{order.amount || 0}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <Badge color={getStatusColor(order.status)}>
                       {order.status || "Pending"}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => handleInvoice(order._id || order.orderId || order.bookingId)}

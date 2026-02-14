@@ -49,6 +49,7 @@ const ViewAgencyModal: FC<ViewAgencyModalProps> = ({ isOpen, onClose }) => {
             <div className="w-full md:w-2/3">
               <Badge
                 color={selectedAgency.status === "Active" ? "success" : "failure"}
+                className="inline-flex w-fit"
               >
                 {selectedAgency.status}
               </Badge>

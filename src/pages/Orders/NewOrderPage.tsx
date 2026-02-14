@@ -144,11 +144,28 @@ const NewOrderPage: FC = () => {
   }
 
   const handleBoxChange = (id: number, field: keyof BoxDetails, value: string) => {
+    const numericFields: Array<keyof BoxDetails> = ["length", "breadth", "height", "weight"]
+    if (numericFields.includes(field)) {
+      // Allow only positive numeric values (including empty while editing)
+      if (!/^\d*$/.test(value)) {
+        return
+      }
+      if (value !== "" && Number(value) <= 0) {
+        return
+      }
+    }
+
     setBoxes((prev) =>
       prev.map((box) =>
         box.id === id ? { ...box, [field]: value } : box
       )
     )
+  }
+
+  const preventInvalidNumberKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (["-", "+", "e", "E", "."].includes(e.key)) {
+      e.preventDefault()
+    }
   }
 
   const calculateChargeableWeight = () => {
@@ -823,6 +840,8 @@ const NewOrderPage: FC = () => {
                           placeholder="L"
                           value={box.length}
                           onChange={(e) => handleBoxChange(box.id, "length", e.target.value)}
+                          onKeyDown={preventInvalidNumberKeys}
+                          min={1}
                           required
                         />
                         <TextInput
@@ -830,6 +849,8 @@ const NewOrderPage: FC = () => {
                           placeholder="B"
                           value={box.breadth}
                           onChange={(e) => handleBoxChange(box.id, "breadth", e.target.value)}
+                          onKeyDown={preventInvalidNumberKeys}
+                          min={1}
                           required
                         />
                         <TextInput
@@ -837,6 +858,8 @@ const NewOrderPage: FC = () => {
                           placeholder="H"
                           value={box.height}
                           onChange={(e) => handleBoxChange(box.id, "height", e.target.value)}
+                          onKeyDown={preventInvalidNumberKeys}
+                          min={1}
                           required
                         />
                       </div>
@@ -853,6 +876,8 @@ const NewOrderPage: FC = () => {
                           placeholder="Enter Package weight"
                           value={box.weight}
                           onChange={(e) => handleBoxChange(box.id, "weight", e.target.value)}
+                          onKeyDown={preventInvalidNumberKeys}
+                          min={1}
                           required
                           className="flex-1"
                         />
