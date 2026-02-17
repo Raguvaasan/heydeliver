@@ -80,7 +80,7 @@ const ForwardOrdersPage: FC = () => {
   const [orders, setOrders] = useState<ForwardOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const limit = 10;
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [totalOrders, setTotalOrders] = useState(0);
   const [recallingOrderId, setRecallingOrderId] = useState<string | null>(null);
@@ -127,7 +127,12 @@ const ForwardOrdersPage: FC = () => {
       }));
       
       setOrders(normalizedOrders);
-      setTotalOrders(response.data?.total || response.data?.totalCount || normalizedOrders.length);
+      setTotalOrders(
+        response.data?.pagination?.total ||
+        response.data?.total ||
+        response.data?.totalCount ||
+        normalizedOrders.length
+      );
       
       toast.success(`Loaded ${normalizedOrders.length} orders`);
     } catch (error: any) {
@@ -146,7 +151,12 @@ const ForwardOrdersPage: FC = () => {
     fetchForwardOrders();
   }, [page, limit, statusFilter]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
+
   const handleRecallOrder = async (order: any) => {
+    console.log("order",order)
     const rawOrderId = order.orderId || order.bookingId || order._id || order.id;
     if (!rawOrderId) {
       toast.error("Order ID not found");
@@ -160,33 +170,37 @@ const ForwardOrdersPage: FC = () => {
     setRecallingOrderId(orderId);
     try {
       const payload = {
-        name: order.name || order.customer || order.customerName || order.consigneeName || "",
-        add: order.add || order.address || order.deliveryAddress || "",
-        pin: order.pin || order.pincode || "",
-        city: order.city || order.deliveryCity || "",
-        state: order.state || order.deliveryState || "",
-        country: order.country || order.deliveryCountry || "India",
-        phone: order.phone || order.customerNumber || "",
-        paymentMode: order.paymentMode || order.payment_mode || "Prepaid",
-        status: "active",
-        fromName: order.fromName || "",
-        fromAdd: order.fromAdd || "",
-        fromPin: order.fromPin || "",
-        fromCity: order.fromCity || "",
-        fromState: order.fromState || "",
-        fromCountry: order.fromCountry || "India",
-        fromPhone: order.fromPhone || "",
-        returnPin: order.returnPin || order.return_pin || "",
-        returnCity: order.returnCity || order.return_city || "",
-        returnPhone: order.returnPhone || order.return_phone || "",
-        returnAdd: order.returnAdd || order.return_add || "",
-        returnState: order.returnState || order.return_state || "",
-        returnCountry: order.returnCountry || order.return_country || "India",
-        productsDesc: order.productsDesc || order.products_desc || "",
+        name: order.consignee.name,
+        add: order.consignee.address,
+        pin:order.consignee.pin,
+        city: order.consignee.city,
+        state: order.consignee.state,
+        country: order.consignee.country || "India",
+        phone: order.consignee.phone,
+
+        paymentMode: order.shipmentDetails.paymentMode,
+        status: "In Transit",
+
+        fromName: order.from.name,
+        fromAdd: order.from.address,
+        fromPin: order.from.pin,
+        fromCity: order.from.city,
+        fromState: order.from.state,
+        fromCountry: order.from.country,
+        fromPhone: order.from.phone,
+
+        returnPin: order.pickupLocation.pincode,
+        returnCity: order.pickupLocation.city || "",
+        returnPhone: order.pickupLocation.phone,
+        returnAdd: order.pickupLocation.address,
+        returnState: order.pickupLocation.state || "",
+        returnCountry: order.pickupLocation.country || "India",
+        
+        productsDesc: order.productsDesc || "",
         codAmount: String(order.codAmount || order.cod_amount || "0"),
-        totalAmount: String(order.totalAmount || order.total_amount || order.amount || "0"),
-        weight: String(order.weight || ""),
-        shippingMode: order.shippingMode || order.shipping_mode || "Surface",
+        totalAmount: String(order.amount),
+        weight: String(order.shipmentDetails.weight),
+        shippingMode: order.shipmentDetails.shippingMode,
       };
 
       await http.put(`/shipment/order/${encodeURIComponent(apiOrderId)}`, payload);
@@ -216,10 +230,22 @@ const ForwardOrdersPage: FC = () => {
   const getOrderId = (order: ForwardOrder) =>
     order.bookingId || order.orderId || order._id || order.id || "-";
 
-  const getDisplayDate = (order: ForwardOrder) =>
-    order.forwardDate ||
-    order.bookingDate ||
-    (order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "-");
+  const totalPages = Math.max(1, Math.ceil(totalOrders / limit));
+
+  const formatDateTime = (isoDate: string | undefined) => {
+  if (!isoDate) return "-";
+
+  const date = new Date(isoDate);
+
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
 
   const getStatusColor = (status?: string) =>
     status?.toLowerCase() === "delivered"
@@ -229,6 +255,12 @@ const ForwardOrdersPage: FC = () => {
         : status?.toLowerCase() === "cancelled"
           ? "failure"
           : "info";
+
+  const getText = (value?: string | number, fallback = "-") => {
+    if (value === null || value === undefined) return fallback;
+    const text = String(value).trim();
+    return text.length ? text : fallback;
+  };
 
   return (
     <NavbarSidebarLayout>
@@ -242,8 +274,8 @@ const ForwardOrdersPage: FC = () => {
           </p>
         </div>
 
-        <Card className="overflow-hidden flex-1 flex flex-col">
-          <div className="flex h-full flex-col">
+        <Card className="overflow-hidden flex-1 flex flex-col min-w-0">
+          <div className="flex h-full flex-col min-w-0">
           <div className="mb-4 flex flex-col md:flex-row gap-4">
             <TextInput
               icon={HiSearch}
@@ -274,8 +306,20 @@ const ForwardOrdersPage: FC = () => {
             </Button>
           </div>
 
-          <div className="hidden w-full flex-1 overflow-x-auto overflow-y-auto pb-0 md:block [scrollbar-width:thin] [scrollbar-color:#64748b_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500/70 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80">
-            <Table hoverable className="min-w-max whitespace-nowrap">
+          <div className="hidden w-full min-w-0 flex-1 overflow-x-auto overflow-y-auto pb-2 pr-1 md:block [scrollbar-width:thin] [scrollbar-color:#64748b_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500/70 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80">
+            <Table hoverable className="min-w-[1100px] w-full table-fixed text-sm [&_th]:px-2 [&_th]:py-3 [&_td]:px-2 [&_td]:py-3">
+              <colgroup>
+                <col className="w-[15%]" />
+                <col className="w-[13%]" />
+                <col className="w-[10%]" />
+                <col className="w-[12%]" />
+                <col className="w-[9%]" />
+                <col className="w-[9%]" />
+                <col className="w-[10%]" />
+                <col className="w-[6%]" />
+                <col className="w-[6%]" />
+                <col className="w-[10%]" />
+              </colgroup>
               <Table.Head>
                 <Table.HeadCell>Order ID</Table.HeadCell>
                 <Table.HeadCell>Franchise Name</Table.HeadCell>
@@ -330,49 +374,99 @@ const ForwardOrdersPage: FC = () => {
                       key={order._id || order.id || order.orderId}
                       className="bg-white dark:border-gray-700 dark:bg-gray-800"
                     >
-                      <Table.Cell className="font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                        {getOrderId(order)}
-                      </Table.Cell>
-                      <Table.Cell>
-                        <span className="font-medium text-orange-600">
-                          {order.franchiseName || "-"}
+                      <Table.Cell className="font-medium text-gray-900 dark:text-white">
+                        <span className="block truncate" title={getText(getOrderId(order))}>
+                          {getText(getOrderId(order))}
                         </span>
                       </Table.Cell>
-                      <Table.Cell>{order.waybill || order.awb || "-"}</Table.Cell>
-                      <Table.Cell>{order.customer || order.customerName || order.consigneeName || "-"}</Table.Cell>
-                      <Table.Cell>{order.origin || order.sellerAdd || order.seller_add || "-"}</Table.Cell>
                       <Table.Cell>
-                        {order.destination || order.city || order.deliveryCity || "-"}
-                        {order.pin && <span className="text-xs text-gray-500 block">PIN: {order.pin}</span>}
+                        <span
+                          className="block truncate font-medium text-orange-600"
+                          title={getText(order.franchiseName)}
+                        >
+                          {getText(order.franchiseName)}
+                        </span>
                       </Table.Cell>
                       <Table.Cell>
-                        {getDisplayDate(order)}
+                        <span
+                          className="block truncate"
+                          title={getText(order.waybill || order.awb)}
+                        >
+                          {getText(order.waybill || order.awb)}
+                        </span>
                       </Table.Cell>
                       <Table.Cell>
-                        <Badge color={getStatusColor(order.status)}>
-                          {order.status || "In Transit"}
-                        </Badge>
+                        <span
+                          className="block truncate"
+                          title={getText(order.consignee.name)}
+                        >
+                          {getText(order.consignee.name)}
+                        </span>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <span
+                          className="block truncate"
+                          title={getText(order.pickupLocation.address)}
+                        >
+                          {getText(order.pickupLocation.address)}
+                        </span>
+                      </Table.Cell>
+                      <Table.Cell>
+                        <span
+                          className="block truncate"
+                          title={getText(order.consignee.city)}
+                        >
+                          {getText(order.consignee.city)}
+                        </span>
+                        {order.pin && (
+                          <span className="text-xs text-gray-500 block truncate" title={`PIN: ${order.pin}`}>
+                            PIN: {order.pin}
+                          </span>
+                        )}
+                      </Table.Cell>
+                     <Table.Cell>
+  <span
+    className="block truncate"
+    title={formatDateTime(order.createdAt)}
+  >
+    {formatDateTime(order.createdAt)}
+  </span>
+</Table.Cell>
+                      <Table.Cell>
+                        <span className="block truncate" title={getText(order.status || "In Transit")}>
+                          <Badge className="inline-flex" color={getStatusColor(order.status)}>
+                            {getText(order.status || "In Transit")}
+                          </Badge>
+                        </span>
                       </Table.Cell>
                       <Table.Cell>
                         <div className="flex flex-col">
-                          <span className="font-medium">₹{Number(order.amount || order.totalAmount || 0).toFixed(2)}</span>
+                          <span
+                            className="block truncate font-medium"
+                            title={`₹${Number(order.amount || order.totalAmount || 0).toFixed(2)}`}
+                          >
+                            ₹{Number(order.amount || order.totalAmount || 0).toFixed(2)}
+                          </span>
                           {order.paymentMode && (
-                            <span className="text-xs text-gray-500">{order.paymentMode}</span>
+                            <span className="block truncate text-xs text-gray-500" title={getText(order.paymentMode)}>
+                              {getText(order.paymentMode)}
+                            </span>
                           )}
                         </div>
                       </Table.Cell>
                       <Table.Cell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           <Button
                             size="sm"
                             color="light"
+                            className="px-2"
+                            title="View order"
                             onClick={() => {
                               const orderId = order.orderId || order._id || order.id;
                               navigate(`/orders/forward/${orderId}`);
                             }}
                           >
-                            <HiEye className="mr-2 h-4 w-4" />
-                            View
+                            <HiEye className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
@@ -436,7 +530,7 @@ const ForwardOrdersPage: FC = () => {
                       {order.destination || order.city || order.deliveryCity || "-"}
                     </p>
                     <p className="text-gray-500">Forward Date</p>
-                    <p className="text-right">{getDisplayDate(order)}</p>
+                    <p className="text-right">{(order.createdAt)}</p>
                     <p className="text-gray-500">Amount</p>
                     <p className="text-right font-medium">
                       ₹{Number(order.amount || order.totalAmount || 0).toFixed(2)}
@@ -497,7 +591,7 @@ const ForwardOrdersPage: FC = () => {
                     color="gray"
                     size="sm"
                     onClick={() => setPage(page + 1)}
-                    disabled={orders.length < limit || loading}
+                    disabled={page >= totalPages || loading}
                   >
                     Next
                   </Button>

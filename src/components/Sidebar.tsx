@@ -214,6 +214,11 @@ const Sidebar: FC<SidebarProps> = ({
   }
 
   const toggleMenu = (menuTitle: string) => {
+    if (!isExpanded) {
+      setIsExpanded(true)
+      return
+    }
+
     setOpenMenus((prev) =>
       prev.includes(menuTitle)
         ? prev.filter((title) => title !== menuTitle)
@@ -258,15 +263,21 @@ const Sidebar: FC<SidebarProps> = ({
       <aside
         className={`fixed top-0 left-0 z-50 h-screen transition-transform duration-300 ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 ${isExpanded ? "w-64 lg:w-[20%]" : "w-20 lg:w-20"}`}
+        } lg:translate-x-0 ${isExpanded ? "w-64" : "w-20"}`}
       >
         <div className="h-full bg-[#2c2c2c] dark:bg-[#1a1a1a] flex flex-col">
           {/* Logo Section */}
-          <div className="h-16 flex items-center justify-between px-4 border-b border-gray-700">
+          <div className={`h-16 flex items-center border-b border-gray-700 ${isExpanded ? "justify-between px-4" : "justify-center px-2"}`}>
             <Link to="/dashboard" className="flex items-center gap-2">
               <div className="flex items-center">
-                <span className="text-yellow-500 font-bold text-xl">Hey</span>
-                <span className="text-white font-bold text-xl">Deliver</span>
+                {isExpanded ? (
+                  <>
+                    <span className="text-yellow-500 font-bold text-xl">Hey</span>
+                    <span className="text-white font-bold text-xl">Deliver</span>
+                  </>
+                ) : (
+                  <span className="text-white font-bold text-lg">HD</span>
+                )}
               </div>
             </Link>
           </div>
@@ -280,51 +291,62 @@ const Sidebar: FC<SidebarProps> = ({
                     // Menu item with submenu - use button instead of Link
                     <button
                       onClick={() => toggleMenu(item.title)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                      className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all ${
                         isActive(item.path)
                           ? "bg-orange-500 text-white"
                           : "text-gray-300 hover:bg-gray-700 hover:text-white"
-                      }`}
+                      } ${isExpanded ? "gap-3" : "justify-center"}`}
+                      title={!isExpanded ? item.title : undefined}
                     >
                       <span className="flex-shrink-0">{item.icon}</span>
-                      <span className="flex-1 text-left text-sm font-medium">
-                        {item.title}
-                      </span>
-                      <HiChevronDown
-                        className={`h-4 w-4 flex-shrink-0 transition-transform ${
-                          isMenuOpen(item.title) ? "rotate-180" : ""
-                        }`}
-                      />
-                      {item.badge && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                          {item.badge}
-                        </span>
+                      {isExpanded && (
+                        <>
+                          <span className="flex-1 text-left text-sm font-medium">
+                            {item.title}
+                          </span>
+                          <HiChevronDown
+                            className={`h-4 w-4 flex-shrink-0 transition-transform ${
+                              isMenuOpen(item.title) ? "rotate-180" : ""
+                            }`}
+                          />
+                          {item.badge && (
+                            <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
                       )}
                     </button>
                   ) : (
                     // Menu item without submenu - use Link
                     <Link
                       to={item.path}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                      className={`flex items-center px-3 py-2.5 rounded-lg transition-all ${
                         isActive(item.path)
                           ? "bg-orange-500 text-white"
                           : "text-gray-300 hover:bg-gray-700 hover:text-white"
-                      }`}
+                      } ${isExpanded ? "gap-3" : "justify-center"}`}
+                      onClick={() => setIsMobileOpen(false)}
+                      title={!isExpanded ? item.title : undefined}
                     >
                       <span className="flex-shrink-0">{item.icon}</span>
-                      <span className="flex-1 text-sm font-medium">
-                        {item.title}
-                      </span>
-                      {item.badge && (
-                        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                          {item.badge}
-                        </span>
+                      {isExpanded && (
+                        <>
+                          <span className="flex-1 text-sm font-medium">
+                            {item.title}
+                          </span>
+                          {item.badge && (
+                            <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
                       )}
                     </Link>
                   )}
 
                   {/* Submenu - Show when open */}
-                  {item.submenu && isMenuOpen(item.title) && (
+                  {isExpanded && item.submenu && isMenuOpen(item.title) && (
                     <div className="ml-11 mt-1 space-y-1">
                       {item.submenu.map((subItem, subIndex) => (
                         <Link
@@ -348,7 +370,7 @@ const Sidebar: FC<SidebarProps> = ({
 
           {/* User Profile Section */}
           <div className="p-3 border-t border-gray-700">
-            <div className="flex items-center gap-2 mb-2">
+            <div className={`flex items-center mb-2 ${isExpanded ? "gap-2" : "justify-center"}`}>
               <div className="w-9 h-9 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
                 {(() => {
                   try {
@@ -360,28 +382,31 @@ const Sidebar: FC<SidebarProps> = ({
                   }
                 })()}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-white truncate">
-                  {(() => {
-                    try {
-                      const profileData = JSON.parse(sessionStorage.getItem("profileData") || "{}")
-                      return profileData.data?.username || profileData.data?.email || profileData.username || profileData.email || profileData.data?.name || profileData.data?.agencyName || profileData.name || "User"
-                    } catch {
-                      return "User"
-                    }
-                  })()}
-                </p>
-                <p className="text-[10px] text-gray-400 capitalize">
-                  {loginType}
-                </p>
-              </div>
+              {isExpanded && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-white truncate">
+                    {(() => {
+                      try {
+                        const profileData = JSON.parse(sessionStorage.getItem("profileData") || "{}")
+                        return profileData.data?.username || profileData.data?.email || profileData.username || profileData.email || profileData.data?.name || profileData.data?.agencyName || profileData.name || "User"
+                      } catch {
+                        return "User"
+                      }
+                    })()}
+                  </p>
+                  <p className="text-[10px] text-gray-400 capitalize">
+                    {loginType}
+                  </p>
+                </div>
+              )}
             </div>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600 rounded transition-colors"
+              className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600 rounded transition-colors ${isExpanded ? "" : "px-0"}`}
+              title={!isExpanded ? "Logout" : undefined}
             >
               <HiLogout className="h-3.5 w-3.5" />
-              <span>Logout</span>
+              {isExpanded && <span>Logout</span>}
             </button>
           </div>
         </div>

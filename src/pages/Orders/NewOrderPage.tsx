@@ -16,7 +16,6 @@ interface BoxDetails {
   weight: string
 }
 
-// Generate unique order ID
 const generateOrderId = () => {
   const prefix = "ORD"
   const timestamp = Date.now().toString().slice(-8)
@@ -28,11 +27,10 @@ const NewOrderPage: FC = () => {
   const navigate = useNavigate()
   const { createDelhiveryShipment, loading } = useOrderStore()
   const { fetchRateData } = useRateCalculatorStore()
-
-  // Get user profile data for franchise
   const loginType = sessionStorage.getItem("loginType")
   const profileDataStr = sessionStorage.getItem("profileData")
   const profileData = profileDataStr ? JSON.parse(profileDataStr) : null
+
   const [formData, setFormData] = useState({
     // Customer Details
     customerName: "",
@@ -63,11 +61,6 @@ const NewOrderPage: FC = () => {
     fromState: "",
     fromCountry: "India",
     fromPhone: "",
-    returnAddress: "",
-    returnCity: "",
-    returnState: "",
-    returnPincode: "",
-    returnPhone: "",
     returnCountry: "India",
     
     // Product Details
@@ -83,18 +76,22 @@ const NewOrderPage: FC = () => {
     pickupLocation: "",
   })
 
-  // Auto-populate pickup location for franchise users
   useEffect(() => {
-    if (loginType === "franchise" && profileData) {
-      const warehouseName = profileData.agencyName || profileData.name || ""
-      if (warehouseName) {
-        setFormData((prev) => ({
-          ...prev,
-          pickupLocation: warehouseName,
-        }))
+    if (loginType !== "franchise") return
+    if (!profileDataStr) return
+
+    const parsedProfile = JSON.parse(profileDataStr)
+    const warehouseName = parsedProfile?.agencyName || parsedProfile?.name || ""
+    if (!warehouseName) return
+
+    setFormData((prev) => {
+      if (prev.pickupLocation === warehouseName) return prev
+      return {
+        ...prev,
+        pickupLocation: warehouseName,
       }
-    }
-  }, [loginType, profileData])
+    })
+  }, [loginType, profileDataStr])
 
   const [boxes, setBoxes] = useState<BoxDetails[]>([
     {
@@ -309,19 +306,20 @@ const NewOrderPage: FC = () => {
         phone: formData.customerPhone,
         order: formData.orderId,
         payment_mode: formData.paymentMode,
-        return_pin: formData.returnPincode || "",
-        return_city: formData.returnCity || "",
-        return_phone: formData.returnPhone || "",
-        return_add: formData.returnAddress || "",
-        return_state: formData.returnState || "",
+        return_pin: profileData.pincode,
+        return_city: profileData.city,
+        return_phone: profileData.phone,
+        return_add: profileData.address,
+        return_state: profileData.state,
         return_country: formData.returnCountry || "",
         products_desc: formData.productsDesc || "",
         hsn_code: formData.hsnCode || "",
         cod_amount: formData.paymentMode === "COD" ? formData.codAmount : "",
-        order_date: formData.orderDate || null,
+        order_date: new Date().toLocaleString(),
         total_amount: selectedRate?.toString() || formData.totalAmount || formData.codAmount,
-        seller_add: formData.sellerAddress || "",
-        seller_name: formData.sellerName || "",
+
+        seller_add: profileData.address,
+        seller_name: profileData.agencyOwner,
         seller_inv: formData.sellerInvoice || "",
         quantity: formData.quantity || "",
         waybill: "",
@@ -340,14 +338,6 @@ const NewOrderPage: FC = () => {
         fromState: formData.fromState,
         fromCountry: formData.fromCountry,
         fromPhone: formData.fromPhone,
-        returnPin: formData.returnPincode || "",
-        returnCity: formData.returnCity || "",
-        returnPhone: formData.returnPhone || "",
-        returnAdd: formData.returnAddress || "",
-        returnState: formData.returnState || "",
-        returnCountry: formData.returnCountry || "",
-        codAmount: formData.paymentMode === "COD" ? formData.codAmount : "0",
-        orderDate: formData.orderDate || new Date().toISOString(),
       })
       setTimeout(() => {
         navigate("/orders")

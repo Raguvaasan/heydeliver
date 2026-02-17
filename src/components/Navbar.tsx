@@ -7,12 +7,14 @@ interface NavbarProps {
   isMobileOpen: boolean
   setIsMobileOpen: (value: boolean) => void
   isSidebarExpanded: boolean
+  setIsSidebarExpanded: (value: boolean) => void
 }
 
 const Navbar: FC<NavbarProps> = ({
   isMobileOpen,
   setIsMobileOpen,
   isSidebarExpanded,
+  setIsSidebarExpanded,
 }) => {
   const navigate = useNavigate()
   const [userName, setUserName] = useState("Admin")
@@ -93,11 +95,21 @@ const Navbar: FC<NavbarProps> = ({
     <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-white dark:bg-[#2c2c2c] border-b border-gray-200 dark:border-gray-700">
       <div
         className={`h-full px-4 lg:px-6 flex items-center justify-between transition-all duration-300 ${
-          isSidebarExpanded ? "lg:ml-[20%]" : "lg:ml-20"
+          isSidebarExpanded ? "lg:ml-60" : "lg:ml-16"
         }`}
       >
         {/* Left Section */}
         <div className="flex items-center gap-4">
+          {/* Desktop Sidebar Toggle */}
+          <button
+            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+            className="hidden lg:inline-flex p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            aria-label={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+            title={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            <HiMenu className="h-6 w-6" />
+          </button>
+
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setIsMobileOpen(!isMobileOpen)}

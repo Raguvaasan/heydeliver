@@ -334,9 +334,9 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       const dashboardData = dashboardResponse.data?.data || dashboardResponse.data
       const walletAmount = Number(dashboardData?.overview?.wallet?.amount || 0)
 
-      // if (walletAmount <= 50) {
-      //   throw new Error("Insufficient balance")
-      // }
+      if (walletAmount <= 50) {
+        throw new Error("Insufficient balance")
+      }
 
       const formData = new URLSearchParams()
       formData.append('format', 'json')
@@ -348,7 +348,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       }))
 
       const response = await axios.post<DelhiveryResponse>(
-        // '/delhivery-api/api/cmu/create.json',
+        '/delhivery-api/api/cmu/create.json',
         formData.toString(),
         {
           headers: {
@@ -359,7 +359,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         }
       )
 
-      if (response.data?.success !== true) {
+      if (response.data?.success == true) {
         const authToken = sessionStorage.getItem("authToken")
         const freightrekPayload: FreightrekShipmentRequest = {
           name: shipmentData.name,
@@ -371,33 +371,35 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           phone: shipmentData.phone,
           order: shipmentData.order,
           paymentMode: shipmentData.payment_mode,
-          fromName: freightrekExtras?.fromName || "",
-          fromAdd: freightrekExtras?.fromAdd || "",
-          fromPin: freightrekExtras?.fromPin || "",
-          fromCity: freightrekExtras?.fromCity || "",
-          fromState: freightrekExtras?.fromState || "",
-          fromCountry: freightrekExtras?.fromCountry || "",
-          fromPhone: freightrekExtras?.fromPhone || "",
-          returnPin: freightrekExtras?.returnPin || shipmentData.return_pin || "",
-          returnCity: freightrekExtras?.returnCity || shipmentData.return_city || "",
-          returnPhone: freightrekExtras?.returnPhone || shipmentData.return_phone || "",
-          returnAdd: freightrekExtras?.returnAdd || shipmentData.return_add || "",
-          returnState: freightrekExtras?.returnState || shipmentData.return_state || "",
-          returnCountry: freightrekExtras?.returnCountry || shipmentData.return_country || "",
-          productsDesc: shipmentData.products_desc || "",
+
+          fromName: freightrekExtras?.fromName,
+          fromAdd: freightrekExtras?.fromAdd,
+          fromPin: freightrekExtras?.fromPin,
+          fromCity: freightrekExtras?.fromCity,
+          fromState: freightrekExtras?.fromState,
+          fromCountry: freightrekExtras?.fromCountry,
+          fromPhone: freightrekExtras?.fromPhone,
+
+          returnPin: shipmentData.return_pin,
+          returnCity: shipmentData.return_city,
+          returnPhone: shipmentData.return_phone,
+          returnAdd: shipmentData.return_add,
+          returnState: shipmentData.return_state,
+          returnCountry: shipmentData.return_country,
+          productsDesc: shipmentData.products_desc,
           hsnCode: shipmentData.hsn_code || "",
-          codAmount: freightrekExtras?.codAmount || shipmentData.cod_amount || "0",
-          orderDate: freightrekExtras?.orderDate || shipmentData.order_date || null,
-          totalAmount: shipmentData.total_amount || "",
-          sellerName: shipmentData.seller_name || "",
-          sellerAdd: shipmentData.seller_add || "",
-          sellerInv: shipmentData.seller_inv || "",
-          quantity: shipmentData.quantity || "",
-          shipmentWidth: shipmentData.shipment_width || "",
-          shipmentHeight: shipmentData.shipment_height || "",
-          weight: shipmentData.weight || "",
-          shippingMode: shipmentData.shipping_mode || "",
-          addressType: shipmentData.address_type || "",
+          codAmount: shipmentData.cod_amount || "0",
+          orderDate: shipmentData.order_date,
+          totalAmount: shipmentData.total_amount,
+          sellerName: shipmentData.seller_name,
+          sellerAdd: shipmentData.seller_add,
+          sellerInv: shipmentData.seller_inv,
+          quantity: shipmentData.quantity,
+          shipmentWidth: shipmentData.shipment_width,
+          shipmentHeight: shipmentData.shipment_height,
+          weight: shipmentData.weight,
+          shippingMode: shipmentData.shipping_mode,
+          addressType: shipmentData.address_type,
           pickupLocation: {
             name: pickupLocation
           }

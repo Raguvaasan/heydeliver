@@ -32,7 +32,7 @@ const NavbarSidebarLayout: FC<NavbarSidebarLayoutProps> = ({
       <div
         className={`transition-all duration-300 ${
           isSidebarExpanded
-            ? "lg:ml-[20%] lg:w-[80%]"
+            ? "lg:ml-64 lg:w-[calc(100%-16rem)]"
             : "lg:ml-20 lg:w-[calc(100%-5rem)]"
         }`}
       >
@@ -41,6 +41,7 @@ const NavbarSidebarLayout: FC<NavbarSidebarLayoutProps> = ({
           isMobileOpen={isMobileOpen}
           setIsMobileOpen={setIsMobileOpen}
           isSidebarExpanded={isSidebarExpanded}
+          setIsSidebarExpanded={setIsSidebarExpanded}
         />
 
         {/* Main Content */}
