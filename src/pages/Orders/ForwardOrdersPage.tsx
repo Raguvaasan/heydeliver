@@ -72,6 +72,9 @@ interface ForwardOrder {
   weight?: number | string;
   shippingMode?: string;
   shipping_mode?: string;
+  shipmentDetails?: {
+    order?: string;
+  };
 }
 
 const ForwardOrdersPage: FC = () => {
@@ -228,7 +231,7 @@ const ForwardOrdersPage: FC = () => {
   );
 
   const getOrderId = (order: ForwardOrder) =>
-    order.bookingId || order.orderId || order._id || order.id || "-";
+    order.shipmentDetails?.order || order.bookingId || order.orderId || order._id || order.id || "-";
 
   const totalPages = Math.max(1, Math.ceil(totalOrders / limit));
 
