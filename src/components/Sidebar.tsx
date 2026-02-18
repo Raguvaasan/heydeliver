@@ -86,7 +86,7 @@ const Sidebar: FC<SidebarProps> = ({
       submenu: [
         { title: "Completed Orders", path: "/orders/completed" },
         { title: "Forward Orders", path: "/orders/forward" },
-        { title: "Pickup Requests", path: "/orders/pickup" },
+        { title: "All Orders", path: "/orders/pickup" },
       ],
     },
     {
@@ -94,7 +94,7 @@ const Sidebar: FC<SidebarProps> = ({
       icon: <HiCreditCard className="h-5 w-5" />,
       path: "/payments",
       submenu: [
-        { title: "Wallet Transactions", path: "/payments/wallet" },
+        { title: "Wallet Transactions", path: "/wallet/transactions" },
         { title: "Invoices", path: "/invoice" },
       ],
     },

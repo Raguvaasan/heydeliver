@@ -186,30 +186,42 @@ const DashboardPage: FC = () => {
         },
       ]
     } else {
-      // Admin view - original mapping
+      // Admin view - franchise/order focused mapping
       const overview = dashboardData.overview || {}
       const revenue = overview.revenue || {}
       const totalShipments = overview.totalShipments || {}
+      const topFranchise = topFranchises[0] || {}
+      const topFranchiseName =
+        topFranchise.franchiseName ||
+        topFranchise.name ||
+        topFranchise.franchise ||
+        "-"
+      const topFranchiseOrders =
+        topFranchise.totalOrders ||
+        topFranchise.shipmentCount ||
+        topFranchise.orderCount ||
+        0
+      const dailyOrderCount = totalShipments.currentPeriod || totalShipments.count || 0
       
       return [
         {
           icon: <HiTruck className="h-5 w-5" />,
-          title: "Active Shipments",
-          value: overview.activeShipments?.total || 0,
-          subtitle: `In Transit: ${overview.activeShipments?.inTransit || 0}, Out for Delivery: ${overview.activeShipments?.outForDelivery || 0}`,
+          title: "Franchise Name",
+          value: topFranchiseName,
+          subtitle: `Top franchise (${topFranchiseOrders} orders)`,
           iconBgColor: "bg-purple-500",
         },
         {
           icon: <HiCube className="h-5 w-5" />,
-          title: "Total Shipments",
-          value: totalShipments.count || 0,
-          subtitle: `Current Period: ${totalShipments.currentPeriod || 0}`,
+          title: "Number of Orders",
+          value: dailyOrderCount,
+          subtitle: `This ${dashboardData.period || selectedPeriod}`,
           percentage: totalShipments.percentageChange ? `${totalShipments.percentageChange}%` : undefined,
           iconBgColor: "bg-orange-500",
         },
         {
           icon: <HiCurrencyRupee className="h-5 w-5" />,
-          title: "Revenue Generated",
+          title: "Total Value of Orders per day",
           value: `${revenue.currency || '₹'}${Number(revenue.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           subtitle: `This ${dashboardData.period || selectedPeriod}`,
           percentage: revenue.percentageChange ? `${revenue.percentageChange}%` : undefined,
@@ -309,6 +321,7 @@ const DashboardPage: FC = () => {
                 title={stat.title}
                 value={stat.value}
                 subtitle={stat.subtitle}
+                percentage={stat.percentage}
                 iconBgColor={stat.iconBgColor}
               />
             ))}
@@ -477,7 +490,7 @@ const DashboardPage: FC = () => {
                         {booking.orderId || booking.bookingId || booking._id || "-"}
                       </td>
                       <td className="px-4 py-3 text-gray-900 dark:text-white">
-                        {booking.franchise || booking.userId || "-"}
+                        {booking.franchiseName}
                       </td>
                       <td className="px-4 py-3 text-gray-900 dark:text-white">
                         {booking.amount ? `₹${Number(booking.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}

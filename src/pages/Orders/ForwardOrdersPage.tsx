@@ -179,7 +179,7 @@ const ForwardOrdersPage: FC = () => {
         phone: order.consignee.phone,
 
         paymentMode: order.shipmentDetails.paymentMode,
-        status: "In Transit",
+        status: "in_transit",
 
         fromName: order.from.name,
         fromAdd: order.from.address,
