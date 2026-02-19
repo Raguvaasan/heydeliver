@@ -121,10 +121,10 @@ const DashboardPage: FC = () => {
   const fetchTopFranchises = async () => {
     try {
       const response = await http.get("/admin/dashboard", {
-        params: { type: 'top-franchises', limit: 5 }
+        params: { type: 'top-franchises', limit: 3 }
       })
       
-      const data = response.data?.data || response.data?.franchises || []
+      const data = response.data?.data || []
       setTopFranchises(data)
     } catch (error: any) {
       console.error("Error fetching top franchises:", error)
@@ -190,25 +190,25 @@ const DashboardPage: FC = () => {
       const overview = dashboardData.overview || {}
       const revenue = overview.revenue || {}
       const totalShipments = overview.totalShipments || {}
-      const topFranchise = topFranchises[0] || {}
-      const topFranchiseName =
-        topFranchise.franchiseName ||
-        topFranchise.name ||
-        topFranchise.franchise ||
-        "-"
-      const topFranchiseOrders =
-        topFranchise.totalOrders ||
-        topFranchise.shipmentCount ||
-        topFranchise.orderCount ||
-        0
+      const topFranchiseNames = topFranchises.length
+        ? topFranchises
+            .map(
+              (franchise) =>
+                franchise?.franchiseName ||
+                franchise?.name ||
+                franchise?.franchise ||
+                "-"
+            )
+            .join(", ")
+        : "-"
       const dailyOrderCount = totalShipments.currentPeriod || totalShipments.count || 0
       
       return [
         {
           icon: <HiTruck className="h-5 w-5" />,
           title: "Franchise Name",
-          value: topFranchiseName,
-          subtitle: `Top franchise (${topFranchiseOrders} orders)`,
+          value: topFranchiseNames,
+          subtitle: `Top 3 franchise`,
           iconBgColor: "bg-purple-500",
         },
         {
