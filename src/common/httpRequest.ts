@@ -4,6 +4,10 @@ const API_URL = '/api'  // Always use proxy route
 
 const httpRequest = axios.create({
   baseURL: API_URL,
+  timeout: 30000, // 30 second timeout
+  headers: {
+    'Content-Type': 'application/json',
+  },
 })
 
 httpRequest.interceptors.request.use(

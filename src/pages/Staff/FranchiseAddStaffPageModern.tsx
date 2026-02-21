@@ -32,8 +32,29 @@ const FranchiseAddStaffPageModern: FC = () => {
   const [agenciesLoading, setAgenciesLoading] = useState(false)
 
   useEffect(() => {
-    fetchRoles()
-    fetchAgencies()
+    // Optimized: Fetch both roles and agencies in parallel
+    const fetchAllData = async () => {
+      setRolesLoading(true)
+      setAgenciesLoading(true)
+      try {
+        const [rolesRes, agenciesRes] = await Promise.all([
+          http.get("/admin/role"),
+          http.get("/admin/franchise")
+        ])
+        
+        setRoles(rolesRes.data?.data || [])
+        setAgencies(agenciesRes.data?.data || [])
+      } catch (error) {
+        console.error("Error fetching data:", error)
+        setRoles([])
+        setAgencies([])
+      } finally {
+        setRolesLoading(false)
+        setAgenciesLoading(false)
+      }
+    }
+    
+    fetchAllData()
   }, [])
 
   const fetchRoles = async () => {

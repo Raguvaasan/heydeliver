@@ -44,34 +44,94 @@ const FranchiseAddEditStaffPage: FC = () => {
   const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
-    fetchRoles()
-    
-    // Check if franchise user - auto-populate their franchise
-    const loginType = sessionStorage.getItem("loginType")
-    const isFranchise = loginType === "franchise" || loginType === "staff"
-    
-    if (isFranchise) {
-      // For franchise users, get their franchise from profile
-      const profileData = sessionStorage.getItem("profileData")
-      if (profileData) {
-        try {
-          const profile = JSON.parse(profileData)
-          const franchiseId = profile.franchiseId || profile.franchise?._id || profile.franchise
-          if (franchiseId) {
-            setFormData(prev => ({ ...prev, franchiseId }))
+    // Optimized: Fetch all required data in parallel
+    const fetchAllData = async () => {
+      const loginType = sessionStorage.getItem("loginType")
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+      
+      try {
+        if (isFranchise) {
+          // For franchise: only fetch roles + staff data (if editing)
+          const promises: Promise<any>[] = [
+            http.get("/admin/franchise/role")
+          ]
+          
+          if (isEditMode && id) {
+            promises.push(http.get(`/admin/franchise/staff/${id}`))
           }
-        } catch (error) {
-          console.error("Error parsing profile data:", error)
+          
+          const [rolesRes, staffRes] = await Promise.all(promises)
+          
+          setRoles(rolesRes.data?.data || [])
+          
+          // Set franchise from profile
+          const profileData = sessionStorage.getItem("profileData")
+          if (profileData) {
+            try {
+              const profile = JSON.parse(profileData)
+              const franchiseId = profile.franchiseId || profile.franchise?._id || profile.franchise
+              if (franchiseId) {
+                setFormData(prev => ({ ...prev, franchiseId }))
+              }
+            } catch (error) {
+              console.error("Error parsing profile data:", error)
+            }
+          }
+          
+          // Update form data if editing
+          if (staffRes && staffRes.data?.data) {
+            const staff = staffRes.data.data
+            setFormData({
+              name: staff.name || "",
+              email: staff.email || "",
+              phone: staff.phone || "",
+              type: staff.type || "franchise",
+              roleId: typeof staff.roleId === 'object' ? staff.roleId?._id : staff.roleId || staff.role?._id || "",
+              franchiseId: typeof staff.franchiseId === 'object' ? staff.franchiseId?._id : staff.franchiseId || "",
+              username: staff.username || "",
+              password: "",
+              status: staff.status === "Active" || staff.status === true ? "Active" : "Inactive",
+            })
+          }
+        } else {
+          // For admin: fetch roles + agencies + staff data (if editing) in parallel
+          const promises: Promise<any>[] = [
+            http.get("/admin/role"),
+            http.get("/admin/franchise")
+          ]
+          
+          if (isEditMode && id) {
+            promises.push(http.get(`/admin/staff/${id}`))
+          }
+          
+          const [rolesRes, agenciesRes, staffRes] = await Promise.all(promises)
+          
+          setRoles(rolesRes.data?.data || [])
+          setAgencies(agenciesRes.data?.data || [])
+          
+          // Update form data if editing
+          if (staffRes && staffRes.data?.data) {
+            const staff = staffRes.data.data
+            setFormData({
+              name: staff.name || "",
+              email: staff.email || "",
+              phone: staff.phone || "",
+              type: staff.type || "franchise",
+              roleId: typeof staff.roleId === 'object' ? staff.roleId?._id : staff.roleId || staff.role?._id || "",
+              franchiseId: typeof staff.franchiseId === 'object' ? staff.franchiseId?._id : staff.franchiseId || "",
+              username: staff.username || "",
+              password: "",
+              status: staff.status === "Active" || staff.status === true ? "Active" : "Inactive",
+            })
+          }
         }
+      } catch (error: any) {
+        console.error("Error fetching data:", error)
+        toast.error("Failed to load required data")
       }
-    } else {
-      // For admin users, fetch all franchises
-      fetchAgencies()
     }
     
-    if (isEditMode && id) {
-      fetchStaffData(id)
-    }
+    fetchAllData()
   }, [id, isEditMode])
 
   const fetchStaffData = async (staffId: string) => {

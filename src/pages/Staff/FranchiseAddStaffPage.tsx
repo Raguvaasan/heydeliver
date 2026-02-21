@@ -29,35 +29,30 @@ const FranchiseAddStaffPage: FC = () => {
   const [agenciesLoading, setAgenciesLoading] = useState(false)
 
   useEffect(() => {
-    fetchRoles()
-    fetchAgencies()
+    // Optimized: Fetch both roles and agencies in parallel
+    const fetchAllData = async () => {
+      setRolesLoading(true)
+      setAgenciesLoading(true)
+      try {
+        const [rolesRes, agenciesRes] = await Promise.all([
+          http.get("/admin/role"),
+          http.get("/admin/franchise")
+        ])
+        
+        setRoles(rolesRes.data?.data || [])
+        setAgencies(agenciesRes.data?.data || [])
+      } catch (error) {
+        console.error("Error fetching data:", error)
+        setRoles([])
+        setAgencies([])
+      } finally {
+        setRolesLoading(false)
+        setAgenciesLoading(false)
+      }
+    }
+    
+    fetchAllData()
   }, [])
-
-  const fetchRoles = async () => {
-    setRolesLoading(true)
-    try {
-      const response = await http.get("/admin/role")
-      setRoles(response.data?.data || [])
-    } catch (error) {
-      console.error("Error fetching roles:", error)
-      setRoles([])
-    } finally {
-      setRolesLoading(false)
-    }
-  }
-
-  const fetchAgencies = async () => {
-    setAgenciesLoading(true)
-    try {
-      const response = await http.get("/admin/franchise")
-      setAgencies(response.data?.data || [])
-    } catch (error) {
-      console.error("Error fetching agencies:", error)
-      setAgencies([])
-    } finally {
-      setAgenciesLoading(false)
-    }
-  }
 
   const validationSchema = Yup.object({
     name: Yup.string().required("Name is required"),

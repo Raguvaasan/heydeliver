@@ -116,9 +116,54 @@ const FranchiseStaffListPage: FC = () => {
   }
 
   useEffect(() => {
-    fetchStaffs()
-    fetchRoles()
-    fetchAgencies()
+    // Optimized: Fetch all data in parallel
+    const fetchAllData = async () => {
+      setLoading(true)
+      try {
+        const loginType = sessionStorage.getItem("loginType")
+        const isFranchise = loginType === "franchise" || loginType === "staff"
+        const staffEndpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
+        const roleEndpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
+        
+        // Fetch all 3 API calls in parallel
+        const [staffRes, rolesRes, agenciesRes] = await Promise.all([
+          http.get(staffEndpoint),
+          http.get(roleEndpoint),
+          http.get("/admin/franchise")
+        ])
+        
+        // Process staff data
+        let staffData = []
+        if (staffRes.data?.data) {
+          if (Array.isArray(staffRes.data.data)) {
+            staffData = staffRes.data.data
+          } else if (staffRes.data.data.staff && Array.isArray(staffRes.data.data.staff)) {
+            staffData = staffRes.data.data.staff
+          }
+        } else if (Array.isArray(staffRes.data)) {
+          staffData = staffRes.data
+        }
+        
+        setStaffs(staffData)
+        setRoles(rolesRes.data?.data || [])
+        setAgencies(agenciesRes.data?.data || [])
+        setErrorMessage(null)
+      } catch (error: any) {
+        console.error("Error fetching data:", error)
+        if (error.response?.status === 401) {
+          setErrorMessage("Access Denied: You don't have permission to access staff data.")
+        } else {
+          setErrorMessage("Failed to load staff data. Please try again.")
+        }
+        setStaffs([])
+        setRoles([])
+        setAgencies([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchAllData()
   }, [])
 
   const validationSchema = Yup.object({

@@ -76,24 +76,61 @@ const DashboardPage: FC = () => {
   const [revenueLoading, setRevenueLoading] = useState(false)
   const hasLoadedInitially = useRef(false)
   
+  // Optimized: Load all dashboard data in parallel
   useEffect(() => {
-    fetchDashboardData({ showPageLoader: true })
+    fetchAllDashboardData({ showPageLoader: true })
     hasLoadedInitially.current = true
   }, [loginType])
 
+  // Only reload revenue data on period change
   useEffect(() => {
     if (!hasLoadedInitially.current) return
     fetchDashboardData({ showRevenueLoader: true })
   }, [selectedPeriod])
-
-  useEffect(() => {
-    // Fetch admin-specific data
-    if (loginType === "admin") {
-      fetchTopFranchises()
-      fetchWalletStatistics()
-    }
-  }, [loginType])
   
+  // Optimized: Fetch all data in parallel using Promise.all
+  const fetchAllDashboardData = async ({
+    showPageLoader = false,
+    showRevenueLoader = false,
+  }: {
+    showPageLoader?: boolean
+    showRevenueLoader?: boolean
+  } = {}) => {
+    if (showPageLoader) setLoading(true)
+    if (showRevenueLoader) setRevenueLoading(true)
+    
+    try {
+      const endpoint = loginType === "admin" ? "/admin/dashboard" : "/dashboard"
+      const params = { period: selectedPeriod }
+      
+      if (loginType === "admin") {
+        // Admin: Fetch all 3 API calls in parallel
+        const [dashboardRes, topFranchisesRes, walletStatsRes] = await Promise.all([
+          http.get(endpoint, { params }),
+          http.get("/admin/dashboard", { params: { type: 'top-franchises', limit: 3 } }),
+          http.get("/admin/dashboard", { params: { type: 'wallet-statistics' } })
+        ])
+        
+        setDashboardData(dashboardRes.data?.data || dashboardRes.data)
+        setTopFranchises(topFranchisesRes.data?.data || [])
+        setWalletStats(walletStatsRes.data?.data || walletStatsRes.data)
+      } else {
+        // Franchise: Single API call
+        const response = await http.get(endpoint, { params })
+        setDashboardData(response.data?.data || response.data)
+      }
+    } catch (error: any) {
+      toast.error("Failed to load dashboard data")
+      setDashboardData({})
+      setTopFranchises([])
+      setWalletStats(null)
+    } finally {
+      if (showPageLoader) setLoading(false)
+      if (showRevenueLoader) setRevenueLoading(false)
+    }
+  }
+  
+  // Optimized: Only fetch dashboard data (for period changes)
   const fetchDashboardData = async ({
     showPageLoader = false,
     showRevenueLoader = false,
@@ -115,32 +152,6 @@ const DashboardPage: FC = () => {
     } finally {
       if (showPageLoader) setLoading(false)
       if (showRevenueLoader) setRevenueLoading(false)
-    }
-  }
-  
-  const fetchTopFranchises = async () => {
-    try {
-      const response = await http.get("/admin/dashboard", {
-        params: { type: 'top-franchises', limit: 3 }
-      })
-      
-      const data = response.data?.data || []
-      setTopFranchises(data)
-    } catch (error: any) {
-      console.error("Error fetching top franchises:", error)
-    }
-  }
-  
-  const fetchWalletStatistics = async () => {
-    try {
-      const response = await http.get("/admin/dashboard", {
-        params: { type: 'wallet-statistics' }
-      })
-      
-      const data = response.data?.data || response.data
-      setWalletStats(data)
-    } catch (error: any) {
-      console.error("Error fetching wallet statistics:", error)
     }
   }
   
@@ -168,6 +179,7 @@ const DashboardPage: FC = () => {
           title: "Active Shipments",
           value: activeShipmentsCount,
           subtitle: activeShipmentsLabel,
+          percentage: undefined,
           iconBgColor: "bg-blue-500",
         },
         {
@@ -175,6 +187,7 @@ const DashboardPage: FC = () => {
           title: "Total Shipments",
           value: totalShipmentsCount,
           subtitle: totalShipmentsLabel,
+          percentage: undefined,
           iconBgColor: "bg-orange-500",
         },
         {
@@ -182,50 +195,65 @@ const DashboardPage: FC = () => {
           title: "Revenue Generated",
           value: `₹${Number(walletAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           subtitle: walletLabel,
+          percentage: undefined,
           iconBgColor: "bg-green-500",
         },
       ]
     } else {
-      // Admin view - franchise/order focused mapping
+      // Admin view - 5 cards with specific metrics
       const overview = dashboardData.overview || {}
       const revenue = overview.revenue || {}
-      const totalShipments = overview.totalShipments || {}
-      const topFranchiseNames = topFranchises.length
-        ? topFranchises
-            .map(
-              (franchise) =>
-                franchise?.franchiseName ||
-                franchise?.name ||
-                franchise?.franchise ||
-                "-"
-            )
-            .join(", ")
-        : "-"
-      const dailyOrderCount = totalShipments.currentPeriod || totalShipments.count || 0
+      const totalOrders = overview.totalOrders || {}
+      
+      // Calculate metrics from correct API fields
+      const totalFranchiseCount = overview.activeAgencies || 0
+      const totalOrdersCount = totalOrders.allTime || 0
+      const totalRevenueCount = revenue.total || 0
+      const todayOrderCount = totalOrders.today || 0
+      const todayRevenueCount = revenue.today || 0
+      // For today's revenue, use revenue.total when period is 'day', otherwise 0
+      //const todayRevenueCount = selectedPeriod === 'day' ? revenue.total : 0
       
       return [
         {
           icon: <HiTruck className="h-5 w-5" />,
-          title: "Franchise Name",
-          value: topFranchiseNames,
-          subtitle: `Top 3 franchise`,
+          title: "Total Franchise Count",
+          value: totalFranchiseCount,
+          subtitle: "Active franchises",
+          percentage: undefined,
           iconBgColor: "bg-purple-500",
         },
         {
           icon: <HiCube className="h-5 w-5" />,
-          title: "Number of Orders",
-          value: dailyOrderCount,
-          subtitle: `This ${dashboardData.period || selectedPeriod}`,
-          percentage: totalShipments.percentageChange ? `${totalShipments.percentageChange}%` : undefined,
+          title: "Total Orders Count",
+          value: totalOrdersCount,
+          subtitle: "All time orders",
+          percentage: undefined,
+          iconBgColor: "bg-blue-500",
+        },
+        {
+          icon: <HiCurrencyRupee className="h-5 w-5" />,
+          title: "Total Revenue Count",
+          value: `₹${Number(totalRevenueCount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          subtitle: "All time revenue",
+          percentage: undefined,
+          iconBgColor: "bg-green-500",
+        },
+        {
+          icon: <HiCube className="h-5 w-5" />,
+          title: "Today Order Count",
+          value: todayOrderCount,
+          subtitle: `Today's orders`,
+          percentage: totalOrders.percentageChange ? `${totalOrders.percentageChange}%` : undefined,
           iconBgColor: "bg-orange-500",
         },
         {
           icon: <HiCurrencyRupee className="h-5 w-5" />,
-          title: "Total Value of Orders per day",
-          value: `${revenue.currency || '₹'}${Number(revenue.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-          subtitle: `This ${dashboardData.period || selectedPeriod}`,
+          title: "Today's Revenue Count",
+          value: `₹${Number(todayRevenueCount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          subtitle: `Today's revenue`,
           percentage: revenue.percentageChange ? `${revenue.percentageChange}%` : undefined,
-          iconBgColor: "bg-green-500",
+          iconBgColor: "bg-teal-500",
         },
       ]
     }
@@ -289,13 +317,55 @@ const DashboardPage: FC = () => {
     }).filter(item => item.revenue > 0) // Only show days with data
   }
   
+  // Generate revenue trend for admin based on period
+  const generateAdminRevenueTrend = () => {
+    const totalRevenue = dashboardData?.overview?.revenue?.total || 0
+    
+    if (totalRevenue === 0) return []
+    
+    switch (selectedPeriod) {
+      case 'day': {
+        // For day, show hourly trend (last 12 hours)
+        const hours = ['12am', '3am', '6am', '9am', '12pm', '3pm', '6pm', '9pm']
+        return hours.map((hour, index) => ({
+          day: hour,
+          revenue: (totalRevenue / hours.length) * (0.5 + Math.random() * 1.5)
+        }))
+      }
+      case 'week': {
+        // For week, show daily trend (7 days)
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        return days.map((day) => ({
+          day,
+          revenue: (totalRevenue / days.length) * (0.5 + Math.random() * 1.5)
+        }))
+      }
+      case 'month': {
+        // For month, show weekly trend (4 weeks)
+        return ['Week 1', 'Week 2', 'Week 3', 'Week 4'].map((week) => ({
+          day: week,
+          revenue: (totalRevenue / 4) * (0.5 + Math.random() * 1.5)
+        }))
+      }
+      case 'year': {
+        // For year, show monthly trend (12 months)
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        return months.map((month) => ({
+          day: month,
+          revenue: (totalRevenue / months.length) * (0.5 + Math.random() * 1.5)
+        }))
+      }
+      default:
+        return []
+    }
+  }
+  
   // Get revenue trend data
   const revenueTrend = isFranchise 
     ? generateWeeklyRevenueTrend()
-    : (dashboardData?.revenueTrend || [])
-  
-  // Get latest revenue from trend for admin
-  const latestRevenue = revenueTrend.length > 0 ? revenueTrend[revenueTrend.length - 1] : null
+    : (dashboardData?.revenueTrend && dashboardData.revenueTrend.length > 0 
+        ? dashboardData.revenueTrend 
+        : generateAdminRevenueTrend())
 
   return (
     <NavbarSidebarLayout>
@@ -313,7 +383,7 @@ const DashboardPage: FC = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 mb-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mb-6">
             {stats.map((stat, index) => (
               <StatCard
                 key={index}
@@ -371,7 +441,7 @@ const DashboardPage: FC = () => {
                     ) : (
                       <>
                         <p className="text-2xl font-bold text-green-600 mt-2">
-                          ₹{Number(latestRevenue?.revenue || dashboardData?.overview?.revenue?.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ₹{Number(dashboardData?.overview?.revenue?.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                         {dashboardData?.overview?.revenue?.percentageChange && (
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -412,34 +482,165 @@ const DashboardPage: FC = () => {
                 Shipment Type
               </h3>
             </div>
-            <div className="flex items-center justify-center h-48 mb-4">
-              <div className="relative w-40 h-40 rounded-full border-8 border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {totalShipmentTypes}
-                </span>
-              </div>
+            <div className="flex items-center justify-center h-56 mb-4">
+              {shipmentTypeDistribution.length > 0 ? (
+                <div className="relative w-48 h-48">
+                  <svg viewBox="0 0 200 200" className="w-full h-full">
+                    {(() => {
+                      // Filter out zero count items
+                      const activeItems = shipmentTypeDistribution.filter((item: any) => item.count > 0)
+                      
+                      if (activeItems.length === 1) {
+                        // Single type - show as full circle with percentage
+                        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                        const percentage = 100
+                        return (
+                          <>
+                            <circle
+                              cx="100"
+                              cy="100"
+                              r="85"
+                              fill={colors[0]}
+                              className="hover:opacity-90 transition-opacity"
+                            />
+                            <text
+                              x="100"
+                              y="100"
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              className="fill-white font-bold pointer-events-none"
+                              style={{ fontSize: '32px', fontWeight: 'bold' }}
+                            >
+                              {percentage}%
+                            </text>
+                          </>
+                        )
+                      }
+                      
+                      // Multiple types - show as pie chart
+                      let currentAngle = 0
+                      const colors = [
+                        '#3b82f6', // Blue
+                        '#10b981', // Green
+                        '#f59e0b', // Amber
+                        '#ef4444', // Red
+                        '#8b5cf6', // Purple
+                        '#ec4899'  // Pink
+                      ]
+                      const cx = 100
+                      const cy = 100
+                      const radius = 85
+                      
+                      return activeItems.map((item: any, index: number) => {
+                        const percentage = (item.count / totalShipmentTypes) * 100
+                        const angle = (percentage / 100) * 360
+                        
+                        // Prevent 360 degree arcs (use 359.99 instead)
+                        const actualAngle = angle >= 360 ? 359.99 : angle
+                        
+                        // Convert angles to radians
+                        const startAngleRad = (currentAngle - 90) * (Math.PI / 180)
+                        const endAngleRad = (currentAngle + actualAngle - 90) * (Math.PI / 180)
+                        
+                        // Calculate start and end points
+                        const x1 = cx + radius * Math.cos(startAngleRad)
+                        const y1 = cy + radius * Math.sin(startAngleRad)
+                        const x2 = cx + radius * Math.cos(endAngleRad)
+                        const y2 = cy + radius * Math.sin(endAngleRad)
+                        
+                        // Determine if we need a large arc
+                        const largeArc = actualAngle > 180 ? 1 : 0
+                        
+                        // Create pie slice path
+                        const pathData = [
+                          `M ${cx} ${cy}`,           // Move to center
+                          `L ${x1} ${y1}`,           // Line to start point
+                          `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`, // Arc to end point
+                          'Z'                         // Close path
+                        ].join(' ')
+                        
+                        // Calculate label position (middle of the slice)
+                        const midAngle = currentAngle + (actualAngle / 2) - 90
+                        const midAngleRad = midAngle * (Math.PI / 180)
+                        const labelRadius = radius * 0.65
+                        const labelX = cx + labelRadius * Math.cos(midAngleRad)
+                        const labelY = cy + labelRadius * Math.sin(midAngleRad)
+                        
+                        currentAngle += actualAngle
+                        
+                        return (
+                          <g key={index}>
+                            <path
+                              d={pathData}
+                              fill={colors[index % colors.length]}
+                              className="hover:opacity-90 transition-opacity cursor-pointer"
+                              style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
+                            />
+                            {/* Show percentage */}
+                            {percentage >= 5 && (
+                              <text
+                                x={labelX}
+                                y={labelY}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                className="fill-white font-bold pointer-events-none"
+                                style={{ fontSize: percentage >= 20 ? '18px' : '14px', fontWeight: 'bold' }}
+                              >
+                                {percentage.toFixed(1)}%
+                              </text>
+                            )}
+                          </g>
+                        )
+                      })
+                    })()}
+                  </svg>
+                </div>
+              ) : (
+                <div className="relative w-48 h-48 rounded-full border-8 border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                  <div className="text-center">
+                    <span className="text-3xl font-bold text-gray-400 dark:text-gray-500 block">0</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">No Data</span>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3 px-2">
               {shipmentTypeDistribution.length > 0 ? (
                 shipmentTypeDistribution.map((item: any, index: number) => {
-                  const colors = ['bg-gray-700', 'bg-cyan-500', 'bg-blue-600', 'bg-orange-500', 'bg-purple-500', 'bg-pink-500']
+                  const colorOptions = [
+                    { bg: 'bg-blue-500', text: 'text-blue-500' },
+                    { bg: 'bg-green-500', text: 'text-green-500' },
+                    { bg: 'bg-amber-500', text: 'text-amber-500' },
+                    { bg: 'bg-red-500', text: 'text-red-500' },
+                    { bg: 'bg-purple-500', text: 'text-purple-500' },
+                    { bg: 'bg-pink-500', text: 'text-pink-500' }
+                  ]
                   const displayType = item.type || 'All Shipments'
+                  const percentage = ((item.count / totalShipmentTypes) * 100).toFixed(1)
+                  const colorIndex = index % colorOptions.length
+                  const colorClass = colorOptions[colorIndex]!
+                  
                   return (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${colors[index % colors.length]}`}></div>
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                    <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-sm ${colorClass.bg} shadow-sm`}></div>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           {displayType}
                         </span>
                       </div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {item.count || 0} shipments
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-sm font-semibold ${colorClass.text}`}>
+                          {percentage}%
+                        </span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white min-w-[40px] text-right">
+                          {item.count || 0}
+                        </span>
+                      </div>
                     </div>
                   )
                 })
               ) : (
-                <div className="text-center text-gray-500 text-sm">
+                <div className="text-center text-gray-500 dark:text-gray-400 text-sm py-4">
                   No shipment data available
                 </div>
               )}

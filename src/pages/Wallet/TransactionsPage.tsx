@@ -125,10 +125,7 @@ const TransactionsPage: FC = () => {
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                 <tr>
                   <th className="px-4 py-3">Transaction Details</th>
-                  <th className="px-4 py-3">Account Details</th>
                   <th className="px-4 py-3">Order ID</th>
-                  <th className="px-4 py-3">AWB / LBN</th>
-                  <th className="px-4 py-3">Weight & Zone</th>
                   <th className="px-4 py-3">Description</th>
                   <th className="px-4 py-3 text-right">Credit</th>
                   <th className="px-4 py-3 text-right">Debit</th>
@@ -138,7 +135,7 @@ const TransactionsPage: FC = () => {
                 {safeTransactions.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={5}
                       className="text-center py-12 text-gray-500 dark:text-gray-400"
                     >
                       <div className="flex flex-col items-center">
@@ -168,10 +165,7 @@ const TransactionsPage: FC = () => {
                       <td className="px-4 py-3">
                         {new Date(transaction.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3">-</td>
                       <td className="px-4 py-3">{transaction.orderId || "-"}</td>
-                      <td className="px-4 py-3">-</td>
-                      <td className="px-4 py-3">-</td>
                       <td className="px-4 py-3">{transaction.description}</td>
                       <td className="px-4 py-3 text-right text-green-600 font-medium">
                         {transaction.type === "credit" ? `₹${transaction.amount.toFixed(2)}` : "-"}
