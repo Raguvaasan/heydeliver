@@ -66,7 +66,7 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
         })
         onClose()
       } catch (error) {
-        console.error("Update agency failed:", error)
+        // Error handled by store
       }
     }
   }

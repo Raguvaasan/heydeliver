@@ -1,6 +1,6 @@
 import { FC, useEffect, useState, useCallback, useMemo } from "react"
 import { Badge, Button, Card, Spinner, Tabs } from "flowbite-react"
-import { HiDocumentDownload, HiEye, HiPencil, HiTrash } from "react-icons/hi"
+import { HiDocumentDownload, HiEye, HiPencil, HiTrash, HiViewGrid, HiCheckCircle, HiClock, HiTruck, HiXCircle } from "react-icons/hi"
 import { useNavigate } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useOrderStore } from "../../store/orderStore"
@@ -12,11 +12,13 @@ const OrdersPage: FC = () => {
   const { orders, activeOrders, fetchOrders, fetchActiveOrders, deleteOrder, loading } = useOrderStore()
   const [activeTab, setActiveTab] = useState<"recent" | "active">("recent")
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
+  const [statusFilter, setStatusFilter] = useState<string>("all")
 
   useEffect(() => {
     fetchOrders()
     fetchActiveOrders()
-  }, [fetchOrders, fetchActiveOrders])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Run only on mount
 
   // Memoized callbacks to prevent unnecessary re-renders
   const handleSelectOrder = useCallback((orderId: string) => {
@@ -222,7 +224,6 @@ const OrdersPage: FC = () => {
       const pdfUrl = doc.output("bloburl")
       window.open(pdfUrl, "_blank", "noopener,noreferrer")
     } catch (error: any) {
-      console.error("Invoice generation failed:", error)
       toast.error(error?.message || "Failed to generate invoice")
     }
   }, [])
@@ -234,10 +235,21 @@ const OrdersPage: FC = () => {
     return "gray"
   }, [])
 
-  // Memoize the current orders list based on active tab
+  // Memoize the current orders list based on active tab and status filter
   const currentOrdersList = useMemo(() => {
-    return activeTab === "recent" ? orders : activeOrders
-  }, [activeTab, orders, activeOrders])
+    const baseOrders = activeTab === "recent" ? orders : activeOrders
+    
+    // Apply status filter
+    if (statusFilter === "all") {
+      return baseOrders
+    }
+    
+    return baseOrders.filter(order => {
+      const orderStatus = order.status?.toLowerCase().replace(/[\s_-]/g, "")
+      const filterStatus = statusFilter.toLowerCase().replace(/[\s_-]/g, "")
+      return orderStatus === filterStatus
+    })
+  }, [activeTab, orders, activeOrders, statusFilter])
 
   const renderOrdersTable = useCallback((ordersList: any[]) => {
     if (loading) {
@@ -390,7 +402,7 @@ const OrdersPage: FC = () => {
 
         {/* Tabs */}
         <Card>
-          <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+          <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
             <div className="flex gap-8">
               <button
                 onClick={() => setActiveTab("recent")}
@@ -411,6 +423,78 @@ const OrdersPage: FC = () => {
                 Pickup Requests
               </button>
             </div>
+          </div>
+
+          {/* Status Filter Tabs */}
+          <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+            <nav className="flex flex-wrap gap-2 -mb-px" aria-label="Status Tabs">
+              <button
+                onClick={() => setStatusFilter("all")}
+                className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                  statusFilter === "all"
+                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                <HiViewGrid className="h-5 w-5" />
+                All Status
+              </button>
+              <button
+                onClick={() => setStatusFilter("active")}
+                className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                  statusFilter === "active"
+                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                <HiCheckCircle className="h-5 w-5" />
+                Active
+              </button>
+              <button
+                onClick={() => setStatusFilter("pending")}
+                className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                  statusFilter === "pending"
+                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                <HiClock className="h-5 w-5" />
+                Pending
+              </button>
+              <button
+                onClick={() => setStatusFilter("in-transit")}
+                className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                  statusFilter === "in-transit"
+                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                <HiTruck className="h-5 w-5" />
+                In Transit
+              </button>
+              <button
+                onClick={() => setStatusFilter("delivered")}
+                className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                  statusFilter === "delivered"
+                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                <HiCheckCircle className="h-5 w-5" />
+                Delivered
+              </button>
+              <button
+                onClick={() => setStatusFilter("cancelled")}
+                className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                  statusFilter === "cancelled"
+                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                <HiXCircle className="h-5 w-5" />
+                Cancelled
+              </button>
+            </nav>
           </div>
 
           {/* Table */}

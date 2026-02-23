@@ -122,7 +122,7 @@ const EditRolePage: FC = () => {
         navigate("/role")
       }
     } catch (error) {
-      console.error("Failed to update role:", error)
+      // Error handled by store
     }
   }
 

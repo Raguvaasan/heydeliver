@@ -89,7 +89,7 @@ const AddRolePage: FC = () => {
       await addRole(roleData)
       navigate("/role")
     } catch (error) {
-      console.error("Failed to add role:", error)
+      // Error handled by store
     }
   }
 

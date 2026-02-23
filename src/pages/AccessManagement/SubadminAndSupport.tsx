@@ -98,13 +98,6 @@ const UserPage: FC = function () {
     return matchesSearch && matchesTab
   })
 
-  // Debug: Log first staff to see structure
-  useEffect(() => {
-    if (staffs.length > 0) {
-      console.log("First staff role:", staffs[0]?.role)
-    }
-  }, [staffs])
-
   // Helper function to get role name
   const getRoleName = (staff: any) => {
     if (!staff.role) return "-"

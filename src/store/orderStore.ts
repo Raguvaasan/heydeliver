@@ -165,7 +165,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           headers: {
             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
-          timeout: 30000,
+          timeout: 5000,
           validateStatus: () => true,
         }),
       ])
@@ -220,7 +220,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         error: null,
       })
     } catch (err: any) {
-      console.error("Error fetching orders:", err)
 
       set({
         orders: [],
@@ -245,7 +244,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         loading: false
       })
     } catch (err: any) {
-      console.error("Error fetching active orders:", err)
       set({
         activeOrders: [],
         loading: false,
@@ -272,7 +270,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         headers: {
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
-        timeout: 30000,
+        timeout: 5000,
       })
 
       const shipmentData = shipmentRes.data?.data || shipmentRes.data
@@ -298,7 +296,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         loading: false,
       })
     } catch (err: any) {
-      console.error("Error getting order:", err)
       set({
         loading: false,
         error: err?.response?.data?.message || err?.message || "Failed to get order"
@@ -315,7 +312,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       toast.success("Order created successfully!")
       set({ loading: false })
     } catch (err: any) {
-      console.error("Error creating order:", err)
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to create order"
       set({ loading: false, error: errorMessage })
       toast.error(errorMessage)
@@ -355,7 +351,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
             'Content-Type': 'application/x-www-form-urlencoded',
             'Accept': 'application/json'
           },
-          timeout: 30000
+          timeout: 5000
         }
       )
 
@@ -414,11 +410,11 @@ export const useOrderStore = create<OrderState>((set, get) => ({
                 'Content-Type': 'application/json',
                 ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
               },
-              timeout: 30000
+              timeout: 5000
             }
           )
         } catch (freightrekErr: any) {
-          console.error("Error creating Freightrek shipment:", freightrekErr)
+          // Freightrek shipment failed, continue with Delhivery success
         }
 
         set({ loading: false })
@@ -429,7 +425,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         throw new Error(response.data.rmk || "Failed to create shipment")
       }
     } catch (err: any) {
-      console.error("Error creating Delhivery shipment:", err)
       const errorMessage = err?.response?.data?.rmk ||
         err?.response?.data?.message ||
         err?.message ||
@@ -448,7 +443,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       toast.success("Order updated successfully!")
       set({ loading: false })
     } catch (err: any) {
-      console.error("Error updating order:", err)
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to update order"
       set({ loading: false, error: errorMessage })
       toast.error(errorMessage)
@@ -464,7 +458,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       toast.success("Order deleted successfully!")
       set({ loading: false })
     } catch (err: any) {
-      console.error("Error deleting order:", err)
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to delete order"
       set({ loading: false, error: errorMessage })
       toast.error(errorMessage)

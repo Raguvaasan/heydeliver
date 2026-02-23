@@ -11,6 +11,7 @@ interface Transaction {
   createdAt: string
   orderId?: string
   paymentMethod?: string
+  franchiseName?: string
 }
 
 interface WalletState {
@@ -76,7 +77,6 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       set({ paymentLoading: false })
       return response.data
     } catch (error: any) {
-      console.error('Payment order error:', error)
       const errorMsg = error.response?.data?.message || error.message || "Failed to create payment order"
       set({ error: errorMsg, paymentLoading: false })
       toast.error(errorMsg)
@@ -101,7 +101,6 @@ export const useWalletStore = create<WalletState>((set, get) => ({
         throw new Error(response.data?.message || "Payment verification failed")
       }
     } catch (error: any) {
-      console.error('❌ Verification error:', error)
       const errorMsg = error.response?.data?.message || error.message || "Payment verification failed"
       toast.error(errorMsg)
       throw error

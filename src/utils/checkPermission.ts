@@ -29,7 +29,6 @@ export const checkModulePermission = ({
     // If no specific action is provided, return true if module is present
     return true
   } catch (error) {
-    console.error("Error checking module permission:", error)
     return false
   }
 }

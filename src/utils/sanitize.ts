@@ -83,14 +83,12 @@ export const sanitizeURL = (url: string): string => {
   // Check for dangerous protocols
   const dangerousProtocols = /^(?:javascript|data|vbscript|file|about):/i
   if (dangerousProtocols.test(url)) {
-    console.warn('Blocked dangerous URL:', url)
     return ''
   }
   
   // Allow only http, https, mailto
   const safeProtocols = /^(?:https?|mailto):/i
   if (url.includes(':') && !safeProtocols.test(url)) {
-    console.warn('Blocked non-standard URL protocol:', url)
     return ''
   }
   

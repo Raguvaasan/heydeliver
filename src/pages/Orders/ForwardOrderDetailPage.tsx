@@ -58,10 +58,8 @@ const ForwardOrderDetailPage: FC = () => {
         setOrder(foundOrder);
       } else {
         toast.error("Order not found");
-        console.error("Order not found in list:", orderId);
       }
     } catch (error: any) {
-      console.error("Error fetching order detail:", error);
       toast.error(error?.response?.data?.message || "Failed to fetch order details");
     } finally {
       setLoading(false);

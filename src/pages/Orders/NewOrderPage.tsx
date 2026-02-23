@@ -278,7 +278,7 @@ const NewOrderPage: FC = () => {
       return
     }
 
-    if (boxes.length === 0 || !boxes[0].weight) {
+    if (boxes.length === 0 || !boxes[0]?.weight) {
       toast.error("Please add at least one box with weight")
       return
     }
@@ -323,8 +323,8 @@ const NewOrderPage: FC = () => {
         seller_inv: formData.sellerInvoice || "",
         quantity: formData.quantity || "",
         waybill: "",
-        shipment_width: firstBox.breadth || "100",
-        shipment_height: firstBox.height || "100",
+        shipment_width: firstBox?.breadth || "100",
+        shipment_height: firstBox?.height || "100",
         weight: totalWeight.toString(),
         shipping_mode: formData.shippingMode,
         address_type: formData.addressType || "",
@@ -343,7 +343,7 @@ const NewOrderPage: FC = () => {
         navigate("/orders")
       }, 1500)
     } catch (error) {
-      console.error("Order creation failed:", error)
+      // Error handled by store
     }
   }
 

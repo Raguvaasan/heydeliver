@@ -163,10 +163,10 @@ export const useRateCalculatorStore = create<RateCalculatorState>((set) => ({
 
   fetchRateData: async (params: RateCalculatorParams) => {
     try {
-      return await requestRateData(params)
+      const result = await requestRateData(params)
+      return result || null
     } catch (err: any) {
       const errorMessage = getErrorMessage(err)
-      console.error("Rate calculation error:", err)
       throw new Error(errorMessage)
     }
   },

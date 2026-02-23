@@ -66,7 +66,7 @@ const ProfilePageModern: FC = () => {
         }
       }
     } catch (error) {
-      console.error("Error parsing profile data:", error)
+      // Profile parsing failed, use defaults
     }
     return {
       firstName: "",

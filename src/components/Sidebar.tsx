@@ -84,8 +84,8 @@ const Sidebar: FC<SidebarProps> = ({
       icon: <HiShoppingCart className="h-5 w-5" />,
       path: "/orders",
       submenu: [
-        { title: "Completed Orders", path: "/orders/completed" },
         { title: "Forward Orders", path: "/orders/forward" },
+        { title: "Completed Orders", path: "/orders/completed" },
         { title: "All Orders", path: "/orders/pickup" },
       ],
     },

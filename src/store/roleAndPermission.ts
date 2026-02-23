@@ -77,7 +77,6 @@ export const useRoleStore = create<RoleState>((set, get) => ({
         loading: false 
       })
     } catch (err: any) {
-      console.error("Error fetching roles:", err)
       set({ 
         roles: [], 
         loading: false, 
@@ -98,7 +97,6 @@ export const useRoleStore = create<RoleState>((set, get) => ({
         loading: false,
       })
     } catch (err: any) {
-      console.error("Error getting role:", err)
       set({ loading: false, error: err?.response?.data?.message || err?.message || "Failed to get role" })
       toast.error("Failed to get role details")
     }
@@ -113,7 +111,6 @@ export const useRoleStore = create<RoleState>((set, get) => ({
       toast.success("Role added successfully!")
       set({ loading: false })
     } catch (err: any) {
-      console.error("Error adding role:", err)
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to add role"
       set({ loading: false, error: errorMessage })
       toast.error(errorMessage)
@@ -130,7 +127,6 @@ export const useRoleStore = create<RoleState>((set, get) => ({
       toast.success("Role updated successfully!")
       set({ loading: false })
     } catch (err: any) {
-      console.error("Error updating role:", err)
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to update role"
       set({ loading: false, error: errorMessage })
       toast.error(errorMessage)
@@ -146,7 +142,6 @@ export const useRoleStore = create<RoleState>((set, get) => ({
       await get().fetchRoles()
       set({ loading: false })
     } catch (err: any) {
-      console.error("Error deleting role:", err)
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to delete role"
       set({ loading: false, error: errorMessage })
       throw err
@@ -166,7 +161,6 @@ export const useRoleStore = create<RoleState>((set, get) => ({
         : []
       set({ modules, loading: false })
     } catch (err: any) {
-      console.error("Error fetching modules:", err)
       set({ loading: false, error: err?.message || "Failed to fetch modules" })
     }
   },

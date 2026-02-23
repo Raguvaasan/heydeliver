@@ -16,7 +16,6 @@ const PaymentCallbackPage: FC = () => {
   useEffect(() => {
     const orderId = searchParams.get("order_id")
     if (!orderId) {
-      console.error('❌ No order_id in URL')
       toast.error("Invalid payment response")
       setVerifying(false)
       setPaymentStatus("failed")
@@ -30,7 +29,6 @@ const PaymentCallbackPage: FC = () => {
         setPaymentStatus("success")
         
       } catch (error: any) {
-        console.error('❌ Payment verification error:', error)
         setPaymentStatus("failed")
         
         // Show specific error message if available

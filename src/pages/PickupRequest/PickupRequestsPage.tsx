@@ -1,6 +1,6 @@
 import { FC, useEffect, useState } from "react";
-import { Badge, Button, Card, Table, TextInput, Spinner, Select } from "flowbite-react";
-import { HiSearch, HiEye } from "react-icons/hi";
+import { Badge, Button, Card, Table, TextInput, Spinner } from "flowbite-react";
+import { HiSearch, HiEye, HiViewGrid, HiCheckCircle, HiClock, HiTruck, HiXCircle } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar";
 import http from "../../common/httpRequest";
@@ -108,7 +108,6 @@ const PickupRequestsPage: FC = () => {
           normalizedOrders.length
       );
     } catch (error: any) {
-      console.error("Failed to fetch all orders:", error);
       const errorMsg = error.response?.data?.message || error.message || "Failed to fetch orders";
       toast.error(errorMsg);
       setOrders([]);
@@ -182,6 +181,7 @@ const PickupRequestsPage: FC = () => {
 
         <Card className="overflow-hidden flex-1 flex flex-col min-w-0">
           <div className="flex h-full flex-col min-w-0">
+            {/* Search and Refresh Bar */}
             <div className="mb-4 flex flex-col md:flex-row gap-4">
               <TextInput
                 icon={HiSearch}
@@ -190,21 +190,81 @@ const PickupRequestsPage: FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="flex-1"
               />
-              <Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full md:w-48"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
-                <option value="in-transit">In Transit</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-              </Select>
               <Button color="gray" onClick={fetchAllOrders} disabled={loading} className="w-full md:w-auto">
                 Refresh
               </Button>
+            </div>
+
+            {/* Status Filter Tabs */}
+            <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+              <nav className="flex flex-wrap gap-2 -mb-px" aria-label="Status Tabs">
+                <button
+                  onClick={() => setStatusFilter("all")}
+                  className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                    statusFilter === "all"
+                      ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  }`}
+                >
+                  <HiViewGrid className="h-5 w-5" />
+                  All Status
+                </button>
+                <button
+                  onClick={() => setStatusFilter("active")}
+                  className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                    statusFilter === "active"
+                      ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  }`}
+                >
+                  <HiCheckCircle className="h-5 w-5" />
+                  Active
+                </button>
+                <button
+                  onClick={() => setStatusFilter("pending")}
+                  className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                    statusFilter === "pending"
+                      ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  }`}
+                >
+                  <HiClock className="h-5 w-5" />
+                  Pending
+                </button>
+                <button
+                  onClick={() => setStatusFilter("in-transit")}
+                  className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                    statusFilter === "in-transit"
+                      ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  }`}
+                >
+                  <HiTruck className="h-5 w-5" />
+                  In Transit
+                </button>
+                <button
+                  onClick={() => setStatusFilter("delivered")}
+                  className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                    statusFilter === "delivered"
+                      ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  }`}
+                >
+                  <HiCheckCircle className="h-5 w-5" />
+                  Delivered
+                </button>
+                <button
+                  onClick={() => setStatusFilter("cancelled")}
+                  className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                    statusFilter === "cancelled"
+                      ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  }`}
+                >
+                  <HiXCircle className="h-5 w-5" />
+                  Cancelled
+                </button>
+              </nav>
             </div>
 
             <div className="hidden w-full min-w-0 flex-1 overflow-x-auto overflow-y-auto pb-2 pr-1 md:block [scrollbar-width:thin] [scrollbar-color:#64748b_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500/70 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80">

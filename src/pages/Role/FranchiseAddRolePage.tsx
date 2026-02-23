@@ -90,7 +90,7 @@ const FranchiseAddRolePage: FC = () => {
       await addRole(roleData)
       navigate("/franchise-role")
     } catch (error) {
-      console.error("Failed to add franchise role:", error)
+      // Error handled by store
     }
   }
 

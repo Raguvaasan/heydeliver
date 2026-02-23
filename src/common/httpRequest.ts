@@ -4,10 +4,18 @@ const API_URL = '/api'  // Always use proxy route
 
 const httpRequest = axios.create({
   baseURL: API_URL,
-  timeout: 30000, // 30 second timeout
+  timeout: 5000, // 5 second timeout for fast responses
   headers: {
     'Content-Type': 'application/json',
+    'Accept-Encoding': 'gzip, deflate, br', // Enable compression
   },
+  // Performance optimizations
+  maxRedirects: 5,
+  maxContentLength: 50 * 1024 * 1024, // 50MB max
+  decompress: true, // Auto-decompress responses
+  // Connection pooling for keep-alive
+  httpAgent: undefined, // Browser handles this automatically
+  httpsAgent: undefined,
 })
 
 httpRequest.interceptors.request.use(
@@ -37,6 +45,11 @@ httpRequest.interceptors.response.use(
 // Public HTTP instance without token for public APIs
 export const httpPublic = axios.create({
   baseURL: API_URL,
+  timeout: 5000, // 5 second timeout
+  headers: {
+    'Accept-Encoding': 'gzip, deflate, br', // Enable compression
+  },
+  decompress: true,
 })
 
 httpPublic.interceptors.response.use(

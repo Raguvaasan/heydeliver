@@ -156,7 +156,6 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
       await addAgency(sanitizedValues)
       onClose()
     } catch (error) {
-      console.error("Add agency failed:", error)
       throw error
     }
   }

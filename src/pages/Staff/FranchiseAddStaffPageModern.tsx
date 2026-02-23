@@ -45,7 +45,6 @@ const FranchiseAddStaffPageModern: FC = () => {
         setRoles(rolesRes.data?.data || [])
         setAgencies(agenciesRes.data?.data || [])
       } catch (error) {
-        console.error("Error fetching data:", error)
         setRoles([])
         setAgencies([])
       } finally {
@@ -63,7 +62,6 @@ const FranchiseAddStaffPageModern: FC = () => {
       const response = await http.get("/admin/role")
       setRoles(response.data?.data || [])
     } catch (error) {
-      console.error("Error fetching roles:", error)
       toast.error("Failed to load roles")
       setRoles([])
     } finally {
@@ -77,7 +75,6 @@ const FranchiseAddStaffPageModern: FC = () => {
       const response = await http.get("/admin/franchise")
       setAgencies(response.data?.data || [])
     } catch (error) {
-      console.error("Error fetching agencies:", error)
       toast.error("Failed to load franchises")
       setAgencies([])
     } finally {
@@ -104,7 +101,6 @@ const FranchiseAddStaffPageModern: FC = () => {
       toast.success("Staff member added successfully!")
       navigate("/franchise-staff")
     } catch (error: any) {
-      console.error("Error adding staff:", error)
       toast.error(error.response?.data?.message || "Failed to add staff member")
       throw error
     }

@@ -13,7 +13,8 @@ const OrderDetailsPage: FC = () => {
     if (id) {
       getOrderById(id)
     }
-  }, [id, getOrderById])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]) // Re-run only when id changes
 
   if (loading || !selectedOrder) {
     return (

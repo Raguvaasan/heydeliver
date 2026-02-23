@@ -68,9 +68,10 @@ const Navbar: FC<NavbarProps> = ({
         }
       }
     } catch (error) {
-      console.error("Error parsing profile data:", error)
+      // Profile data parsing failed, use defaults
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Run only on mount
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

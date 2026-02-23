@@ -45,7 +45,6 @@ const RoleAndPermissionPage: FC = () => {
         setIsDeleteModalOpen(false)
         setSelectedRoleId(null)
       } catch (error) {
-        console.error("Delete failed:", error)
         toast.error("Failed to delete role")
       }
     }

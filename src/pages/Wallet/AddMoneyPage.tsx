@@ -40,7 +40,8 @@ const AddMoneyPage: FC = () => {
   // Fetch wallet balance on mount
   useEffect(() => {
     fetchBalance()
-  }, [fetchBalance])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Run only on mount
 
   const handleRecharge = async () => {
     const amount = parseFloat(rechargeAmount)

@@ -257,7 +257,6 @@ const FranchiseStaffPage: FC = function () {
     </NavbarSidebarLayout>
   )
   } catch (error) {
-    console.error("Error in FranchiseStaffPage:", error)
     return (
       <NavbarSidebarLayout isFooter={false}>
         <div className="px-4 pt-6">

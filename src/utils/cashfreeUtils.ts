@@ -85,7 +85,6 @@ export const initiateCashfreePayment = async (
 
     return result
   } catch (error: any) {
-    console.error("Payment initiation error:", error)
     throw error
   }
 }

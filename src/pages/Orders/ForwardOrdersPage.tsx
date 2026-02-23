@@ -1,6 +1,6 @@
 import { FC, useEffect, useState } from "react";
-import { Badge, Button, Card, Table, TextInput, Spinner, Select } from "flowbite-react";
-import { HiSearch, HiEye, HiRefresh } from "react-icons/hi";
+import { Badge, Button, Card, Table, TextInput, Spinner } from "flowbite-react";
+import { HiSearch, HiEye, HiRefresh, HiCheckCircle, HiClock, HiTruck } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar";
 import http from "../../common/httpRequest";
@@ -84,7 +84,7 @@ const ForwardOrdersPage: FC = () => {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const limit = 10;
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
   const [totalOrders, setTotalOrders] = useState(0);
   const [recallingOrderId, setRecallingOrderId] = useState<string | null>(null);
 
@@ -96,10 +96,9 @@ const ForwardOrdersPage: FC = () => {
         limit,
       };
       
-      // Add status filter if not "all"
-      if (statusFilter !== "all") {
-        params.status = statusFilter;
-      }
+      // Always add status filter (active, pending, or in-transit)
+      params.status = statusFilter.replace("-", "_");
+      
       const response = await http.get("/shipment/orders", { params });
       let ordersData: ForwardOrder[] = [];
       
@@ -139,8 +138,6 @@ const ForwardOrdersPage: FC = () => {
       
       toast.success(`Loaded ${normalizedOrders.length} orders`);
     } catch (error: any) {
-      console.error("Failed to fetch forward orders:", error);
-      console.error("Error response:", error.response?.data);
       
       const errorMsg = error.response?.data?.message || error.message || "Failed to fetch orders";
       toast.error(errorMsg);
@@ -159,7 +156,6 @@ const ForwardOrdersPage: FC = () => {
   }, [statusFilter]);
 
   const handleRecallOrder = async (order: any) => {
-    console.log("order",order)
     const rawOrderId = order.orderId || order.bookingId || order._id || order.id;
     if (!rawOrderId) {
       toast.error("Order ID not found");
@@ -279,7 +275,7 @@ const ForwardOrdersPage: FC = () => {
 
         <Card className="overflow-hidden flex-1 flex flex-col min-w-0">
           <div className="flex h-full flex-col min-w-0">
-          <div className="mb-4 flex flex-col md:flex-row gap-4">
+          <div className="mb-4 flex flex-col md:flex-row gap-4 items-start md:items-center">
             <TextInput
               icon={HiSearch}
               placeholder="Search by Order ID, AWB, or Customer Name..."
@@ -287,26 +283,54 @@ const ForwardOrdersPage: FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1"
             />
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full md:w-48"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="pending">Pending</option>
-              <option value="in-transit">In Transit</option>
-              <option value="delivered">Delivered</option>
-              <option value="cancelled">Cancelled</option>
-            </Select>
             <Button
               color="gray"
               onClick={fetchForwardOrders}
               disabled={loading}
               className="w-full md:w-auto"
             >
+              <HiRefresh className="mr-2 h-5 w-5" />
               Refresh
             </Button>
+          </div>
+
+          {/* Status Tabs */}
+          <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+            <nav className="flex flex-wrap gap-2 -mb-px" aria-label="Tabs">
+              <button
+                onClick={() => setStatusFilter("active")}
+                className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                  statusFilter === "active"
+                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                <HiCheckCircle className="h-5 w-5" />
+                Active
+              </button>
+              <button
+                onClick={() => setStatusFilter("pending")}
+                className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                  statusFilter === "pending"
+                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                <HiClock className="h-5 w-5" />
+                Pending
+              </button>
+              <button
+                onClick={() => setStatusFilter("in-transit")}
+                className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${
+                  statusFilter === "in-transit"
+                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                }`}
+              >
+                <HiTruck className="h-5 w-5" />
+                In Transit
+              </button>
+            </nav>
           </div>
 
           <div className="hidden w-full min-w-0 flex-1 overflow-x-auto overflow-y-auto pb-2 pr-1 md:block [scrollbar-width:thin] [scrollbar-color:#64748b_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500/70 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80">

@@ -75,7 +75,6 @@ export const useRateCardStore = create<RateCardState>((set, get) => ({
     }
 
     if (zoneIndex === -1) {
-      console.warn(`Zone not found: "${zone}" (normalized: "${normalizedZone}")`)
       return 0
     }
 
@@ -91,29 +90,29 @@ export const useRateCardStore = create<RateCardState>((set, get) => ({
     let totalCharge = 0
     const weightInKg = weightInGrams / 1000
     if (weightInKg <= 0.25) {
-      totalCharge = rates.baseFare[zoneIndex]
+      totalCharge = rates.baseFare[zoneIndex] || 0
     }
     // Up to 500g
     else if (weightInKg <= 0.5) {
-      totalCharge = rates.baseFare[zoneIndex] + rates.additional250g[zoneIndex]
+      totalCharge = (rates.baseFare[zoneIndex] || 0) + (rates.additional250g[zoneIndex] || 0)
     }
     // Up to 5kg
     else if (weightInKg <= 5) {
-      totalCharge = rates.baseFare[zoneIndex] + rates.additional250g[zoneIndex]
+      totalCharge = (rates.baseFare[zoneIndex] || 0) + (rates.additional250g[zoneIndex] || 0)
       const remaining = weightInKg - 0.5
       const units500g = Math.ceil(remaining / 0.5)
-      totalCharge += units500g * rates.additional500g[zoneIndex]
+      totalCharge += units500g * (rates.additional500g[zoneIndex] || 0)
     }
     // Above 5kg
     else {
-      totalCharge = rates.baseFare[zoneIndex] + rates.additional250g[zoneIndex]
+      totalCharge = (rates.baseFare[zoneIndex] || 0) + (rates.additional250g[zoneIndex] || 0)
       // First 4.5kg (0.5 to 5kg) in 500g units
       const units500g = Math.ceil(4.5 / 0.5)
-      totalCharge += units500g * rates.additional500g[zoneIndex]
+      totalCharge += units500g * (rates.additional500g[zoneIndex] || 0)
       // Remaining in 1kg units
       const remaining = weightInKg - 5
       const units1kg = Math.ceil(remaining)
-      totalCharge += units1kg * rates.additional1kg[zoneIndex]
+      totalCharge += units1kg * (rates.additional1kg[zoneIndex] || 0)
     }
 
     return totalCharge

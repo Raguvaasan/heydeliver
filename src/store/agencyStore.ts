@@ -227,7 +227,6 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
       }))
       toast.success("Agency deleted successfully!")
     } catch (error: any) {
-      console.error("Delete error:", error.response?.data) // Debug log
       const message = error?.response?.data?.message || error?.message || "Failed to delete agency"
       set({ loading: false, error: message })
       toast.error(message)

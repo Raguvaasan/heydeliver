@@ -77,14 +77,8 @@ const WalletPage: FC = () => {
       fetchBalance()
       fetchTransactions()
     }
-  }, [isAdmin, activeTab, fetchBalance, fetchTransactions, fetchAllFranchiseTransactions, fetchAllFranchiseRecharges])
-
-  // Debug log for transactions
-  useEffect(() => {
-    if (transactions.length > 0) {
-      console.log('WalletPage: First transaction structure =', transactions[0])
-    }
-  }, [transactions, recharges, totalCredit])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, activeTab]) // Only re-run when role or tab changes
 
   const handleRecharge = () => {
     if (!rechargeAmount || parseFloat(rechargeAmount) <= 0) {

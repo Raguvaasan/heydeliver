@@ -74,7 +74,7 @@ const FranchiseAddEditStaffPage: FC = () => {
                 setFormData(prev => ({ ...prev, franchiseId }))
               }
             } catch (error) {
-              console.error("Error parsing profile data:", error)
+              // Profile parsing failed
             }
           }
           
@@ -126,7 +126,6 @@ const FranchiseAddEditStaffPage: FC = () => {
           }
         }
       } catch (error: any) {
-        console.error("Error fetching data:", error)
         toast.error("Failed to load required data")
       }
     }
@@ -158,7 +157,6 @@ const FranchiseAddEditStaffPage: FC = () => {
         })
       }
     } catch (error: any) {
-      console.error("Error fetching staff:", error)
       toast.error("Failed to load staff data")
     } finally {
       setFetchLoading(false)
@@ -175,7 +173,6 @@ const FranchiseAddEditStaffPage: FC = () => {
       const rolesData = response.data?.data || []
       setRoles(rolesData)
     } catch (error) {
-      console.error("Error fetching roles:", error)
       toast.error("Failed to load roles")
     }
   }
@@ -187,7 +184,6 @@ const FranchiseAddEditStaffPage: FC = () => {
       const franchiseData = response.data?.data || []
       setAgencies(franchiseData)
     } catch (error) {
-      console.error("Error fetching agencies:", error)
       toast.error("Failed to load franchises")
     }
   }
@@ -255,7 +251,6 @@ const FranchiseAddEditStaffPage: FC = () => {
       }
       navigate("/franchise-staff")
     } catch (error: any) {
-      console.error(`Error ${isEditMode ? 'updating' : 'adding'} staff:`, error)
       toast.error(error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'add'} staff`)
     } finally {
       setLoading(false)

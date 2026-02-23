@@ -43,7 +43,7 @@ const AgencyManagementPage: FC = () => {
         setIsDeleteModalOpen(false)
         setSelectedId(null)
       } catch (error) {
-        console.error("Delete failed:", error)
+        // Error handled by store
       }
     }
   }

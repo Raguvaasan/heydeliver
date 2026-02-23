@@ -126,7 +126,7 @@ const FranchiseEditRolePage: FC = () => {
         navigate("/franchise-role")
       }
     } catch (error) {
-      console.error("Failed to update franchise role:", error)
+      // Error handled by store
     }
   }
 

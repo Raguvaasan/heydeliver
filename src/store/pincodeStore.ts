@@ -121,8 +121,6 @@ export const usePincodeStore = create<PincodeStoreState>((set, get) => ({
         errorMessage = err.message
       }
       
-      console.error("Pincode fetch error:", err)
-      
       set({
         pickupLoading: false,
         pickupError: errorMessage,
@@ -191,8 +189,6 @@ export const usePincodeStore = create<PincodeStoreState>((set, get) => ({
       } else if (err.message) {
         errorMessage = err.message
       }
-      
-      console.error("Pincode fetch error:", err)
       
       set({
         deliveryLoading: false,

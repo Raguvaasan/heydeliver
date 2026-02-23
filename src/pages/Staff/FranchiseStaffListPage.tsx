@@ -66,19 +66,9 @@ const FranchiseStaffListPage: FC = () => {
         staffData = response.data
       }
 
-      if (staffData.length > 0) {
-        console.log("First staff object:", staffData[0])
-      }
-
       setStaffs(staffData)
       setErrorMessage(null)
     } catch (error: any) {
-      console.error("=== ERROR FETCHING STAFFS ===")
-      console.error("Error object:", error)
-      console.error("Error message:", error.message)
-      console.error("Error response:", error.response)
-      console.error("Error response status:", error.response?.status)
-      console.error("Error response data:", error.response?.data)
 
       if (error.response?.status === 401) {
         setErrorMessage("Access Denied: You don't have permission to access staff data.")
@@ -102,7 +92,7 @@ const FranchiseStaffListPage: FC = () => {
       const response = await http.get(endpoint)
       setRoles(response.data?.data || [])
     } catch (error) {
-      console.error("Error fetching roles:", error)
+      // Error handled silently
     }
   }
 
@@ -111,7 +101,7 @@ const FranchiseStaffListPage: FC = () => {
       const response = await http.get("/admin/franchise")
       setAgencies(response.data?.data || [])
     } catch (error) {
-      console.error("Error fetching agencies:", error)
+      // Error handled silently
     }
   }
 
@@ -149,7 +139,6 @@ const FranchiseStaffListPage: FC = () => {
         setAgencies(agenciesRes.data?.data || [])
         setErrorMessage(null)
       } catch (error: any) {
-        console.error("Error fetching data:", error)
         if (error.response?.status === 401) {
           setErrorMessage("Access Denied: You don't have permission to access staff data.")
         } else {
@@ -205,7 +194,6 @@ const FranchiseStaffListPage: FC = () => {
         formik.resetForm()
         fetchStaffs()
       } catch (error: any) {
-        console.error("Error adding staff:", error)
         toast.error(error.response?.data?.message || "Failed to add staff")
       }
     },
@@ -239,7 +227,6 @@ const FranchiseStaffListPage: FC = () => {
       setStaffToDelete(null)
       fetchStaffs()
     } catch (error: any) {
-      console.error("Error deleting staff:", error)
       toast.error("Failed to delete staff")
     }
   }

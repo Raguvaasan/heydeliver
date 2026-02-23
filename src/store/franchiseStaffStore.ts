@@ -51,7 +51,6 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
       const staffData = response.data?.data || []
       set({ staffs: staffData, loading: false })
     } catch (error: any) {
-      console.error("Error fetching staffs:", error)
       set({ error: error.message, loading: false, staffs: [] })
     }
   },
@@ -67,7 +66,6 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
       const roleData = response.data?.data || []
       set({ roles: roleData, loading: false })
     } catch (error: any) {
-      console.error("Error fetching roles:", error)
       set({ error: error.message, loading: false, roles: [] })
     }
   },
@@ -83,7 +81,6 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
       const response = await http.get(endpoint)
       set({ selectedStaff: response.data?.data, loading: false })
     } catch (error: any) {
-      console.error("Error fetching staff by id:", error)
       set({ error: error.message, loading: false })
     }
   },
@@ -99,7 +96,6 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
       await http.post(endpoint, data)
       set({ loading: false })
     } catch (error: any) {
-      console.error("Error adding staff:", error)
       set({ error: error.message, loading: false })
       throw error
     }
@@ -116,7 +112,6 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
       await http.put(endpoint, data)
       set({ loading: false })
     } catch (error: any) {
-      console.error("Error updating staff:", error)
       set({ error: error.message, loading: false })
       throw error
     }
@@ -133,7 +128,6 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
       await http.delete(endpoint)
       set({ loading: false })
     } catch (error: any) {
-      console.error("Error deleting staff:", error)
       set({ error: error.message, loading: false })
       throw error
     }

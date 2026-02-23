@@ -61,7 +61,7 @@ const AddAgencyModal: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
       setImageFile(null)
       onClose()
     } catch (error) {
-      console.error("Add agency failed:", error)
+      // Error handled by store
     }
   }
 

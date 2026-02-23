@@ -55,7 +55,6 @@ export const useStaffStore = create<StaffState>((set, get) => ({
       }))
       set({ roles: rolesList, loading: false })
     } catch (error) {
-      console.error("Error fetching roles:", error)
       set({ 
         roles: [],
         loading: false 
@@ -87,7 +86,6 @@ export const useStaffStore = create<StaffState>((set, get) => ({
         loading: false,
       })
     } catch (error: any) {
-      console.error("Error fetching staffs:", error)
       // Set empty array instead of showing error on initial load
       set({ 
         staffs: [],
@@ -126,7 +124,6 @@ export const useStaffStore = create<StaffState>((set, get) => ({
         loading: false,
       })
     } catch (error: any) {
-      console.error("Error fetching staff:", error)
       set({ 
         loading: false,
         error: error?.response?.data?.message || "Failed to fetch staff"
@@ -161,7 +158,6 @@ export const useStaffStore = create<StaffState>((set, get) => ({
       await get().fetchStaffs()
       set({ loading: false })
     } catch (error: any) {
-      console.error("Error adding staff:", error)
       const message = error?.response?.data?.message || "Failed to add staff"
       set({ loading: false, error: message })
       throw new Error(message)
@@ -197,7 +193,6 @@ export const useStaffStore = create<StaffState>((set, get) => ({
       await get().fetchStaffs()
       set({ loading: false })
     } catch (error: any) {
-      console.error("Error updating staff:", error)
       const message = error?.response?.data?.message || "Failed to update staff"
       set({ loading: false, error: message })
       throw new Error(message)
@@ -211,7 +206,6 @@ export const useStaffStore = create<StaffState>((set, get) => ({
       await get().fetchStaffs()
       set({ loading: false })
     } catch (error: any) {
-      console.error("Error deleting staff:", error)
       const message = error?.response?.data?.message || "Failed to delete staff"
       set({ loading: false, error: message })
       throw new Error(message)

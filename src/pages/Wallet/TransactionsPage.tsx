@@ -27,7 +27,21 @@ const TransactionsPage: FC = () => {
   useEffect(() => {
     fetchBalance()
     fetchTransactions()
-  }, [fetchBalance, fetchTransactions])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Run only on mount
+
+  // Helper function to extract readable order ID
+  const getOrderId = (orderId: string | undefined) => {
+    if (!orderId) return "-"
+    const parts = orderId.split("_")
+    return parts[parts.length - 1] || orderId
+  }
+
+  // Helper function to format payment method
+  const formatPaymentMethod = (method: string | undefined) => {
+    if (!method) return "-"
+    return method.toUpperCase()
+  }
 
   return (
     <NavbarSidebarLayout>
@@ -126,7 +140,9 @@ const TransactionsPage: FC = () => {
                 <tr>
                   <th className="px-4 py-3">Transaction Details</th>
                   <th className="px-4 py-3">Order ID</th>
+                  <th className="px-4 py-3">Franchise Name</th>
                   <th className="px-4 py-3">Description</th>
+                  <th className="px-4 py-3">Payment Method</th>
                   <th className="px-4 py-3 text-right">Credit</th>
                   <th className="px-4 py-3 text-right">Debit</th>
                 </tr>
@@ -135,7 +151,7 @@ const TransactionsPage: FC = () => {
                 {safeTransactions.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={7}
                       className="text-center py-12 text-gray-500 dark:text-gray-400"
                     >
                       <div className="flex flex-col items-center">
@@ -165,8 +181,18 @@ const TransactionsPage: FC = () => {
                       <td className="px-4 py-3">
                         {new Date(transaction.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3">{transaction.orderId || "-"}</td>
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        {transaction.orderId}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-orange-600">
+                        {transaction.franchiseName || "-"}
+                      </td>
                       <td className="px-4 py-3">{transaction.description}</td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                          {formatPaymentMethod(transaction.paymentMethod)}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-right text-green-600 font-medium">
                         {transaction.type === "credit" ? `₹${transaction.amount.toFixed(2)}` : "-"}
                       </td>

@@ -42,7 +42,6 @@ const FranchiseAddStaffPage: FC = () => {
         setRoles(rolesRes.data?.data || [])
         setAgencies(agenciesRes.data?.data || [])
       } catch (error) {
-        console.error("Error fetching data:", error)
         setRoles([])
         setAgencies([])
       } finally {
@@ -93,7 +92,6 @@ const FranchiseAddStaffPage: FC = () => {
         toast.success("Staff added successfully")
         navigate("/franchise-staff")
       } catch (error: any) {
-        console.error("Error adding staff:", error)
         toast.error(error.response?.data?.message || "Failed to add staff")
       } finally {
         setLoading(false)

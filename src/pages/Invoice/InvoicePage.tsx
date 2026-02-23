@@ -33,7 +33,6 @@ const InvoicePage: FC = () => {
       const response = await http.get("/admin/invoice")
       setInvoices(response.data?.data || [])
     } catch (error: any) {
-      console.error("Error fetching invoices:", error)
       if (error.response?.status !== 401) {
         toast.error("Failed to fetch invoices")
       }
@@ -49,7 +48,6 @@ const InvoicePage: FC = () => {
       const response = await http.get("/admin/credit-notes")
       setCreditNotes(response.data?.data || [])
     } catch (error: any) {
-      console.error("Error fetching credit notes:", error)
       setCreditNotes([])
     } finally {
       setLoading(false)
@@ -62,7 +60,6 @@ const InvoicePage: FC = () => {
       const response = await http.get("/admin/debit-notes")
       setDebitNotes(response.data?.data || [])
     } catch (error: any) {
-      console.error("Error fetching debit notes:", error)
       setDebitNotes([])
     } finally {
       setLoading(false)
