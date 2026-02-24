@@ -67,7 +67,7 @@ const PickupRequestsPage: FC = () => {
       };
 
       if (statusFilter !== "all") {
-        params.status = statusFilter;
+        params.status = statusFilter.replace("-", "_");
       }
 
       const response = await http.get("/shipment/orders", { params });
