@@ -262,29 +262,18 @@ const DashboardPage: FC = () => {
   const stats = buildStats()
   const recentBookings = dashboardData?.recentBookings || []
   
-  // Handle shipment type data differently for franchise vs admin
+  // Handle shipment type data - both franchise and admin use shipmentTypeDistribution array
   const isFranchise = loginType === "franchise" || loginType === "staff"
   let shipmentTypeDistribution: any[] = []
   let totalShipmentTypes = 0
   
-  if (isFranchise) {
-    // Franchise: Convert shipmentType object to array
-    const shipmentTypeData = dashboardData?.shipmentType || {}
-    shipmentTypeDistribution = [
-      { type: 'Road Freight', count: shipmentTypeData.roadFreight || 0 },
-      { type: 'Ocean Freight', count: shipmentTypeData.oceanFreight || 0 },
-      { type: 'Air Freight', count: shipmentTypeData.airFreight || 0 },
-      { type: 'Rail Freight', count: shipmentTypeData.railFreight || 0 },
-    ].filter(item => item.count > 0)
-    totalShipmentTypes = shipmentTypeData.total || 0
-  } else {
-    // Admin: Use shipmentTypeDistribution array directly
-    shipmentTypeDistribution = dashboardData?.shipmentTypeDistribution || []
-    totalShipmentTypes = shipmentTypeDistribution.reduce(
-      (sum: number, item: any) => sum + (item.count || 0),
-      0
-    )
-  }
+  // Both admin and franchise now use the same shipmentTypeDistribution array from API
+  // Show all types, even with 0 count
+  shipmentTypeDistribution = dashboardData?.shipmentTypeDistribution || []
+  totalShipmentTypes = shipmentTypeDistribution.reduce(
+    (sum: number, item: any) => sum + (item.count || 0),
+    0
+  )
   
   // Get revenue data for display (franchise-specific)
   const revenueData = isFranchise ? (dashboardData?.revenue || {}) : {}
@@ -314,7 +303,7 @@ const DashboardPage: FC = () => {
         // Future days: no data yet
         return { day, revenue: 0 }
       }
-    }).filter(item => item.revenue > 0) // Only show days with data
+    })
   }
   
   // Generate revenue trend for admin based on period
@@ -383,7 +372,7 @@ const DashboardPage: FC = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 mb-6">
+          <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6 ${loginType === 'admin' ? 'xl:grid-cols-5' : ''}`}>
             {stats.map((stat, index) => (
               <StatCard
                 key={index}
@@ -616,7 +605,9 @@ const DashboardPage: FC = () => {
                     { bg: 'bg-pink-500', text: 'text-pink-500' }
                   ]
                   const displayType = item.type || 'All Shipments'
-                  const percentage = ((item.count / totalShipmentTypes) * 100).toFixed(1)
+                  const percentage = totalShipmentTypes > 0 
+                    ? ((item.count / totalShipmentTypes) * 100).toFixed(1)
+                    : '0.0'
                   const colorIndex = index % colorOptions.length
                   const colorClass = colorOptions[colorIndex]!
                   
@@ -670,8 +661,10 @@ const DashboardPage: FC = () => {
                       <input type="checkbox" className="rounded" />
                     </th>
                     <th className="px-4 py-3">Order ID</th>
-                    <th className="px-4 py-3">Franchise</th>
+                    {loginType === "admin" && <th className="px-4 py-3">Franchise</th>}
                     <th className="px-4 py-3">Amount</th>
+                    <th className="px-4 py-3">Date</th>
+                    <th className="px-4 py-3">Drop Location</th>
                     <th className="px-4 py-3">Status</th>
                   </tr>
                 </thead>
@@ -690,21 +683,33 @@ const DashboardPage: FC = () => {
                       <td className="px-4 py-3 font-medium text-orange-600 text-xs">
                         {booking.orderId || booking.bookingId || booking._id || "-"}
                       </td>
-                      <td className="px-4 py-3 text-gray-900 dark:text-white">
-                        {booking.franchiseName}
-                      </td>
+                      {loginType === "admin" && (
+                        <td className="px-4 py-3 text-gray-900 dark:text-white">
+                          {booking.franchise || booking.franchiseName || '-'}
+                        </td>
+                      )}
                       <td className="px-4 py-3 text-gray-900 dark:text-white">
                         {booking.amount ? `₹${Number(booking.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {booking.date ? new Date(booking.date).toLocaleDateString('en-IN', { 
+                          day: '2-digit', 
+                          month: 'short', 
+                          year: 'numeric' 
+                        }) : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white">
+                        {booking.dropLocation || '-'}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`font-medium ${
                           booking.status?.toLowerCase() === 'delivered' ? 'text-green-600' :
-                          booking.status?.toLowerCase() === 'in transit' ? 'text-blue-600' :
+                          booking.status?.toLowerCase().includes('transit') ? 'text-blue-600' :
                           booking.status?.toLowerCase() === 'pending' ? 'text-yellow-600' :
                           booking.status?.toLowerCase() === 'cancelled' ? 'text-red-600' :
                           'text-purple-600'
                         }`}>
-                          {booking.status ? booking.status.charAt(0).toUpperCase() + booking.status.slice(1) : "Pending"}
+                          {booking.status ? booking.status.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : "Pending"}
                         </span>
                       </td>
                     </tr>

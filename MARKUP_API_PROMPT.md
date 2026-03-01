@@ -1,4 +1,4 @@
-# Create 2 Markup Management APIs for HeyDeliver
+# Create 2 Markup Management APIs for TRUECARGO
 
 ## Overview
 Build RESTful APIs to manage markup settings for Rate Calculator and Rate Card features. Currently stored in frontend localStorage, need to move to backend database.

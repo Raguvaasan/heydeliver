@@ -3,7 +3,7 @@
   "name": "admin-portal",
   "version": "1.0.0",
   "descrption": "admin dashboard",
-  "author": "heyDeliver",
+  "author": "TRUECARGO",
   "homepage": "/admin",
   "scripts": {
     "postinstall": "node ./fix-flowbite.js",

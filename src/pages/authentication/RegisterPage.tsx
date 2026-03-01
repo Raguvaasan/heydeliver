@@ -72,9 +72,11 @@ const RegisterPage: FC = function () {
       <ToastContainer position="top-center" autoClose={3000} />
 
       <div className="my-6">
-        <span className="font-bruno text-2xl text-trans_main">
-          heyDeliver ADMIN
-        </span>
+        <img 
+          src="/images/truecargo.jpeg" 
+          alt="TRUECARGO Logo"
+          className="h-24 w-auto object-contain"
+        />
       </div>
 
       <Card className="w-full md:max-w-screen-sm md:[&>*]:p-16">

@@ -339,4 +339,4 @@ Potential improvements:
 8. Support multiple currencies
 
 ## License
-Part of HeyDeliver Admin Portal - Internal Use Only
+Part of TRUECARGO Admin Portal - Internal Use Only

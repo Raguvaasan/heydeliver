@@ -101,7 +101,7 @@ const MainContentFooter: FC = () => {
         </div>
       </Footer>
       <p className="my-8 text-center text-sm text-gray-500">
-        &copy; {new Date().getFullYear()} HeyDeliver. All rights reserved.
+        &copy; {new Date().getFullYear()} TRUECARGO. All rights reserved.
       </p>
     </>
   )

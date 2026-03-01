@@ -129,17 +129,16 @@ const LoginPage: FC = function () {
         {/* Left Side - Branding & Illustration */}
         <div className="hidden lg:flex flex-col justify-center w-1/2 pr-16">
           <div className="space-y-6 mb-16">
-            {/* <div className="inline-block"> */}
-              <h1 className="text-7xl font-extrabold tracking-tight mb-2">
-                <span className="bg-gradient-to-r from-orange-600 via-orange-500 to-orange-500 bg-clip-text text-transparent">Hey</span><span className="text-gray-900">Deliver</span>
-              </h1>
-              <div className="h-1.5 w-32 bg-gradient-to-r from-orange-500 to-amber-400 rounded-full"></div>
-            {/* </div> */}
-            <p className="text-2xl text-gray-700 font-light leading-relaxed mt-6">
-              Fast, Reliable & Secure
-            </p>
-            <p className="text-lg text-orange-600 font-semibold">
-              Delivery Management System
+            {/* Logo Image */}
+            <div className="mb-6">
+              <img 
+                src="/images/truecargo.jpeg" 
+                alt="TRUECARGO Logo"
+                className="h-36 w-auto object-contain"
+              />
+            </div>
+            <p className="text-2xl text-gray-700 font-light leading-relaxed">
+              Move | Connect | Deliver
             </p>
             
             {/* Feature Pills */}
@@ -175,10 +174,12 @@ const LoginPage: FC = function () {
         <div className="w-full lg:w-1/2 max-w-lg lg:ml-auto">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-10">
-            <h1 className="text-5xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-orange-600 to-orange-600 bg-clip-text text-transparent">Hey</span><span className="text-gray-900">Deliver</span>
-            </h1>
-            <p className="text-sm text-gray-600 mt-2">Delivery Management System</p>
+            <img 
+              src="/images/truecargo.jpeg" 
+              alt="TRUECARGO Logo"
+              className="h-24 w-auto mx-auto object-contain mb-2"
+            />
+            <p className="text-sm text-gray-600 mt-2">Move | Connect | Deliver</p>
           </div>
 
           <div className="relative group">

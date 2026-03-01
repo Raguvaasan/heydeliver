@@ -14,7 +14,7 @@ interface Order {
 
 const CreatePickupRequestPage: FC = () => {
   const navigate = useNavigate();
-  const [selectedLocation, setSelectedLocation] = useState("HEYDELIVER FRANCHISE");
+  const [selectedLocation, setSelectedLocation] = useState("TRUECARGO FRANCHISE");
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState("Evening");
   const [showSlotDropdown, setShowSlotDropdown] = useState(false);
@@ -143,7 +143,7 @@ const CreatePickupRequestPage: FC = () => {
             value={selectedLocation}
             onChange={(e) => setSelectedLocation(e.target.value)}
           >
-            <option>HEYDELIVER FRANCHISE</option>
+            <option>TRUECARGO FRANCHISE</option>
           </Select>
         </div>
 

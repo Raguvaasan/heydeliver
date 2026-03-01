@@ -503,7 +503,7 @@ Your app is already optimized very well. Here are minor tweaks for perfection:
 
 ### **Performance Grade: A (93/100)**
 
-Your HeyDeliver admin portal has **EXCELLENT** performance:
+Your TRUECARGO admin portal has **EXCELLENT** performance:
 
 ✅ Lightning-fast initial load  
 ✅ Instant page navigation  

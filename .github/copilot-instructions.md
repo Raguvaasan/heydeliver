@@ -1,7 +1,7 @@
-# GitHub Copilot Instructions for HeyDeliver Admin Portal
+# GitHub Copilot Instructions for TRUECARGO Admin Portal
 
 ## Project Overview
-This is a React + TypeScript admin dashboard for HeyDeliver, built with Vite, using Flowbite React components, TailwindCSS, and Zustand for state management.
+This is a React + TypeScript admin dashboard for TRUECARGO, built with Vite, using Flowbite React components, TailwindCSS, and Zustand for state management.
 
 ## Tech Stack
 - **Framework**: React 18.2 + TypeScript 4.9
