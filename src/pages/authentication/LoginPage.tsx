@@ -154,13 +154,13 @@ const LoginPage: FC = function () {
             
             {/* Feature Pills */}
             <div className="flex justify-center flex-wrap gap-3 mt-8">
-              <span className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 border border-orange-100">
+              <span className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 border border-primary-200">
                 ⚡ Real-time Tracking
               </span>
-              <span className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 border border-orange-100">
+              <span className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 border border-primary-200">
                 🔒 Secure Platform
               </span>
-              <span className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 border border-orange-100">
+              <span className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 border border-primary-200">
                 📊 Advanced Analytics
               </span>
             </div>
@@ -168,15 +168,17 @@ const LoginPage: FC = function () {
           
           {/* Delivery Truck Illustration with Premium Effects */}
           <div className="relative group">
-            <div className="absolute -inset-6 bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500 rounded-[2.5rem] blur-3xl opacity-25 group-hover:opacity-35 transition-opacity duration-500"></div>
-            <div className="relative bg-gradient-to-br from-blue-50/90 via-white/90 to-blue-100/90 backdrop-blur-xl rounded-[2rem] p-10 overflow-hidden border border-orange-100/30 transform transition-transform duration-300 group-hover:scale-[1.02]">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-400/20 to-transparent rounded-full blur-2xl"></div>
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-amber-400/20 to-transparent rounded-full blur-2xl"></div>
-              <img 
-                src="/images/Gemini_Generated_Image_fnjmi7fnjmi7fnjm.png" 
-                alt="Delivery Truck"
-                className="w-full h-auto relative z-10"
-              />
+            <div className="absolute -inset-6 rounded-[2.5rem] blur-3xl opacity-25 group-hover:opacity-35 transition-opacity duration-500 bg-[radial-gradient(circle_at_center,rgba(255,204,0,0.42)_0%,rgba(255,204,0,0.18)_45%,rgba(255,204,0,0)_75%)]"></div>
+            <div className="relative bg-gradient-to-br from-blue-50/90 via-white/90 to-blue-100/90 backdrop-blur-xl rounded-[2rem] overflow-hidden border border-primary-200 shadow-[0_18px_42px_rgba(255,204,0,0.24)] hover:shadow-[0_22px_52px_rgba(255,204,0,0.32)] transform transition-transform duration-300 group-hover:scale-[1.02]">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-400/20 to-transparent rounded-full blur-2xl"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-primary-300/20 to-transparent rounded-full blur-2xl"></div>
+              <div className="relative z-10 w-full aspect-[16/9] overflow-hidden rounded-2xl">
+                <img 
+                  src="/images/Gemini_Generated_Image_fnjmi7fnjmi7fnjm.png" 
+                  alt="Delivery Truck"
+                  className="h-full w-full object-cover object-center"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -195,10 +197,10 @@ const LoginPage: FC = function () {
 
           <div className="relative group">
             {/* Card Glow Effect */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500 rounded-[2rem] blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
+            <div className="absolute -inset-1 rounded-[2rem] blur-2xl opacity-20 group-hover:opacity-30 transition-opacity duration-500 bg-[radial-gradient(circle_at_center,rgba(255,204,0,0.40)_0%,rgba(255,204,0,0.16)_48%,rgba(255,204,0,0)_78%)]"></div>
             
             {/* Main Card */}
-            <div className="relative bg-white/95 backdrop-blur-2xl rounded-[1.75rem] p-12 border border-orange-200/50">
+            <div className="relative bg-white/95 backdrop-blur-2xl rounded-[1.75rem] p-12 border border-primary-200 shadow-[0_20px_48px_rgba(255,204,0,0.20)] hover:shadow-[0_24px_56px_rgba(255,204,0,0.28)] transition-shadow duration-300">
               
               <h2 className="text-3xl font-bold text-gray-900 mb-1 text-center">
                 Sign In
@@ -216,14 +218,14 @@ const LoginPage: FC = function () {
                     onChange={() => setLoginType("admin")}
                     className="sr-only peer"
                   />
-                  <div className="px-6 py-3 rounded-xl border-2 border-gray-200 peer-checked:border-orange-500 transition-all duration-300 hover:border-orange-300">
+                  <div className="px-6 py-3 rounded-xl border-2 border-gray-200 peer-checked:border-primary-200 transition-all duration-300 hover:border-primary-400">
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 peer-checked:border-orange-500 flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 peer-checked:border-primary-200 flex items-center justify-center">
                         {loginType === "admin" && (
-                          <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                          <div className="w-3 h-3 bg-primary-500 rounded-full"></div>
                         )}
                       </div>
-                      <span className="text-sm font-semibold text-gray-700 peer-checked:text-orange-600">
+                      <span className="text-sm font-semibold text-gray-700">
                         Admin
                       </span>
                     </div>
@@ -239,14 +241,14 @@ const LoginPage: FC = function () {
                     onChange={() => setLoginType("franchise")}
                     className="sr-only peer"
                   />
-                  <div className="px-6 py-3 rounded-xl border-2 border-gray-200 peer-checked:border-orange-500 transition-all duration-300 hover:border-orange-300">
+                  <div className="px-6 py-3 rounded-xl border-2 border-gray-200 peer-checked:border-primary-200 transition-all duration-300 hover:border-primary-400">
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 peer-checked:border-orange-500 flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 peer-checked:border-primary-200 flex items-center justify-center">
                         {loginType === "franchise" && (
-                          <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                          <div className="w-3 h-3 bg-primary-500 rounded-full"></div>
                         )}
                       </div>
-                      <span className="text-sm font-semibold text-gray-700 peer-checked:text-orange-600">
+                      <span className="text-sm font-semibold text-gray-700">
                         Franchise
                       </span>
                     </div>
@@ -285,9 +287,6 @@ const LoginPage: FC = function () {
                     >
                       Password
                     </Label>
-                    {/* <a href="#" className="text-xs font-medium text-orange-500 hover:text-orange-600 transition-colors">
-                      Forgot?
-                    </a> */}
                   </div>
                   <div className="relative">
                     <input
@@ -337,7 +336,7 @@ const LoginPage: FC = function () {
                         setCaptchaAnswer(generated)
                         setCaptchaInput("")
                       }}
-                      className="px-3 py-2 text-sm font-semibold text-orange-600 border border-orange-200 rounded-lg transition-colors flex items-center gap-1.5"
+                      className="px-3 py-2 text-sm font-semibold border border-primary-300 rounded-lg transition-colors flex items-center gap-1.5"
                     >
                       <HiArrowPath className="h-4 w-4" />
                       Refresh
@@ -357,7 +356,7 @@ const LoginPage: FC = function () {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-14 mt-8 bg-orange-500 via-orange-600 to-amber-500 hover:from-orange-600 hover:via-orange-700 hover:to-amber-600 disabled:from-orange-300 disabled:to-amber-300 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+                  className="w-full h-14 mt-8 bg-primary-500 via-primary-600 to-primary-500 hover:from-primary-600 hover:via-primary-700 hover:to-primary-600 disabled:from-primary-300 disabled:to-primary-300 text-white font-bold text-lg rounded-xl shadow-[0_10px_24px_rgba(255,204,0,0.28)] hover:shadow-[0_14px_32px_rgba(255,204,0,0.38)] transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
                     <>
