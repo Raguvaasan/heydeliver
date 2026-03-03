@@ -273,7 +273,7 @@ export const FormSection: FC<FormSectionProps> = ({
     >
       <div className="flex items-start gap-3 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
         {icon && (
-          <div className="flex-shrink-0 w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center text-orange-600 dark:text-orange-400">
+          <div className="flex-shrink-0 w-10 h-10 border border-primary-500 rounded-lg flex items-center justify-center text-orange-600 dark:text-orange-400">
             {icon}
           </div>
         )}

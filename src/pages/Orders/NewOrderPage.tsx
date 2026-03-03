@@ -793,7 +793,7 @@ const NewOrderPage: FC = () => {
 
             <div className="space-y-4">
               {boxes.map((box, index) => (
-                <div key={box.id} className="border border-orange-500 rounded-lg p-4 bg-orange-50">
+                <div key={box.id}>
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-medium text-gray-900">BOX {index + 1}</h4>
                     {boxes.length > 1 && (
@@ -887,7 +887,7 @@ const NewOrderPage: FC = () => {
                   the package dimensions & weight measured before delivery
                 </p>
                 <div>
-                  <Label>Total Chargeable Weight <span className="text-gray-400">ⓘ</span></Label>
+                  <Label>Total Chargeable Weight <span>ⓘ</span></Label>
                   <p className="text-lg font-semibold">
                     {chargeableWeight ? `${chargeableWeight} gm` : "- gm"}
                   </p>

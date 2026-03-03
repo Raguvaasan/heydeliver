@@ -102,14 +102,14 @@ const RoleFormPage: FC = () => {
           </h1>
         </div>
 
-        <Card>
+        <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Role & Permission
           </h2>
 
           {/* Role Name Input */}
           <div className="mb-6">
-            <Label htmlFor="roleName" className="mb-2 block">
+            <Label htmlFor="roleName" className="mb-2 block text-gray-700 dark:text-gray-300">
               Role Name
             </Label>
             <TextInput
@@ -117,14 +117,15 @@ const RoleFormPage: FC = () => {
               placeholder="Enter role name"
               value={roleType}
               onChange={(e) => setRoleType(e.target.value)}
+              className="[&_input]:border-gray-300 [&_input]:bg-white [&_input]:text-gray-900 [&_input]:placeholder:text-gray-400 dark:[&_input]:border-gray-600 dark:[&_input]:bg-gray-700 dark:[&_input]:text-white dark:[&_input]:placeholder:text-gray-400 dark:[&_input]:focus:border-primary-500 dark:[&_input]:focus:ring-primary-500/30"
               required
             />
           </div>
 
           {/* Permissions Table */}
-          <div className="overflow-x-auto mb-6">
+          <div className="mb-6 overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
             <table className="w-full text-left text-sm">
-              <thead className="bg-gray-800 text-white text-xs uppercase">
+              <thead className="bg-gray-800 text-xs uppercase text-white dark:bg-gray-900">
                 <tr>
                   <th className="px-4 py-3">ASSIGN ROLE</th>
                   <th className="px-4 py-3 text-center">VIEW</th>
@@ -134,7 +135,7 @@ const RoleFormPage: FC = () => {
                   <th className="px-4 py-3 text-center">
                     <button
                       onClick={handleSelectAll}
-                      className="text-white hover:text-orange-400 font-semibold"
+                      className="font-semibold text-white hover:text-primary-300"
                     >
                       SELECT ALL
                     </button>
@@ -150,7 +151,7 @@ const RoleFormPage: FC = () => {
                     <td className="px-4 py-3 text-center">
                       <input
                         type="checkbox"
-                        className="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
+                        className="h-4 w-4 cursor-pointer rounded border-gray-300 bg-gray-100 text-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-primary-500"
                         checked={perm.view}
                         onChange={() => handleCheckboxChange(index, "view")}
                       />
@@ -158,7 +159,7 @@ const RoleFormPage: FC = () => {
                     <td className="px-4 py-3 text-center">
                       <input
                         type="checkbox"
-                        className="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
+                        className="h-4 w-4 cursor-pointer rounded border-gray-300 bg-gray-100 text-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-primary-500"
                         checked={perm.add}
                         onChange={() => handleCheckboxChange(index, "add")}
                       />
@@ -166,7 +167,7 @@ const RoleFormPage: FC = () => {
                     <td className="px-4 py-3 text-center">
                       <input
                         type="checkbox"
-                        className="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
+                        className="h-4 w-4 cursor-pointer rounded border-gray-300 bg-gray-100 text-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-primary-500"
                         checked={perm.edit}
                         onChange={() => handleCheckboxChange(index, "edit")}
                       />
@@ -174,7 +175,7 @@ const RoleFormPage: FC = () => {
                     <td className="px-4 py-3 text-center">
                       <input
                         type="checkbox"
-                        className="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
+                        className="h-4 w-4 cursor-pointer rounded border-gray-300 bg-gray-100 text-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-primary-500"
                         checked={perm.delete}
                         onChange={() => handleCheckboxChange(index, "delete")}
                       />
@@ -182,7 +183,7 @@ const RoleFormPage: FC = () => {
                     <td className="px-4 py-3 text-center">
                       <input
                         type="checkbox"
-                        className="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
+                        className="h-4 w-4 cursor-pointer rounded border-gray-300 bg-gray-100 text-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-primary-500"
                         checked={
                           perm.view && perm.add && perm.edit && perm.delete
                         }

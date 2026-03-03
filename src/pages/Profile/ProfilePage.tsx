@@ -173,7 +173,7 @@ const ProfilePage: FC = () => {
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
             <Avatar
               size="xl"
-              img={`https://ui-avatars.com/api/?name=${encodeURIComponent(getFullName())}&background=3b82f6&color=fff&size=128`}
+              img={`https://ui-avatars.com/api/?name=${encodeURIComponent(getFullName())}&background=FFCC00&color=fff&size=128`}
               rounded
             >
               <div className="text-4xl font-bold">{getInitials()}</div>

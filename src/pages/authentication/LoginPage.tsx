@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
-import { Button, Label, TextInput } from "flowbite-react"
-import { useState, type FC, FormEvent } from "react"
+import { Label } from "flowbite-react"
+import { useEffect, useState, type FC, FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { HiEye, HiEyeOff } from "react-icons/hi"
 import { HiArrowPath } from "react-icons/hi2"
@@ -27,6 +27,20 @@ const LoginPage: FC = function () {
   const [captchaInput, setCaptchaInput] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const root = document.documentElement
+    const hadDarkClass = root.classList.contains("dark")
+
+    // Keep login screen in light mode for readability.
+    root.classList.remove("dark")
+
+    return () => {
+      if (hadDarkClass) {
+        root.classList.add("dark")
+      }
+    }
+  }, [])
 
   const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault()
@@ -103,46 +117,43 @@ const LoginPage: FC = function () {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-white">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-white via-[#fffef8] to-[#fffdf3]">
       
       {/* Premium Animated Background Shapes */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Right Side Blobs */}
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-orange-300 to-orange-200 rounded-full mix-blend-multiply filter animate-blob"></div>
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-gradient-to-br from-amber-300 to-orange-400 rounded-full mix-blend-multiply filter animate-blob animation-delay-4000"></div>
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-primary-100 to-primary-50 rounded-full opacity-45 mix-blend-multiply filter animate-blob"></div>
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full opacity-45 mix-blend-multiply filter animate-blob animation-delay-4000"></div>
         
         {/* Left Side Blobs */}
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-amber-300 to-orange-300 rounded-full mix-blend-multiply filter animate-blob animation-delay-2000"></div>
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-gradient-to-br from-orange-200 to-amber-300 rounded-full mix-blend-multiply filter animate-blob animation-delay-3000"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-primary-50 to-primary-100 rounded-full opacity-40 mix-blend-multiply filter animate-blob animation-delay-2000"></div>
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-gradient-to-br from-primary-50 to-primary-100 rounded-full opacity-35 mix-blend-multiply filter animate-blob animation-delay-3000"></div>
       </div>
 
       {/* Elegant Grid Pattern */}
       <div className="absolute inset-0" style={{
-        backgroundImage: `radial-gradient(circle at 1px 1px, rgba(251, 146, 60, 0.08) 1px, transparent 0)`,
+        backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255, 204, 0, 0.04) 1px, transparent 0)`,
         backgroundSize: '40px 40px'
       }}></div>
 
       {/* Subtle Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-white/60 via-transparent to-transparent"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-white/75 via-white/25 to-transparent"></div>
 
       <div className="relative z-10 min-h-screen flex items-center justify-between px-8 lg:px-20 max-w-7xl mx-auto">
         {/* Left Side - Branding & Illustration */}
         <div className="hidden lg:flex flex-col justify-center w-1/2 pr-16">
           <div className="space-y-6 mb-16">
             {/* Logo Image */}
-            <div className="mb-6">
+            <div className="inline-block rounded-2xl bg-white/90 px-6 py-4">
               <img 
-                src="/images/truecargo.jpeg" 
+                src="/images/truecargo.png" 
                 alt="TRUECARGO Logo"
-                className="h-36 w-auto object-contain"
+                className="w-auto object-contain"
               />
             </div>
-            <p className="text-2xl text-gray-700 font-light leading-relaxed">
-              Move | Connect | Deliver
-            </p>
             
             {/* Feature Pills */}
-            <div className="flex flex-wrap gap-3 mt-8">
+            <div className="flex justify-center flex-wrap gap-3 mt-8">
               <span className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full text-sm font-medium text-gray-700 border border-orange-100">
                 ⚡ Real-time Tracking
               </span>
@@ -175,11 +186,11 @@ const LoginPage: FC = function () {
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-10">
             <img 
-              src="/images/truecargo.jpeg" 
+              src="/images/truecargo.png" 
               alt="TRUECARGO Logo"
               className="h-24 w-auto mx-auto object-contain mb-2"
             />
-            <p className="text-sm text-gray-600 mt-2">Move | Connect | Deliver</p>
+            {/* <p className="text-sm text-gray-600 mt-2">Move | Connect | Deliver</p> */}
           </div>
 
           <div className="relative group">
@@ -195,7 +206,7 @@ const LoginPage: FC = function () {
               <p className="text-gray-600 text-center mb-5 text-sm">Enter your credentials to access your account</p>
 
               {/* Premium Login Type Selector */}
-              <div className="flex mb-10 justify-center gap-4">
+              <div className="flex mb-6 justify-center gap-4">
                 <label className="flex items-center cursor-pointer group relative">
                   <input
                     type="radio"
@@ -205,7 +216,7 @@ const LoginPage: FC = function () {
                     onChange={() => setLoginType("admin")}
                     className="sr-only peer"
                   />
-                  <div className="px-6 py-3 rounded-xl border-2 border-gray-200 peer-checked:border-orange-500 peer-checked:bg-gradient-to-r peer-checked:from-orange-50 peer-checked:to-amber-50 transition-all duration-300 hover:border-orange-300">
+                  <div className="px-6 py-3 rounded-xl border-2 border-gray-200 peer-checked:border-orange-500 transition-all duration-300 hover:border-orange-300">
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 rounded-full border-2 border-gray-300 peer-checked:border-orange-500 flex items-center justify-center">
                         {loginType === "admin" && (
@@ -228,7 +239,7 @@ const LoginPage: FC = function () {
                     onChange={() => setLoginType("franchise")}
                     className="sr-only peer"
                   />
-                  <div className="px-6 py-3 rounded-xl border-2 border-gray-200 peer-checked:border-orange-500 peer-checked:bg-gradient-to-r peer-checked:from-orange-50 peer-checked:to-amber-50 transition-all duration-300 hover:border-orange-300">
+                  <div className="px-6 py-3 rounded-xl border-2 border-gray-200 peer-checked:border-orange-500 transition-all duration-300 hover:border-orange-300">
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 rounded-full border-2 border-gray-300 peer-checked:border-orange-500 flex items-center justify-center">
                         {loginType === "franchise" && (
@@ -253,14 +264,14 @@ const LoginPage: FC = function () {
                     {loginType === "admin" ? "Email Address" : "Email Address"}
                   </Label>
                   <div className="relative">
-                    <TextInput
+                    <input
                       id={loginType === "admin" ? "email" : "email"}
                       type={loginType === "admin" ? "email" : "email"}
                       placeholder={loginType === "admin" ? "you@example.com" : "Enter your email"}
                       value={loginType === "admin" ? email : username}
                       onChange={(e) => loginType === "admin" ? setEmail(e.target.value) : setUsername(e.target.value)}
                       required
-                      className="w-full text-base pl-4 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all duration-200 bg-gray-50 focus:bg-white"
+                      className="w-full text-base pl-4 pr-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-500 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
                     />
                   </div>
                 </div>
@@ -279,7 +290,7 @@ const LoginPage: FC = function () {
                     </a> */}
                   </div>
                   <div className="relative">
-                    <TextInput
+                    <input
                       id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••••"
@@ -287,15 +298,15 @@ const LoginPage: FC = function () {
                       onChange={(e) => setPassword(e.target.value)}
                       autoComplete="current-password"
                       required
-                      className="w-full text-base pl-4 pr-12 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all duration-200 bg-gray-50 focus:bg-white"
+                      className="w-full text-base pl-4 pr-12 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-500 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 focus:outline-none transition-colors"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
+                      aria-label={!showPassword ? "Hide password" : "Show password"}
                     >
-                      {showPassword ? (
+                      {!showPassword ? (
                         <HiEyeOff className="h-5 w-5" />
                       ) : (
                         <HiEye className="h-5 w-5" />
@@ -311,7 +322,7 @@ const LoginPage: FC = function () {
                     Captcha
                   </Label>
                   <div className="flex items-center gap-3">
-                    <div className="px-4 py-3 rounded-xl border-2 border-orange-200 bg-orange-50 text-orange-700 font-semibold">
+                    <div className="px-4 py-3 rounded-xl border-2 border-gray-300 bg-white text-gray-900 font-semibold">
                       {captchaQuestion || "--"}
                     </div>
                     <button
@@ -326,19 +337,19 @@ const LoginPage: FC = function () {
                         setCaptchaAnswer(generated)
                         setCaptchaInput("")
                       }}
-                      className="px-3 py-2 text-sm font-semibold text-orange-600 border border-orange-200 rounded-lg hover:bg-orange-50 transition-colors flex items-center gap-1.5"
+                      className="px-3 py-2 text-sm font-semibold text-orange-600 border border-orange-200 rounded-lg transition-colors flex items-center gap-1.5"
                     >
                       <HiArrowPath className="h-4 w-4" />
                       Refresh
                     </button>
                   </div>
-                  <TextInput
+                  <input
                     type="text"
                     placeholder="Enter the letters above"
                     value={captchaInput}
                     onChange={(e) => setCaptchaInput(e.target.value.toUpperCase())}
                     required
-                    className="w-full text-base pl-4 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all duration-200 bg-gray-50 focus:bg-white"
+                    className="w-full text-base pl-4 pr-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-500 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
                   />
                 </div>
 

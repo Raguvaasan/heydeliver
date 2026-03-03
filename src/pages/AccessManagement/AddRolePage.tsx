@@ -95,30 +95,30 @@ const AddRolePage: FC = () => {
 
   return (
     <NavbarSidebarLayout isFooter={false}>
-      <div className="p-6 space-y-8 bg-[#d5e1f759] rounded-lg shadow-lg">
-        <h1 className="text-2xl font-semibold text-black">Add Role</h1>
+      <div className="rounded-lg bg-[#d5e1f759] p-6 shadow-lg dark:bg-gray-800/70 space-y-8">
+        <h1 className="text-2xl font-semibold text-black dark:text-white">Add Role</h1>
 
-        <div className="max-w-xl space-y-6 bg-white p-6 rounded-xl shadow-lg">
-          <Label value="Role Type" />
+        <div className="max-w-xl space-y-6 rounded-xl bg-white p-6 shadow-lg dark:bg-gray-900">
+          <Label value="Role Type" className="text-gray-700 dark:text-gray-300" />
           <TextInput
             placeholder="Enter role name"
             value={roleType}
             onChange={(e) => setRoleType(e.target.value)}
-            className="bg-gray-100 text-gray-700 border-2 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg"
+            className="[&_input]:border-2 [&_input]:border-gray-300 [&_input]:bg-gray-100 [&_input]:text-gray-700 [&_input]:rounded-lg [&_input]:focus:ring-2 [&_input]:focus:ring-primary-500 [&_input]:focus:border-transparent dark:[&_input]:border-gray-600 dark:[&_input]:bg-gray-800 dark:[&_input]:text-gray-100"
           />
 
           <div className="flex items-center gap-4 mt-4">
-            <Label value="Status" />
+            <Label value="Status" className="text-gray-700 dark:text-gray-300" />
             <ToggleSwitch
               checked={status}
               onChange={() => setStatus((prevStatus) => !prevStatus)}
               label={status ? "Active" : "Inactive"}
-              className="text-blue-600"
+              className="text-primary-600 dark:text-primary-400"
             />
           </div>
         </div>
 
-        <div className="overflow-x-auto border rounded-lg shadow-lg bg-white">
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
           <table className="min-w-full divide-y divide-gray-300 text-center text-sm dark:divide-gray-700">
             <thead className="bg-[#272727] text-white">
               <tr>
@@ -174,11 +174,11 @@ const AddRolePage: FC = () => {
                 }
 
                 return (
-                  <tr key={index} className="hover:bg-gray-100">
-                    <td className="py-3 px-4 font-medium text-gray-800 flex items-center gap-2">
+                  <tr key={index} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <td className="py-3 px-4 font-medium text-gray-800 dark:text-gray-100 flex items-center gap-2">
                       <input
                         type="checkbox"
-                        className="form-checkbox h-4 w-4 text-blue-600"
+                        className="form-checkbox h-4 w-4 text-primary-600 dark:text-primary-400"
                         checked={allChecked}
                         onChange={handleSelectAllRow}
                       />
@@ -188,7 +188,7 @@ const AddRolePage: FC = () => {
                       <td key={action} className="py-3 px-4">
                         <input
                           type="checkbox"
-                          className="form-checkbox h-4 w-4 text-blue-600 hover:bg-blue-200"
+                          className="form-checkbox h-4 w-4 text-primary-600 hover:bg-primary-100 dark:text-primary-400 dark:hover:bg-primary-900/20"
                           checked={currentPerm?.permission?.[action] === true}
                           onChange={() =>
                             handleCheckboxChange(moduleName, action)
@@ -212,7 +212,7 @@ const AddRolePage: FC = () => {
             Cancel
           </Button>
           <Button
-            className="bg-blue-600 text-white hover:bg-[#272727]_hover transition duration-300"
+            className="bg-primary-600 text-white hover:bg-primary-700 transition duration-300"
             onClick={handleSubmit}
             disabled={loading}
           >

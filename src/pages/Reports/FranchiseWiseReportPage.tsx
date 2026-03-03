@@ -63,10 +63,10 @@ const FranchiseWiseReportPage: FC = () => {
         </div>
 
         {/* Filters */}
-        <Card className="mb-6">
+        <Card className="mb-6 border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
           <div className="flex items-end gap-4">
             <div className="flex-1">
-              <Label htmlFor="period" value="Select Period" className="mb-2" />
+              <Label htmlFor="period" value="Select Period" className="mb-2 text-gray-700 dark:text-gray-200" />
               <Select
                 id="period"
                 value={selectedPeriod}
@@ -89,31 +89,31 @@ const FranchiseWiseReportPage: FC = () => {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Total Franchises</p>
-              <p className="text-3xl font-bold text-gray-900">{franchiseData.length}</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Total Franchises</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{franchiseData.length}</p>
             </div>
           </Card>
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Total Orders</p>
-              <p className="text-3xl font-bold text-gray-900">
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Total Orders</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">
                 {franchiseData.reduce((sum, f) => sum + f.totalOrders, 0).toLocaleString()}
               </p>
             </div>
           </Card>
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Delivered</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Delivered</p>
               <p className="text-3xl font-bold text-green-600">
                 {franchiseData.reduce((sum, f) => sum + f.delivered, 0).toLocaleString()}
               </p>
             </div>
           </Card>
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Total Revenue</p>
               <p className="text-3xl font-bold text-blue-600">
                 ₹{franchiseData.reduce((sum, f) => sum + f.revenue, 0).toLocaleString()}
               </p>
@@ -122,28 +122,28 @@ const FranchiseWiseReportPage: FC = () => {
         </div>
 
         {/* Franchise Table */}
-        <Card>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
             Franchise Performance
           </h3>
           <div className="overflow-x-auto">
-            <Table hoverable>
+            <Table hoverable className="[&_thead]:bg-gray-100 dark:[&_thead]:bg-gray-900 [&_thead_th]:text-gray-700 dark:[&_thead_th]:text-gray-200 [&_tbody]:divide-gray-200 dark:[&_tbody]:divide-gray-700">
               <Table.Head>
-                <Table.HeadCell>Franchise Name</Table.HeadCell>
-                <Table.HeadCell>Total Orders</Table.HeadCell>
-                <Table.HeadCell>Delivered</Table.HeadCell>
-                <Table.HeadCell>Pending</Table.HeadCell>
-                <Table.HeadCell>RTO</Table.HeadCell>
-                <Table.HeadCell>Revenue</Table.HeadCell>
-                <Table.HeadCell>Growth</Table.HeadCell>
+                <Table.HeadCell className="bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200">Franchise Name</Table.HeadCell>
+                <Table.HeadCell className="bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200">Total Orders</Table.HeadCell>
+                <Table.HeadCell className="bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200">Delivered</Table.HeadCell>
+                <Table.HeadCell className="bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200">Pending</Table.HeadCell>
+                <Table.HeadCell className="bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200">RTO</Table.HeadCell>
+                <Table.HeadCell className="bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200">Revenue</Table.HeadCell>
+                <Table.HeadCell className="bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200">Growth</Table.HeadCell>
               </Table.Head>
-              <Table.Body className="divide-y">
+              <Table.Body className="divide-y divide-gray-200 dark:divide-gray-700">
                 {franchiseData.map((franchise, index) => (
-                  <Table.Row key={index} className="bg-white">
-                    <Table.Cell className="font-medium text-gray-900">
+                  <Table.Row key={index} className="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700">
+                    <Table.Cell className="font-medium text-gray-900 dark:text-white">
                       {franchise.name}
                     </Table.Cell>
-                    <Table.Cell>{franchise.totalOrders}</Table.Cell>
+                    <Table.Cell className="text-gray-700 dark:text-gray-300">{franchise.totalOrders}</Table.Cell>
                     <Table.Cell>
                       <Badge color="success">{franchise.delivered}</Badge>
                     </Table.Cell>
@@ -153,7 +153,7 @@ const FranchiseWiseReportPage: FC = () => {
                     <Table.Cell>
                       <Badge color="failure">{franchise.rto}</Badge>
                     </Table.Cell>
-                    <Table.Cell className="font-semibold">
+                    <Table.Cell className="font-semibold text-gray-900 dark:text-gray-200">
                       ₹{franchise.revenue.toLocaleString()}
                     </Table.Cell>
                     <Table.Cell>

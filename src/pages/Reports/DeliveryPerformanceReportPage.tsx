@@ -47,10 +47,10 @@ const DeliveryPerformanceReportPage: FC = () => {
         </div>
 
         {/* Filters */}
-        <Card className="mb-6">
+        <Card className="mb-6 border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
           <div className="flex items-end gap-4">
             <div className="flex-1">
-              <Label htmlFor="period" value="Select Period" className="mb-2" />
+              <Label htmlFor="period" value="Select Period" className="mb-2 text-gray-700 dark:text-gray-200" />
               <Select
                 id="period"
                 value={selectedPeriod}
@@ -73,10 +73,10 @@ const DeliveryPerformanceReportPage: FC = () => {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-6">
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">On-Time %</p>
+                <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">On-Time %</p>
                 <p className="text-2xl font-bold text-green-600">
                   {performanceMetrics.onTimeDelivery}%
                 </p>
@@ -85,10 +85,10 @@ const DeliveryPerformanceReportPage: FC = () => {
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Avg Time</p>
+                <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Avg Time</p>
                 <p className="text-2xl font-bold text-blue-600">
                   {performanceMetrics.avgDeliveryTime}d
                 </p>
@@ -97,10 +97,10 @@ const DeliveryPerformanceReportPage: FC = () => {
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">1st Attempt</p>
+                <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">1st Attempt</p>
                 <p className="text-2xl font-bold text-purple-600">
                   {performanceMetrics.firstAttemptSuccess}%
                 </p>
@@ -109,9 +109,9 @@ const DeliveryPerformanceReportPage: FC = () => {
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">CSAT Score</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">CSAT Score</p>
               <p className="text-2xl font-bold text-yellow-600">
                 {performanceMetrics.customerSatisfaction}/5
               </p>
@@ -134,18 +134,18 @@ const DeliveryPerformanceReportPage: FC = () => {
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Total Delivered</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Total Delivered</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {performanceMetrics.totalDeliveries.toLocaleString()}
               </p>
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">SLA Met</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">SLA Met</p>
               <p className="text-2xl font-bold text-green-600">
                 {performanceMetrics.sla}%
               </p>
@@ -154,8 +154,8 @@ const DeliveryPerformanceReportPage: FC = () => {
         </div>
 
         {/* Zone-wise Performance */}
-        <Card className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <Card className="mb-6 border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
             Zone-wise Performance
           </h3>
           <div className="space-y-6">
@@ -163,13 +163,13 @@ const DeliveryPerformanceReportPage: FC = () => {
               <div key={index}>
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <span className="font-medium text-gray-900">{zone.zone}</span>
-                    <span className="ml-3 text-sm text-gray-600">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{zone.zone}</span>
+                    <span className="ml-3 text-sm text-gray-600 dark:text-gray-300">
                       {zone.deliveries.toLocaleString()} deliveries
                     </span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-600">Avg: {zone.avgTime}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-300">Avg: {zone.avgTime}</span>
                     <Badge color={getPerformanceColor(zone.onTime)}>
                       {zone.onTime}% On-Time
                     </Badge>
@@ -187,8 +187,8 @@ const DeliveryPerformanceReportPage: FC = () => {
 
         {/* Performance Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
               Delivery Attempt Analysis
             </h3>
             <div className="space-y-4">
@@ -199,14 +199,14 @@ const DeliveryPerformanceReportPage: FC = () => {
               ].map((attempt, index) => (
                 <div key={index}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {attempt.label}
                     </span>
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {attempt.value}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                     <div
                       className={`h-2 rounded-full ${attempt.color}`}
                       style={{ width: `${attempt.value}%` }}
@@ -217,8 +217,8 @@ const DeliveryPerformanceReportPage: FC = () => {
             </div>
           </Card>
 
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
               Delivery Time Distribution
             </h3>
             <div className="space-y-4">
@@ -230,14 +230,14 @@ const DeliveryPerformanceReportPage: FC = () => {
               ].map((time, index) => (
                 <div key={index}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {time.label}
                     </span>
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {time.value}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                     <div
                       className={`h-2 rounded-full ${time.color}`}
                       style={{ width: `${time.value}%` }}

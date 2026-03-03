@@ -44,10 +44,10 @@ const TotalOrdersReportPage: FC = () => {
         </div>
 
         {/* Filters */}
-        <Card className="mb-6">
+        <Card className="mb-6 border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
           <div className="flex items-end gap-4">
             <div className="flex-1">
-              <Label htmlFor="period" value="Select Period" className="mb-2" />
+              <Label htmlFor="period" value="Select Period" className="mb-2 text-gray-700 dark:text-gray-200" />
               <Select
                 id="period"
                 value={selectedPeriod}
@@ -70,10 +70,10 @@ const TotalOrdersReportPage: FC = () => {
 
         {/* Order Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-6">
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Total Orders</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Total Orders</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {orderStats.total.toLocaleString()}
               </p>
               <div className="flex items-center gap-1 mt-2">
@@ -83,70 +83,70 @@ const TotalOrdersReportPage: FC = () => {
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Delivered</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Delivered</p>
               <p className="text-2xl font-bold text-green-600">
                 {orderStats.delivered.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 {((orderStats.delivered / orderStats.total) * 100).toFixed(1)}% of total
               </p>
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">In Transit</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">In Transit</p>
               <p className="text-2xl font-bold text-blue-600">
                 {orderStats.inTransit}
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 {((orderStats.inTransit / orderStats.total) * 100).toFixed(1)}% of total
               </p>
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Pending</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Pending</p>
               <p className="text-2xl font-bold text-yellow-600">
                 {orderStats.pending}
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 {((orderStats.pending / orderStats.total) * 100).toFixed(1)}% of total
               </p>
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">RTO</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">RTO</p>
               <p className="text-2xl font-bold text-red-600">{orderStats.rto}</p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 {((orderStats.rto / orderStats.total) * 100).toFixed(1)}% of total
               </p>
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Success Rate</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Success Rate</p>
               <p className="text-2xl font-bold text-purple-600">
                 {((orderStats.delivered / orderStats.total) * 100).toFixed(1)}%
               </p>
-              <p className="text-xs text-gray-500 mt-2">Delivery success</p>
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Delivery success</p>
             </div>
           </Card>
         </div>
 
         {/* Chart */}
-        <Card className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Orders Trend</h3>
+        <Card className="mb-6 border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">Daily Orders Trend</h3>
           <div className="h-64 flex items-end justify-between gap-4">
             {dailyOrders.map((day, index) => (
               <div key={index} className="flex-1 flex flex-col items-center">
-                <div className="text-sm font-semibold text-gray-900 mb-2">
+                <div className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {day.orders}
                 </div>
                 <div
@@ -156,15 +156,15 @@ const TotalOrdersReportPage: FC = () => {
                     minHeight: "20px",
                   }}
                 ></div>
-                <div className="text-xs text-gray-600 mt-2">{day.date}</div>
+                <div className="mt-2 text-xs text-gray-600 dark:text-gray-300">{day.date}</div>
               </div>
             ))}
           </div>
         </Card>
 
         {/* Status Breakdown */}
-        <Card>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
             Order Status Breakdown
           </h3>
           <div className="space-y-4">
@@ -176,14 +176,14 @@ const TotalOrdersReportPage: FC = () => {
             ].map((status, index) => (
               <div key={index}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {status.label}
                   </span>
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     {status.value} ({((status.value / orderStats.total) * 100).toFixed(1)}%)
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                   <div
                     className={`h-2 rounded-full ${status.color}`}
                     style={{ width: `${(status.value / orderStats.total) * 100}%` }}

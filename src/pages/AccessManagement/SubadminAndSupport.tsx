@@ -194,23 +194,13 @@ const UserPage: FC = function () {
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredStaffs.length > 0 ? (
-                    filteredStaffs.map((staff, index) => (
+                    filteredStaffs.map((staff) => (
                       <tr
                         key={staff._id}
-                        className={`${
-                          index === 0
-                            ? "bg-orange-50 dark:bg-orange-900/20"
-                            : "hover:bg-gray-50 dark:hover:bg-gray-700"
-                        }`}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700"
                       >
                         <td className="px-4 py-3">
-                          <span
-                            className={`font-medium ${
-                              index === 0
-                                ? "text-orange-600"
-                                : "text-gray-900 dark:text-white"
-                            }`}
-                          >
+                          <span className="font-medium text-gray-900 dark:text-white">
                             {staff.name}
                           </span>
                         </td>

@@ -451,7 +451,7 @@ const DashboardPage: FC = () => {
                         onClick={() => setSelectedPeriod(period)}
                         className={`rounded-lg px-3 py-1 text-sm capitalize ${
                           selectedPeriod === period
-                            ? "bg-[#ff5a1f] text-white"
+                            ? "bg-[#FFCC00] text-white"
                             : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                         }`}
                       >

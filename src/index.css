@@ -216,17 +216,77 @@ button[class*="bg-orange-500"],
 a[class*="bg-orange-500"],
 button[class*="from-orange-500"],
 a[class*="from-orange-500"] {
-  background-color: #ff5a1f !important;
+  background-color: #FFCC00 !important;
 }
 
 button[class*="hover:bg-orange-600"]:hover,
 a[class*="hover:bg-orange-600"]:hover,
 button[class*="hover:from-orange-600"]:hover,
 a[class*="hover:from-orange-600"]:hover {
-  background-color: #ff5a1f !important;
+  background-color: #E6B800 !important;
 }
 
 button[class*="bg-gradient-to-r"][class*="from-orange-500"],
 a[class*="bg-gradient-to-r"][class*="from-orange-500"] {
   background-image: none !important;
+}
+
+/* Global orange utility remap to brand color */
+[class*="text-orange-"] {
+  color: #FFCC00 !important;
+}
+
+[class*="hover:text-orange-"]:hover {
+  color: #E6B800 !important;
+}
+
+[class*="bg-orange-"] {
+  background-color: #FFCC00 !important;
+}
+
+[class*="hover:bg-orange-"]:hover {
+  background-color: #E6B800 !important;
+}
+
+[class*="border-orange-"] {
+  border-color: #FFCC00 !important;
+}
+
+[class*="focus:border-orange-"]:focus,
+[class*="peer-checked:border-orange-"] {
+  border-color: #FFCC00 !important;
+}
+
+[class*="ring-orange-"],
+[class*="focus:ring-orange-"]:focus {
+  --tw-ring-color: rgb(255 204 0 / 0.35) !important;
+}
+
+[class*="from-orange-"] {
+  --tw-gradient-from: #FFCC00 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 204 0 / 0) var(--tw-gradient-to-position) !important;
+}
+
+[class*="via-orange-"] {
+  --tw-gradient-via-position: var(--tw-gradient-via-position) !important;
+  --tw-gradient-to: rgb(255 204 0 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-via: #FFCC00 var(--tw-gradient-via-position) !important;
+}
+
+[class*="to-orange-"] {
+  --tw-gradient-to: #FFCC00 var(--tw-gradient-to-position) !important;
+}
+
+[class*="hover:from-orange-"]:hover {
+  --tw-gradient-from: #E6B800 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(230 184 0 / 0) var(--tw-gradient-to-position) !important;
+}
+
+[class*="hover:via-orange-"]:hover {
+  --tw-gradient-to: rgb(230 184 0 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-via: #E6B800 var(--tw-gradient-via-position) !important;
+}
+
+[class*="hover:to-orange-"]:hover {
+  --tw-gradient-to: #E6B800 var(--tw-gradient-to-position) !important;
 }

@@ -291,13 +291,10 @@ const OrdersPage: FC = () => {
                 </td>
               </tr>
             ) : (
-              ordersList.map((order, index) => (
+              ordersList.map((order) => (
                 <tr
                   key={order._id}
-                  className={`${index === 0
-                      ? "bg-orange-50 dark:bg-orange-900/20"
-                      : "hover:bg-gray-50 dark:hover:bg-gray-700"
-                    }`}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
                   <td className="px-4 py-3 whitespace-nowrap">
                     <input
@@ -308,12 +305,7 @@ const OrdersPage: FC = () => {
                     />
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span
-                      className={`font-medium ${index === 0
-                          ? "text-orange-600"
-                          : "text-gray-900 dark:text-white"
-                        }`}
-                    >
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {order.bookingId || order._id}
                     </span>
                   </td>
@@ -387,7 +379,7 @@ const OrdersPage: FC = () => {
             <Button
               onClick={() => navigate("/orders/bulk")}
               color="light"
-              className="border-2 border-orange-500 text-orange-500 hover:bg-orange-50"
+              className="border-2 border-orange-500 text-orange-500 bg-transparent hover:bg-transparent"
             >
               BULK ORDER
             </Button>

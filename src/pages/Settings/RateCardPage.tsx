@@ -76,7 +76,7 @@ const RateCardPage: FC = () => {
   }) => (
     <div className="overflow-x-auto">
       <table className="w-full text-sm text-left">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+        <thead className="bg-gray-50 text-xs uppercase text-gray-700 dark:bg-gray-900 dark:text-gray-200">
           <tr>
             <th scope="col" className="px-6 py-3 min-w-[250px]">
               {type === "Surface" ? "🚚 Surface" : "⚡ Express"}
@@ -90,80 +90,80 @@ const RateCardPage: FC = () => {
         </thead>
         <tbody>
           {/* Base Fare */}
-          <tr className="bg-white border-b hover:bg-gray-50">
-            <td className="px-6 py-4 font-medium text-gray-900">
+          <tr className="border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700">
+            <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
               Base Fare (upto 250 g)
             </td>
             {rates.baseFare.map((rate: number, idx: number) => (
-              <td key={idx} className="px-6 py-4 text-center">
+              <td key={idx} className="px-6 py-4 text-center text-gray-900 dark:text-gray-200">
                 ₹ {applyMarkup(rate)}
               </td>
             ))}
           </tr>
 
           {/* Additional 250g */}
-          <tr className="bg-white border-b hover:bg-gray-50">
-            <td className="px-6 py-4 font-medium text-gray-900">
+          <tr className="border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700">
+            <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
               Every Additional 250 g (upto 500 g)
             </td>
             {rates.additional250g.map((rate: number, idx: number) => (
-              <td key={idx} className="px-6 py-4 text-center">
+              <td key={idx} className="px-6 py-4 text-center text-gray-900 dark:text-gray-200">
                 ₹ {applyMarkup(rate)}
               </td>
             ))}
           </tr>
 
           {/* Additional 500g */}
-          <tr className="bg-white border-b hover:bg-gray-50">
-            <td className="px-6 py-4 font-medium text-gray-900">
+          <tr className="border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700">
+            <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
               Every Additional 500 g (upto 5 kg)
             </td>
             {rates.additional500g.map((rate: number, idx: number) => (
-              <td key={idx} className="px-6 py-4 text-center">
+              <td key={idx} className="px-6 py-4 text-center text-gray-900 dark:text-gray-200">
                 ₹ {applyMarkup(rate)}
               </td>
             ))}
           </tr>
 
           {/* Additional 1kg */}
-          <tr className="bg-white border-b hover:bg-gray-50">
-            <td className="px-6 py-4 font-medium text-gray-900">
+          <tr className="border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700">
+            <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
               Every Additional 1 kg
             </td>
             {rates.additional1kg.map((rate: number, idx: number) => (
-              <td key={idx} className="px-6 py-4 text-center">
+              <td key={idx} className="px-6 py-4 text-center text-gray-900 dark:text-gray-200">
                 ₹ {applyMarkup(rate)}
               </td>
             ))}
           </tr>
 
           {/* Returns RTO */}
-          <tr className="bg-gray-50">
-            <td className="px-6 py-4 font-medium text-gray-900">
+          <tr className="bg-gray-50 dark:bg-gray-900">
+            <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
               ↩️ {type} - Returns (RTO)
             </td>
             <td colSpan={zones.length}></td>
           </tr>
-          <tr className="bg-white border-b hover:bg-gray-50">
-            <td className="px-6 py-4 font-medium text-gray-900">Base Fare</td>
+          <tr className="border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700">
+            <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">Base Fare</td>
             {rates.returnRTO.map((rate: number, idx: number) => (
-              <td key={idx} className="px-6 py-4 text-center">
+              <td key={idx} className="px-6 py-4 text-center text-gray-900 dark:text-gray-200">
                 ₹ {applyMarkup(rate)}
               </td>
             ))}
           </tr>
 
           {/* Reverse DTO */}
-          <tr className="bg-gray-50">
-            <td className="px-6 py-4 font-medium text-gray-900">
+          <tr className="bg-gray-50 dark:bg-gray-900">
+            <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
               📦 {type} - Reverse (DTO)
             </td>
             <td colSpan={zones.length}></td>
           </tr>
-          <tr className="bg-white border-b hover:bg-gray-50">
-            <td className="px-6 py-4 font-medium text-gray-900">Base Fare</td>
+          <tr className="border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700">
+            <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">Base Fare</td>
             {rates.reverseDTO.map((rate: number, idx: number) => (
-              <td key={idx} className="px-6 py-4 text-center">
+              <td key={idx} className="px-6 py-4 text-center text-gray-900 dark:text-gray-200">
                 ₹ {applyMarkup(rate)}
               </td>
             ))}
@@ -182,7 +182,7 @@ const RateCardPage: FC = () => {
           </h1>
         </div>
 
-        <Card>
+        <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
           {/* Tabs and Toggle */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -214,7 +214,7 @@ const RateCardPage: FC = () => {
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  <span className="ml-3 text-sm font-medium text-gray-700">
+                  <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
                     Show Rates Inclusive of GST
                   </span>
                 </label>
@@ -230,18 +230,18 @@ const RateCardPage: FC = () => {
           {/* Rate Tables */}
           {activeTab === 0 ? (
             <>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Surface Rates</h2>
+              <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Surface Rates</h2>
               <RateTable zones={surfaceZones} rates={surfaceRates} type="Surface" />
             </>
           ) : (
             <>
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Express Rates</h2>
+              <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Express Rates</h2>
               <RateTable zones={expressZones} rates={expressRates} type="Express" />
             </>
           )}
 
           {/* COD Information */}
-          <div className="mt-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded">
+          <div className="mt-6 rounded border-l-4 border-blue-400 bg-blue-50 p-4 dark:bg-blue-900/20">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <svg
@@ -253,7 +253,7 @@ const RateCardPage: FC = () => {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-blue-800">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
                   <span className="font-semibold">CASH ON DELIVERY RATES (COD)</span> — ₹
                   50.00 or 2% of product bill value whichever is higher
                 </p>
@@ -262,7 +262,7 @@ const RateCardPage: FC = () => {
           </div>
 
           {/* Disclaimer */}
-          <div className="mt-4 p-4 bg-gray-50 rounded">
+          <div className="mt-4 rounded bg-gray-50 p-4 dark:bg-gray-700/60">
             <div className="flex items-start">
               <div className="flex-shrink-0">
                 <svg
@@ -278,7 +278,7 @@ const RateCardPage: FC = () => {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-gray-700">
+                <p className="text-sm text-gray-700 dark:text-gray-200">
                   These rates are exclusive of GST • Diesel Price Hike (DPH) Charges as per
                   Industry Standards
                 </p>
@@ -288,26 +288,26 @@ const RateCardPage: FC = () => {
         </Card>
 
         {/* Additional Information */}
-        <Card className="mt-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">
+        <Card className="mt-6 border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+          <h2 className="mb-6 text-xl font-bold text-gray-900 dark:text-white">
             Additional Information
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">
+              <h3 className="mb-2 font-semibold text-gray-900 dark:text-gray-100">
                 Maximum Liability - Forward
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-300">
                 Lower of 100% of product value or ₹ 2000
               </p>
             </div>
 
             <div>
-              <h3 className="font-semibold text-gray-900 mb-2">
+              <h3 className="mb-2 font-semibold text-gray-900 dark:text-gray-100">
                 Maximum Liability - Reverse
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-300">
                 Lower of 50% of product value or ₹ 2000
               </p>
             </div>
@@ -315,9 +315,9 @@ const RateCardPage: FC = () => {
         </Card>
 
         {/* Call to Action */}
-        <Card className="mt-6">
+        <Card className="mt-6 border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
           <div className="text-center py-8">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
+            <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
               Want to calculate the charges between two cities?
             </h3>
             <Button

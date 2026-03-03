@@ -43,10 +43,10 @@ const TotalRevenueReportPage: FC = () => {
         </div>
 
         {/* Filters */}
-        <Card className="mb-6">
+        <Card className="mb-6 border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
           <div className="flex items-end gap-4">
             <div className="flex-1">
-              <Label htmlFor="period" value="Select Period" className="mb-2" />
+              <Label htmlFor="period" value="Select Period" className="mb-2 text-gray-700 dark:text-gray-200" />
               <Select
                 id="period"
                 value={selectedPeriod}
@@ -69,11 +69,11 @@ const TotalRevenueReportPage: FC = () => {
 
         {/* Revenue Summary */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Total Revenue</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   ₹{revenueStats.total.toLocaleString()}
                 </p>
                 <div className="flex items-center gap-1 mt-2">
@@ -87,37 +87,37 @@ const TotalRevenueReportPage: FC = () => {
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Shipping Charges</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Shipping Charges</p>
               <p className="text-2xl font-bold text-green-600">
                 ₹{revenueStats.shipping.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 {((revenueStats.shipping / revenueStats.total) * 100).toFixed(1)}% of total
               </p>
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">COD Charges</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">COD Charges</p>
               <p className="text-2xl font-bold text-purple-600">
                 ₹{revenueStats.cod.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 {((revenueStats.cod / revenueStats.total) * 100).toFixed(1)}% of total
               </p>
             </div>
           </Card>
 
-          <Card>
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Other Charges</p>
+              <p className="mb-1 text-sm text-gray-600 dark:text-gray-300">Other Charges</p>
               <p className="text-2xl font-bold text-orange-600">
                 ₹{revenueStats.other.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 {((revenueStats.other / revenueStats.total) * 100).toFixed(1)}% of total
               </p>
             </div>
@@ -125,14 +125,14 @@ const TotalRevenueReportPage: FC = () => {
         </div>
 
         {/* Revenue Trend Chart */}
-        <Card className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <Card className="mb-6 border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
             Monthly Revenue Trend
           </h3>
           <div className="h-64 flex items-end justify-between gap-4">
             {monthlyRevenue.map((month, index) => (
               <div key={index} className="flex-1 flex flex-col items-center">
-                <div className="text-sm font-semibold text-gray-900 mb-2">
+                <div className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   ₹{(month.revenue / 1000).toFixed(0)}K
                 </div>
                 <div
@@ -142,7 +142,7 @@ const TotalRevenueReportPage: FC = () => {
                     minHeight: "30px",
                   }}
                 ></div>
-                <div className="text-xs text-gray-600 mt-2">{month.month}</div>
+                <div className="mt-2 text-xs text-gray-600 dark:text-gray-300">{month.month}</div>
               </div>
             ))}
           </div>
@@ -150,8 +150,8 @@ const TotalRevenueReportPage: FC = () => {
 
         {/* Revenue Breakdown */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
               Revenue by Source
             </h3>
             <div className="space-y-4">
@@ -174,15 +174,15 @@ const TotalRevenueReportPage: FC = () => {
               ].map((source, index) => (
                 <div key={index}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {source.label}
                     </span>
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       ₹{source.value.toLocaleString()} (
                       {((source.value / revenueStats.total) * 100).toFixed(1)}%)
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                     <div
                       className={`h-2 rounded-full ${source.color}`}
                       style={{
@@ -195,8 +195,8 @@ const TotalRevenueReportPage: FC = () => {
             </div>
           </Card>
 
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <Card className="border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
               Payment Method Split
             </h3>
             <div className="space-y-4">
@@ -206,15 +206,15 @@ const TotalRevenueReportPage: FC = () => {
               ].map((method, index) => (
                 <div key={index}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {method.label}
                     </span>
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                       ₹{method.value.toLocaleString()} (
                       {((method.value / revenueStats.total) * 100).toFixed(1)}%)
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
                     <div
                       className={`h-2 rounded-full ${method.color}`}
                       style={{

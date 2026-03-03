@@ -18,7 +18,7 @@ const flowbiteTheme: CustomFlowbiteTheme = {
   button: {
     color: {
       primary:
-        "text-white bg-[#ff5a1f] hover:bg-[#ff5a1f] focus:ring-[#ff5a1f]/30 dark:bg-[#ff5a1f] dark:hover:bg-[#ff5a1f] dark:focus:ring-[#ff5a1f]/30",
+        "text-white bg-[#FFCC00] hover:bg-[#E6B800] focus:ring-[#FFCC00]/30 dark:bg-[#FFCC00] dark:hover:bg-[#E6B800] dark:focus:ring-[#FFCC00]/30",
     },
     outline: {
       on: "transition-all duration-75 ease-in group-hover:bg-opacity-0 group-hover:text-inherit",

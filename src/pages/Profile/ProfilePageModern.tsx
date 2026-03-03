@@ -195,7 +195,7 @@ const ProfilePageModern: FC = () => {
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center">
             <Avatar
               size="lg"
-              img={`https://ui-avatars.com/api/?name=${encodeURIComponent(getFullName())}&background=EB8303&color=fff&size=128`}
+              img={`https://ui-avatars.com/api/?name=${encodeURIComponent(getFullName())}&background=FFCC00&color=fff&size=128`}
               rounded
             />
             <div className="flex-1 text-center sm:text-left">
