@@ -21,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       headers: {
         'Authorization': 'Token 76a094c150aed4e3a9c6b41b608ee7174f4d5b51',
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'Accept': '*/*',
       },
     };
 
@@ -64,8 +64,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const response = await fetch(delhiveryUrl, fetchOptions);
+    const contentType = response.headers.get('content-type') || '';
+
+    if (contentType.includes('application/pdf')) {
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'inline; filename="packing-slip.pdf"');
+      res.status(response.status).send(buffer);
+      return;
+    }
+
     const data = await response.json();
-    
     res.status(response.status).json(data);
     
   } catch (error: any) {
