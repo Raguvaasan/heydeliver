@@ -4,7 +4,11 @@ const API_URL = '/api'  // Always use proxy route
 
 const httpRequest = axios.create({
   baseURL: API_URL,
-  timeout: 5000, // 5 second timeout for fast responses
+  // The 5‑second default caused slow first‑loads to be aborted by axios
+  // (you saw `canceled` entries at ~5s in DevTools). The backend takes
+  // a little longer for cold responses, so bump the timeout or omit it
+  // entirely if you prefer to rely on browser/network timeouts.
+  timeout: 15000, // 15s (or remove this line if you don't want a client timeout)
   headers: {
     'Content-Type': 'application/json',
     'Accept-Encoding': 'gzip, deflate, br', // Enable compression
