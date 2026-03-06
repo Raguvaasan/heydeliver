@@ -33,13 +33,13 @@ const RateCalculatorPage: FC = () => {
   const { rateData, loading, error, calculateRate, clearData } = useRateCalculatorStore()
   const { rateCardMarkup, fetchRateCardMarkup } = useMarkupStore()
   const { calculateRateFromCard } = useRateCardStore()
-  const { 
-    pickupPincodeData, 
-    deliveryPincodeData, 
-    pickupLoading, 
+  const {
+    pickupPincodeData,
+    deliveryPincodeData,
+    pickupLoading,
     deliveryLoading,
-    fetchPickupPincode, 
-    fetchDeliveryPincode 
+    fetchPickupPincode,
+    fetchDeliveryPincode
   } = usePincodeStore()
 
   // Fetch rate card markup on component mount
@@ -186,21 +186,19 @@ const RateCalculatorPage: FC = () => {
                 <div className="flex gap-8">
                   <button
                     onClick={() => setSelectedTab("domestic")}
-                    className={`pb-3 px-4 font-medium transition-colors ${
-                      selectedTab === "domestic"
+                    className={`pb-3 px-4 font-medium transition-colors ${selectedTab === "domestic"
                         ? "text-blue-600 border-b-2 border-blue-600"
                         : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
-                    }`}
+                      }`}
                   >
                     Domestic
                   </button>
                   <button
                     onClick={() => setSelectedTab("international")}
-                    className={`pb-3 px-4 font-medium transition-colors ${
-                      selectedTab === "international"
+                    className={`pb-3 px-4 font-medium transition-colors ${selectedTab === "international"
                         ? "text-blue-600 border-b-2 border-blue-600"
                         : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
-                    }`}
+                      }`}
                   >
                     International
                   </button>
@@ -342,33 +340,35 @@ const RateCalculatorPage: FC = () => {
                       type="number"
                       value={length}
                       onChange={(e) => setLength(e.target.value)}
-                      placeholder="Length"
                     />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute right-3 top-5 transform -translate-y-1/2">
                       <span className="text-sm text-gray-500">cm</span>
                     </div>
+                    <span className="text-sm text-gray-600 mt-1 block">Length</span>
                   </div>
+
                   <div className="relative">
                     <TextInput
                       type="number"
                       value={breadth}
                       onChange={(e) => setBreadth(e.target.value)}
-                      placeholder="Breadth"
                     />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute right-3 top-5 transform -translate-y-1/2">
                       <span className="text-sm text-gray-500">cm</span>
                     </div>
+                    <span className="text-sm text-gray-600 mt-1 block">Breadth</span>
                   </div>
+
                   <div className="relative">
                     <TextInput
                       type="number"
                       value={height}
                       onChange={(e) => setHeight(e.target.value)}
-                      placeholder="Height"
                     />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute right-3 top-5 transform -translate-y-1/2">
                       <span className="text-sm text-gray-500">cm</span>
                     </div>
+                    <span className="text-sm text-gray-600 mt-1 block">Height</span>
                   </div>
                 </div>
               </div>
@@ -464,11 +464,10 @@ const RateCalculatorPage: FC = () => {
               <div className="flex gap-2 mb-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
                 <button
                   onClick={() => setShippingType("forward")}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    shippingType === "forward"
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${shippingType === "forward"
                       ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                  }`}
+                    }`}
                 >
                   Forward
                 </button>
@@ -498,21 +497,19 @@ const RateCalculatorPage: FC = () => {
               <div className="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
                 <button
                   onClick={() => setDeliveryMode("E")}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    deliveryMode === "E"
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${deliveryMode === "E"
                       ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                  }`}
+                    }`}
                 >
                   Express
                 </button>
                 <button
                   onClick={() => setDeliveryMode("S")}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    deliveryMode === "S"
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${deliveryMode === "S"
                       ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                  }`}
+                    }`}
                 >
                   Surface
                 </button>
@@ -540,7 +537,7 @@ const RateCalculatorPage: FC = () => {
                       </svg>
                     </div>
                   </div>
-                  
+
                   <div className="mb-4">
                     <div className="text-3xl font-bold text-gray-900 dark:text-white">
                       ₹{rateDetails.total}
