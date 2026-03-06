@@ -1,33 +1,56 @@
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar";
-import { Card, Button, Select, Label } from "flowbite-react";
+import { Card, Button, Select, Label, TextInput, Spinner } from "flowbite-react";
 import { HiDownload, HiTrendingUp, HiCurrencyRupee } from "react-icons/hi";
 import toast from "react-hot-toast";
+import { useReportsStore, PeriodType } from "../../store/reportsStore";
 
 const TotalRevenueReportPage: FC = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState("this-month");
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("thisMonth");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
+  const {
+    revenueReport,
+    revenueReportLoading,
+    revenueReportError,
+    fetchRevenueReport,
+  } = useReportsStore();
+
+  // fetch when filters change
+  useEffect(() => {
+    if (selectedPeriod === "customRange") {
+      if (startDate && endDate) {
+        fetchRevenueReport(selectedPeriod, startDate, endDate);
+      }
+    } else {
+      fetchRevenueReport(selectedPeriod);
+    }
+  }, [selectedPeriod, startDate, endDate, fetchRevenueReport]);
+
+  // safe extraction using optional chaining in case backend returns an incomplete object
+  // map API response to local variables
   const revenueStats = {
-    total: 693000,
-    shipping: 550000,
-    cod: 120000,
-    other: 23000,
-    growth: 22.3,
+    total: revenueReport?.overview?.totalRevenue ?? 0,
+    shipping: revenueReport?.overview?.shippingCharges ?? 0,
+    cod: revenueReport?.overview?.codCharges ?? 0,
+    other: revenueReport?.overview?.otherCharges ?? 0,
+    growth: 0, // backend doesn’t send growth yet
   };
 
-  const monthlyRevenue = [
-    { month: "Jul", revenue: 450000 },
-    { month: "Aug", revenue: 520000 },
-    { month: "Sep", revenue: 480000 },
-    { month: "Oct", revenue: 590000 },
-    { month: "Nov", revenue: 630000 },
-    { month: "Dec", revenue: 693000 },
-  ];
+  const monthlyRevenue = revenueReport?.revenueTrend
+    ? revenueReport.revenueTrend.map(({ date, revenue }) => ({ month: date, revenue }))
+    : [];
 
-  const maxRevenue = Math.max(...monthlyRevenue.map((m) => m.revenue));
+  const maxRevenue = monthlyRevenue.length > 0 ? Math.max(...monthlyRevenue.map((m) => m.revenue)) : 0;
 
   const handleExport = () => {
+    if (!revenueReport) {
+      toast.error("No data to export");
+      return;
+    }
     toast.success("Exporting revenue report...");
+    // TODO: wire up real export API or CSV generation
   };
 
   return (
@@ -44,28 +67,71 @@ const TotalRevenueReportPage: FC = () => {
 
         {/* Filters */}
         <Card className="mb-6 border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-          <div className="flex items-end gap-4">
-            <div className="flex-1">
-              <Label htmlFor="period" value="Select Period" className="mb-2 text-gray-700 dark:text-gray-200" />
-              <Select
-                id="period"
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-              >
-                <option value="this-week">This Week</option>
-                <option value="this-month">This Month</option>
-                <option value="last-month">Last Month</option>
-                <option value="this-quarter">This Quarter</option>
-                <option value="this-year">This Year</option>
-                <option value="custom">Custom Range</option>
-              </Select>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-end gap-4">
+              <div className="flex-1">
+                <Label htmlFor="period" value="Select Period" className="mb-2 text-gray-700 dark:text-gray-200" />
+                <Select
+                  id="period"
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value as PeriodType)}
+                >
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="thisWeek">This Week</option>
+                  <option value="thisMonth">This Month</option>
+                  <option value="lastMonth">Last Month</option>
+                  <option value="customRange">Custom Range</option>
+                </Select>
+              </div>
+              <Button color="dark" onClick={handleExport} disabled={revenueReportLoading || !revenueReport}>
+                <HiDownload className="mr-2 h-5 w-5" />
+                Export Report
+              </Button>
             </div>
-            <Button color="dark" onClick={handleExport}>
-              <HiDownload className="mr-2 h-5 w-5" />
-              Export Report
-            </Button>
+
+            {/* Custom Date Range Inputs */}
+            {selectedPeriod === "customRange" && (
+              <div className="flex items-end gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex-1">
+                  <Label htmlFor="startDate" value="Start Date" className="mb-2 text-gray-700 dark:text-gray-200" />
+                  <TextInput
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label htmlFor="endDate" value="End Date" className="mb-2 text-gray-700 dark:text-gray-200" />
+                  <TextInput
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </Card>
+
+        {/* Loading State */}
+        {revenueReportLoading && (
+          <div className="flex items-center justify-center h-64 mb-6">
+            <Spinner aria-label="Loading report..." size="lg" />
+          </div>
+        )}
+
+        {/* Error State */}
+        {!revenueReportLoading && !revenueReport && (
+          <Card className="mb-6 bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800">
+            <div className="text-center py-8">
+              <p className="text-red-600 dark:text-red-400 font-semibold">Failed to load report data</p>
+              <p className="text-red-500 dark:text-red-500 text-sm mt-2">Please try again or select a different period</p>
+            </div>
+          </Card>
+        )}
 
         {/* Revenue Summary */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -133,12 +199,14 @@ const TotalRevenueReportPage: FC = () => {
             {monthlyRevenue.map((month, index) => (
               <div key={index} className="flex-1 flex flex-col items-center">
                 <div className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  ₹{(month.revenue / 1000).toFixed(0)}K
+                  {month.revenue >= 1000
+                    ? `₹${(month.revenue / 1000).toFixed(1)}K`
+                    : `₹${month.revenue.toLocaleString()}`}
                 </div>
                 <div
                   className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t transition-all hover:from-blue-700 hover:to-blue-500"
                   style={{
-                    height: `${(month.revenue / maxRevenue) * 100}%`,
+                    height: maxRevenue > 0 ? `${(month.revenue / maxRevenue) * 100}%` : "0%",
                     minHeight: "30px",
                   }}
                 ></div>
@@ -155,43 +223,33 @@ const TotalRevenueReportPage: FC = () => {
               Revenue by Source
             </h3>
             <div className="space-y-4">
-              {[
-                {
-                  label: "Shipping Charges",
-                  value: revenueStats.shipping,
-                  color: "bg-green-600",
-                },
-                {
-                  label: "COD Charges",
-                  value: revenueStats.cod,
-                  color: "bg-purple-600",
-                },
-                {
-                  label: "Other Charges",
-                  value: revenueStats.other,
-                  color: "bg-orange-600",
-                },
-              ].map((source, index) => (
-                <div key={index}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {source.label}
-                    </span>
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      ₹{source.value.toLocaleString()} (
-                      {((source.value / revenueStats.total) * 100).toFixed(1)}%)
-                    </span>
+              {(revenueReport?.revenueBySource ?? []).map((item, index) => {
+                const pct = revenueStats.total ? (item.amount / revenueStats.total) * 100 : 0
+                const color =
+                  item.source.toLowerCase().includes("shipping")
+                    ? "bg-green-600"
+                    : item.source.toLowerCase().includes("cod")
+                    ? "bg-purple-600"
+                    : "bg-orange-600"
+                return (
+                  <div key={index}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {item.source}
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        ₹{item.amount.toLocaleString()} ({pct.toFixed(1)}%)
+                      </span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+                      <div
+                        className={`h-2 rounded-full ${color}`}
+                        style={{ width: `${pct}%` }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
-                    <div
-                      className={`h-2 rounded-full ${source.color}`}
-                      style={{
-                        width: `${(source.value / revenueStats.total) * 100}%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </Card>
 
@@ -200,30 +258,28 @@ const TotalRevenueReportPage: FC = () => {
               Payment Method Split
             </h3>
             <div className="space-y-4">
-              {[
-                { label: "Prepaid", value: 453000, color: "bg-blue-600" },
-                { label: "COD", value: 240000, color: "bg-yellow-600" },
-              ].map((method, index) => (
-                <div key={index}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {method.label}
-                    </span>
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      ₹{method.value.toLocaleString()} (
-                      {((method.value / revenueStats.total) * 100).toFixed(1)}%)
-                    </span>
+              {(revenueReport?.paymentMethodSplit ?? []).map((item, index) => {
+                const pct = revenueStats.total ? (item.amount / revenueStats.total) * 100 : 0
+                const color = item.method.toLowerCase().includes("prepaid") ? "bg-blue-600" : "bg-yellow-600"
+                return (
+                  <div key={index}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {item.method}
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        ₹{item.amount.toLocaleString()} ({pct.toFixed(1)}%)
+                      </span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
+                      <div
+                        className={`h-2 rounded-full ${color}`}
+                        style={{ width: `${pct}%` }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
-                    <div
-                      className={`h-2 rounded-full ${method.color}`}
-                      style={{
-                        width: `${(method.value / revenueStats.total) * 100}%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </Card>
         </div>
