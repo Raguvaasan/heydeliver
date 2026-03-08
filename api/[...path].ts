@@ -34,6 +34,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // ROUTING
+    // --- authentication/login endpoints (were missing in catch‑all) ---
+    if (segments[0] === 'admin' && segments[1] === 'auth' && segments[2] === 'login') {
+      // POST /api/admin/auth/login
+      if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, message: 'Method not allowed' })
+      }
+      const backendUrl = `${BACKEND_API_URL}/admin/auth/login`
+      const backendResponse = await axios.post(backendUrl, req.body, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000,
+        validateStatus: (status) => status < 500,
+      })
+      return res.status(backendResponse.status).json(backendResponse.data)
+    }
+    if (segments[0] === 'admin' && segments[1] === 'agency' && segments[2] === 'login') {
+      // POST /api/admin/agency/login
+      if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, message: 'Method not allowed' })
+      }
+      const backendUrl = `${BACKEND_API_URL}/admin/agency/login`
+      const backendResponse = await axios.post(backendUrl, req.body, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000,
+        validateStatus: (status) => status < 500,
+      })
+      return res.status(backendResponse.status).json(backendResponse.data)
+    }
+    if (
+      segments[0] === 'admin' &&
+      segments[1] === 'staff' &&
+      segments[2] === 'login' &&
+      segments[3] === 'headquarter'
+    ) {
+      // POST /api/admin/staff/login/headquarter
+      if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, message: 'Method not allowed' })
+      }
+      const backendUrl = `${BACKEND_API_URL}/admin/staff/login/headquarter`
+      const backendResponse = await axios.post(backendUrl, req.body, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000,
+        validateStatus: (status) => status < 500,
+      })
+      return res.status(backendResponse.status).json(backendResponse.data)
+    }
+
+    // existing specific handlers follow
     if (segments[0] === 'admin' && segments[1] === 'reports') {
       // identical to original api/admin/reports.ts
       if (req.method !== 'GET') {
@@ -414,6 +461,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const response = await axios.post(`${BACKEND_API_URL}/api/wallet/verify-payment`, payload, { headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' } })
         return res.status(200).json(response.data)
       }
+    }
+
+    // catch‑all for any other admin request not handled above
+    if (segments[0] === 'admin') {
+      // forward everything under /api/admin/... to the real backend
+      const authHeader = req.headers.authorization
+      const backendUrl = `${BACKEND_API_URL}/${path}`
+      const axiosConfig: any = {
+        headers: {},
+        timeout: 30000,
+        validateStatus: (status: number) => status < 500,
+      }
+      if (authHeader) axiosConfig.headers.Authorization = authHeader
+
+      let backendResponse
+      if (req.method === 'GET' || req.method === 'DELETE') {
+        backendResponse = await axios.get(backendUrl, {
+          ...axiosConfig,
+          params: parsedUrl.searchParams,
+        })
+      } else {
+        backendResponse = await axios({
+          method: req.method || 'GET',
+          url: backendUrl,
+          data: req.body,
+          ...axiosConfig,
+        })
+      }
+      return res.status(backendResponse.status).json(backendResponse.data)
     }
 
     if (segments[0] === 'delhivery') {
