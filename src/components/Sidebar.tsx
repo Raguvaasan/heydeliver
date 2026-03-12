@@ -125,6 +125,15 @@ const Sidebar: FC<SidebarProps> = ({
         { title: "Rate Card Markup", path: "/settings/rate-card-markup" },
       ],
     },
+    {
+      title: "Careers",
+      icon: <HiDocumentText className="h-5 w-5" />,
+      path: "/careers",
+      submenu: [
+        { title: "Job Postings", path: "/careers" },
+        { title: "Applications", path: "/careers/applications" },
+      ],
+    },
   ]
 
   // Franchise menu items

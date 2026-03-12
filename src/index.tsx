@@ -91,6 +91,10 @@ const RateCardMarkupPage = lazy(() => import("./pages/Settings/RateCardMarkupPag
 // Profile
 const ProfilePage = lazy(() => import("./pages/Profile/ProfilePageModern"))
 
+// Careers
+const CareersPage = lazy(() => import("./pages/Careers/CareersPage"))
+const ApplicationsPage = lazy(() => import("./pages/Careers/ApplicationsPage"))
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -550,6 +554,24 @@ root.render(
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/careers"
+            element={
+              <ProtectedRoute>
+                <CareersPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/careers/applications"
+            element={
+              <ProtectedRoute>
+                <ApplicationsPage />
               </ProtectedRoute>
             }
           />
