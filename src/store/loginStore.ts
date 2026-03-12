@@ -1,14 +1,18 @@
 import http from "../common/httpRequest"
 import { create } from "zustand"
 
+// all login helpers now support a reusable captchaToken parameter.  the
+// backend performs recaptcha validation server‑side, so we must forward the
+// token obtained from the client (v3/invisible).  franchise login does not
+// currently require captcha but the parameter is included for future parity.
 export const loginAdminUser = (
   email: string,
   password: string,
   captchaToken?: string
 ) => {
   const payload: any = {
-    email: email,
-    password: password
+    email,
+    password,
   }
   if (captchaToken) {
     payload.captchaToken = captchaToken
@@ -18,22 +22,30 @@ export const loginAdminUser = (
 
 export const loginFranchiseUser = (
   username: string,
-  password: string
+  password: string,
+  captchaToken?: string
 ) => {
-  const payload = {
+  const payload: any = {
     username: username.trim(),
-    password: password.trim()
+    password: password.trim(),
+  }
+  if (captchaToken) {
+    payload.captchaToken = captchaToken
   }
   return http.post("/admin/agency/login", payload)
 }
 
 export const loginStaffUser = (
   username: string,
-  password: string
+  password: string,
+  captchaToken?: string
 ) => {
-  const payload = {
+  const payload: any = {
     username: username.trim(),
-    password: password.trim()
+    password: password.trim(),
+  }
+  if (captchaToken) {
+    payload.captchaToken = captchaToken
   }
   return http.post("/admin/staff/login/headquarter", payload)
 }

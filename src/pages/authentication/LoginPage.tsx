@@ -35,6 +35,15 @@ const LoginPage: FC = function () {
     // Keep login screen in light mode for readability.
     root.classList.remove("dark")
 
+    // Generate initial captcha on mount
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    let generated = ""
+    for (let i = 0; i < 4; i++) {
+      generated += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    setCaptchaQuestion(generated)
+    setCaptchaAnswer(generated)
+
     return () => {
       if (hadDarkClass) {
         root.classList.add("dark")
@@ -106,7 +115,11 @@ const LoginPage: FC = function () {
         throw new Error(result.data?.message || "Invalid response from server")
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || "Invalid login credentials"
+      let errorMessage = err.response?.data?.message || err.message || "Invalid login credentials"
+      if (err.response?.status === 404) {
+        // backend sometimes returns 404 when the admin/staff record is missing
+        errorMessage = "Incorrect email/username or password"
+      }
       
       toast.error(errorMessage, {
         duration: 5000,
@@ -314,15 +327,14 @@ const LoginPage: FC = function () {
                   </div>
                 </div>
 
-                {/* Premium Login Button with Gradient */}
                 {/* Captcha */}
                 <div className="space-y-1">
                   <Label className="block text-sm font-semibold text-gray-700">
                     Captcha
                   </Label>
                   <div className="flex items-center gap-3">
-                    <div className="px-4 py-3 rounded-xl border-2 border-gray-300 bg-white text-gray-900 font-semibold">
-                      {captchaQuestion || "--"}
+                    <div className="px-4 py-3 rounded-xl border-2 border-gray-300 bg-white text-gray-900 font-semibold tracking-widest">
+                      {captchaQuestion || "----"}
                     </div>
                     <button
                       type="button"
@@ -351,6 +363,7 @@ const LoginPage: FC = function () {
                     className="w-full text-base pl-4 pr-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-500 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
                   />
                 </div>
+
 
                 {/* Premium Login Button with Gradient */}
                 <button

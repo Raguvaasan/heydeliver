@@ -30,6 +30,9 @@ export default defineConfig(({ mode }) => {
           target: apiProxyTarget,
           changeOrigin: true,
           secure: true,
+          // remove the leading "/api" segment before forwarding so the
+          // backend doesn’t need to know about our development proxy prefix.
+          rewrite: (path) => path.replace(/^\/api/, ""),
         },
         "/delhivery-api": {
           target: "https://track.delhivery.com",
