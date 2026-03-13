@@ -5,6 +5,17 @@ import { HiCurrencyRupee, HiCreditCard } from "react-icons/hi"
 import toast from "react-hot-toast"
 import { useWalletStore } from "../../store/walletStore"
 
+const getProfilePhone = (): string | undefined => {
+  try {
+    const raw = sessionStorage.getItem("profileData")
+    if (!raw) return undefined
+    const profile = JSON.parse(raw)
+    return profile?.mobile || profile?.phone || profile?.mobileNumber || undefined
+  } catch {
+    return undefined
+  }
+}
+
 // Declare Cashfree SDK on window object
 declare global {
   interface Window {
@@ -58,7 +69,8 @@ const AddMoneyPage: FC = () => {
 
     try {
       // Create payment order from backend
-      const orderData = await createPaymentOrder(amount, paymentType)      
+      const customerPhone = getProfilePhone()
+      const orderData = await createPaymentOrder(amount, paymentType, customerPhone)      
       if (!orderData?.orderId || !orderData?.sessionId) {
         toast.error("Failed to create payment order")
         return

@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-   const { amount, paymentMethod } = req.body;
+   const { amount, paymentMethod, customerPhone } = req.body;
 
     // Validate input
     if (!amount || !paymentMethod) {
@@ -46,7 +46,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Forward to actual backend
     const backendUrl = process.env['BACKEND_API_URL'] || 'https://freightrekapi.vercel.app';
-    const requestPayload = { amount, paymentMethod };
+    const requestPayload: any = { amount, paymentMethod };
+    if (customerPhone) requestPayload.customerPhone = customerPhone;
    
     const response = await axios.post(
       `${backendUrl}/api/wallet/create-payment-order`,

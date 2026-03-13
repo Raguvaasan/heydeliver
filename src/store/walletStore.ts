@@ -24,7 +24,7 @@ interface WalletState {
   // Actions
   fetchBalance: () => Promise<void>
   fetchTransactions: () => Promise<void>
-  createPaymentOrder: (amount: number, paymentMethod: string) => Promise<any>
+  createPaymentOrder: (amount: number, paymentMethod: string, customerPhone?: string) => Promise<any>
   verifyPayment: (orderId: string, paymentId?: string) => Promise<void>
   addMoneyToWallet: (amount: number, transactionId: string) => Promise<void>
 }
@@ -59,7 +59,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     }
   },
 
-  createPaymentOrder: async (amount: number, paymentMethod: string) => {
+  createPaymentOrder: async (amount: number, paymentMethod: string, customerPhone?: string) => {
     set({ paymentLoading: true, error: null })
     try {
       if (!amount || amount <= 0) {
@@ -73,6 +73,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       const response = await httpRequest.post("/wallet/create-payment-order", {
         amount,
         paymentMethod,
+        ...(customerPhone ? { customerPhone } : {}),
       })
       set({ paymentLoading: false })
       return response.data
