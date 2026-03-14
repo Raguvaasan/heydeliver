@@ -236,7 +236,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(401).json({ success: false, message: 'Unauthorized' })
       }
       const apiPath = segments.slice(1).join('/')
-      const backendUrl = `${BACKEND_API_URL}/api/${apiPath}`
+      const backendUrl = `${BACKEND_API_URL}/api/v1/settings/${apiPath}`
       if (req.method === 'GET') {
         const backendResponse = await axios.get(backendUrl, { headers: { Authorization: authToken } })
         return res.status(200).json(backendResponse.data)
