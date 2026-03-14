@@ -71,6 +71,11 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/agencies",
     },
     {
+      title: "Customers",
+      icon: <HiUserGroup className="h-5 w-5" />,
+      path: "/customers",
+    },
+    {
       title: "Access Management",
       icon: <HiUserGroup className="h-5 w-5" />,
       path: "/access",
