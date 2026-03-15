@@ -64,6 +64,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Read raw body from stream
       const rawBody = await getRawBody(req);
       fetchOptions.body = rawBody;
+      // Log outgoing request for debugging
+      console.log('Delhivery Proxy Debug:');
+      console.log('URL:', fullUrl);
+      console.log('Headers:', fetchOptions.headers);
+      console.log('Body:', rawBody);
     } else if (req.method === 'POST') {
       // For other POSTs, default to JSON
       fetchOptions.headers['Content-Type'] = 'application/json';

@@ -39,35 +39,8 @@ function loadMarkupConfig(): Promise<MarkupConfig> {
   return markupPromise
 }
 
-// Apply markup on gross_amount, recompute GST at 18%, keep DPH as-is
-function applyMarkup(
-  shipping: number, gstFromApi: number, dph: number,
-  zone: string, chargedWeight: number
-): RateResult {
-  const cfg = markupCache
-
-  // Markup is applied only on the base shipping (gross_amount)
-  let markupAmt = 0
-  if (cfg.isActive && cfg.markupValue > 0) {
-    markupAmt = cfg.markupType === "percentage"
-      ? (shipping * cfg.markupValue) / 100
-      : cfg.markupValue
-  }
-
-  const shippingWithMarkup = shipping + markupAmt
-  // GST is 18% of (shipping + markup) — recalculated, NOT taken from API directly
-  const gst = shippingWithMarkup * 0.18
-  const total = Math.round(shippingWithMarkup) + Math.round(gst) + Math.round(dph)
-
-  return {
-    shipping: Math.round(shippingWithMarkup),
-    gst: Math.round(gst),
-    dph: Math.round(dph),
-    total,
-    zone,
-    chargedWeight,
-  }
-}
+// Use shared rate calculation logic
+import { calculateRate, RateMarkupConfig } from "../../common/rateCalculator"
 
 // BFS key search — finds first matching key anywhere in nested response
 function deepGet(obj: unknown, keys: string[]): number | string | undefined {
@@ -227,7 +200,19 @@ const NewOrderPage: FC = () => {
     const gstApi = Number(deepGet(data, ["gst_amount", "gst", "tax_amount"]) ?? 0)
 
     // Apply markup on gross_amount → recompute GST at 18%
-    return applyMarkup(shipping || Number(deepGet(data, ["total_amount"]) ?? 0), gstApi, dph, zone, cw)
+    // Use shared rate calculation logic
+    const markupConfig: RateMarkupConfig = {
+      markupType: (markupCache.markupType === "flat" ? "flat" : "percentage"),
+      markupValue: markupCache.markupValue,
+      isActive: markupCache.isActive,
+    }
+    return calculateRate({
+      grossAmount: shipping || Number(deepGet(data, ["total_amount"]) ?? 0),
+      dph,
+      zone,
+      chargedWeight: cw,
+      markupConfig,
+    })
   }
 
   // ── Auto-fetch both rates whenever relevant inputs change ────────────────────
