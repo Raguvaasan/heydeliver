@@ -1,13 +1,30 @@
-import { FC, useState, useEffect } from "react"
+import { FC, useState, useEffect, useRef } from "react"
 import { Button, Card, Label, TextInput, Select } from "flowbite-react"
 import { useNavigate } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useOrderStore } from "../../store/orderStore"
-import { useRateCalculatorStore } from "../../store/rateCalculatorStore"
-import { useMarkupStore } from "../../store/markupStore"
+import { usePincodeStore } from "../../store/pincodeStore"
 import toast from "react-hot-toast"
-import { HiPlus, HiTrash, HiRefresh } from "react-icons/hi"
+import { HiTrash, HiRefresh } from "react-icons/hi"
 
+// ─── Delhivery rate API (same endpoint used in RateCalculatorPage) ─────────────
+const RATE_API = "https://admin.heydeliver.in/delhivery-api/api/kinko/v1/invoice/charges/.json"
+
+// BFS key search — finds first matching key anywhere in nested response
+function deepGet(obj: unknown, keys: string[]): number | string | undefined {
+  const q: unknown[] = [obj]
+  while (q.length) {
+    const n = q.shift()
+    if (!n || typeof n !== "object") continue
+    for (const k of Object.keys(n as Record<string, unknown>)) {
+      if (keys.includes(k.toLowerCase()))
+        return (n as Record<string, unknown>)[k] as number | string
+      q.push((n as Record<string, unknown>)[k])
+    }
+  }
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface BoxDetails {
   id: number
   packageType: string
@@ -17,24 +34,51 @@ interface BoxDetails {
   weight: string
 }
 
-const generateOrderId = () => {
-  const prefix = "ORD"
-  const timestamp = Date.now().toString().slice(-8)
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-  return `${prefix}${timestamp}${random}`
+interface RateResult {
+  total: number
+  shipping: number
+  gst: number
+  dph: number
+  zone: string
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const generateOrderId = () => {
+  const ts = Date.now().toString().slice(-8)
+  const rnd = Math.floor(Math.random() * 1000).toString().padStart(3, "0")
+  return `ORD${ts}${rnd}`
+}
+
+// Volumetric weight for ONE box in GRAMS  =  ceil( L×B×H / 5000 × 1000 )
+const volGrams = (l: number, b: number, h: number) =>
+  Math.ceil((l * b * h) / 5000 * 1000)
+
+// Chargeable grams for one box based on its package type
+const boxChargeableGrams = (box: BoxDetails): number => {
+  const actual = Math.round(parseFloat(box.weight) || 0)
+  const isBox = box.packageType.toLowerCase() === "box"
+  if (!isBox) return actual                                     // flyer/envelope/packet → actual only
+  const l = parseFloat(box.length) || 0
+  const b = parseFloat(box.breadth) || 0
+  const h = parseFloat(box.height) || 0
+  return Math.max(actual, volGrams(l, b, h))                   // box → max(actual, volumetric)
+}
+
+// Sum of chargeable grams across all boxes
+const totalChargeableGrams = (boxes: BoxDetails[]): number =>
+  boxes.reduce((sum, box) => sum + boxChargeableGrams(box), 0)
+
+// ─── Component ────────────────────────────────────────────────────────────────
 const NewOrderPage: FC = () => {
   const navigate = useNavigate()
   const { createDelhiveryShipment, loading } = useOrderStore()
-  const { fetchRateData } = useRateCalculatorStore()
-  const { rateCardMarkup, fetchRateCardMarkup } = useMarkupStore()
+
   const loginType = sessionStorage.getItem("loginType")
   const profileDataStr = sessionStorage.getItem("profileData")
   const profileData = profileDataStr ? JSON.parse(profileDataStr) : null
 
+  // ── Form state ──────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
-    // Customer Details
     customerName: "",
     customerPhone: "",
     customerEmail: "",
@@ -43,16 +87,11 @@ const NewOrderPage: FC = () => {
     deliveryState: "",
     deliveryPincode: "",
     deliveryCountry: "India",
-    
-    // Order Details
     orderId: generateOrderId(),
     channelName: "",
     paymentMode: "",
     codAmount: "",
     totalAmount: "",
-    orderDate: "",
-    
-    // Seller/Return Details
     sellerName: "",
     sellerAddress: "",
     sellerInvoice: "",
@@ -64,196 +103,95 @@ const NewOrderPage: FC = () => {
     fromCountry: "India",
     fromPhone: "",
     returnCountry: "India",
-    
-    // Product Details
     productsDesc: "",
     hsnCode: "",
     quantity: "",
-    
-    // Shipping
     shippingMode: "Surface",
     addressType: "",
-    
-    // Warehouse
     pickupLocation: "",
   })
 
-  useEffect(() => {
-    if (loginType !== "franchise") return
-    if (!profileDataStr) return
-
-    const parsedProfile = JSON.parse(profileDataStr)
-    const warehouseName = parsedProfile?.agencyName || parsedProfile?.name || ""
-    if (!warehouseName) return
-
-    setFormData((prev) => {
-      if (prev.pickupLocation === warehouseName) return prev
-      return {
-        ...prev,
-        pickupLocation: warehouseName,
-      }
-    })
-  }, [loginType, profileDataStr])
-
-  useEffect(() => {
-    fetchRateCardMarkup().catch(() => {
-      // Markup is optional for order flow; ignore fetch failures.
-    })
-  }, [fetchRateCardMarkup])
-
   const [boxes, setBoxes] = useState<BoxDetails[]>([
-    {
-      id: 1,
-      packageType: "Box",
-      length: "",
-      breadth: "",
-      height: "",
-      weight: "",
-    },
+    { id: 1, packageType: "Box", length: "", breadth: "", height: "", weight: "" },
   ])
 
   const [showSellerDetails, setShowSellerDetails] = useState(false)
   const [showCustomerDetails, setShowCustomerDetails] = useState(false)
   const [showFromDetails, setShowFromDetails] = useState(false)
-  const [chargeableWeight, setChargeableWeight] = useState<number | null>(null)
-  const [expressRate, setExpressRate] = useState<number | null>(null)
-  const [surfaceRate, setSurfaceRate] = useState<number | null>(null)
+
+  // ── Rate state (managed here — no external rate store needed) ───────────────
+  const [expressRate, setExpressRate] = useState<RateResult | null>(null)
+  const [surfaceRate, setSurfaceRate] = useState<RateResult | null>(null)
   const [rateLoading, setRateLoading] = useState(false)
   const [rateError, setRateError] = useState<string | null>(null)
+  const rateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const applyRateCardMarkup = (baseRate: number | null) => {
-    if (baseRate === null) return null
-
-    if (!rateCardMarkup || !rateCardMarkup.is_active) {
-      return Math.round(baseRate)
-    }
-
-    const markupValue = Number(rateCardMarkup.markup_value || 0)
-    if (!Number.isFinite(markupValue) || markupValue <= 0) {
-      return Math.round(baseRate)
-    }
-
-    const finalRate =
-      rateCardMarkup.markup_type === "percentage"
-        ? baseRate + (baseRate * markupValue) / 100
-        : baseRate + markupValue
-
-    return Math.round(finalRate)
-  }
-
-  const displaySurfaceRate = applyRateCardMarkup(surfaceRate)
-  const displayExpressRate = applyRateCardMarkup(expressRate)
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
-  }
-
-  const handleChannelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value
-    if (!value) {
-      setFormData((prev) => ({
-        ...prev,
-        channelName: value,
-      }))
-      return
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      channelName: value,
-      sellerName: profileData?.agencyName || prev.sellerName,
-      sellerAddress: profileData?.address || prev.sellerAddress,
-      sellerInvoice: profileData?.gstNumber || prev.sellerInvoice,
-    }))
-    setShowSellerDetails(true)
-  }
-
-  const handleBoxChange = (id: number, field: keyof BoxDetails, value: string) => {
-    const numericFields: Array<keyof BoxDetails> = ["length", "breadth", "height", "weight"]
-    if (numericFields.includes(field)) {
-      // Allow only positive numeric values (including empty while editing)
-      if (!/^\d*$/.test(value)) {
-        return
-      }
-      if (value !== "" && Number(value) <= 0) {
-        return
-      }
-    }
-
-    setBoxes((prev) =>
-      prev.map((box) =>
-        box.id === id ? { ...box, [field]: value } : box
-      )
-    )
-  }
-
-  const preventInvalidNumberKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (["-", "+", "e", "E", "."].includes(e.key)) {
-      e.preventDefault()
-    }
-  }
-
-  const calculateChargeableWeight = () => {
-    if (boxes.length === 0) return null
-
-    const actualWeight = boxes.reduce((sum, box) => {
-      const weight = parseFloat(box.weight) || 0
-      return sum + weight
-    }, 0)
-
-    const volumetricWeight = boxes.reduce((sum, box) => {
-      const l = parseFloat(box.length) || 0
-      const b = parseFloat(box.breadth) || 0
-      const h = parseFloat(box.height) || 0
-      const volumetric = (l * b * h) / 5000
-      return sum + volumetric
-    }, 0)
-
-    const charged = Math.max(actualWeight, volumetricWeight)
-    return charged > 0 ? charged : null
-  }
-
+  // ── Set pickupLocation from profile for franchise login ─────────────────────
   useEffect(() => {
-    const charged = calculateChargeableWeight()
-    const chargedRounded = charged ? Math.ceil(charged) : null
+    if (loginType !== "franchise" || !profileDataStr) return
+    const p = JSON.parse(profileDataStr)
+    const name = p?.agencyName || p?.name || ""
+    if (name) setFormData((prev) => ({ ...prev, pickupLocation: name }))
+  }, [loginType, profileDataStr])
 
-    setChargeableWeight(chargedRounded)
+  // ── Direct API call for a single mode ───────────────────────────────────────
+  const fetchRate = async (
+    cgm: number, oPin: string, dPin: string,
+    md: "E" | "S", pt: string
+  ): Promise<RateResult | null> => {
+    const params = new URLSearchParams({
+      md, ss: "Delivered",
+      o_pin: oPin, d_pin: dPin,
+      cgm: String(cgm),
+      pt: pt === "COD" ? "COD" : "Pre-paid",
+    })
+    const res = await fetch(`${RATE_API}?${params}`)
+    if (!res.ok) throw new Error(`API ${res.status}`)
+    const data = await res.json()
+
+    const shipping = Number(deepGet(data, ["gross_amount"]) ?? 0)
+    const gst = Number(deepGet(data, ["gst_amount", "gst", "tax_amount"]) ?? 0)
+    const dph = Number(deepGet(data, ["charge_dph"]) ?? 0)
+    const zone = String(deepGet(data, ["zone", "zone_code"]) ?? "N/A")
+    const apiTotal = Number(deepGet(data, ["total_amount"]) ?? 0)
+    const total = apiTotal > 0 ? apiTotal : shipping + gst + dph
+
+    return {
+      total: Math.round(total),
+      shipping: Math.round(shipping),
+      gst: Math.round(gst),
+      dph: Math.round(dph),
+      zone,
+    }
+  }
+
+  // ── Auto-fetch both rates whenever relevant inputs change ────────────────────
+  useEffect(() => {
+    const cgm = totalChargeableGrams(boxes)
+    const oPin = profileData?.pincode || ""
+    const dPin = formData.deliveryPincode
+
+    // Reset
     setExpressRate(null)
     setSurfaceRate(null)
     setRateError(null)
 
-    if (!chargedRounded) {
+    if (!cgm || oPin.length !== 6 || dPin.length !== 6) {
       setRateLoading(false)
       return
     }
 
-    if (!profileData?.pincode || formData.deliveryPincode.length !== 6) {
-      setRateLoading(false)
-      return
-    }
+    if (rateTimerRef.current) clearTimeout(rateTimerRef.current)
 
-    const pt = formData.paymentMode === "COD" ? "COD" : "Pre-paid"
-    const baseParams = {
-      ss: "Delivered",
-      d_pin: formData.deliveryPincode,
-      o_pin: profileData.pincode,
-      cgm: chargedRounded,
-      pt,
-    }
-
-    const timer = setTimeout(async () => {
+    rateTimerRef.current = setTimeout(async () => {
       setRateLoading(true)
       try {
-        const [expressData, surfaceData] = await Promise.all([
-          fetchRateData({ ...baseParams, md: "E" }),
-          fetchRateData({ ...baseParams, md: "S" }),
+        const [expr, surf] = await Promise.all([
+          fetchRate(cgm, oPin, dPin, "E", formData.paymentMode),
+          fetchRate(cgm, oPin, dPin, "S", formData.paymentMode),
         ])
-
-        setExpressRate(expressData?.total_amount ?? null)
-        setSurfaceRate(surfaceData?.total_amount ?? null)
+        setExpressRate(expr)
+        setSurfaceRate(surf)
       } catch (err: any) {
         setRateError(err?.message || "Failed to fetch rates")
       } finally {
@@ -261,72 +199,84 @@ const NewOrderPage: FC = () => {
       }
     }, 400)
 
-    return () => clearTimeout(timer)
-  }, [boxes, formData.deliveryPincode, formData.paymentMode, profileData?.pincode, fetchRateData])
+    return () => {
+      if (rateTimerRef.current) clearTimeout(rateTimerRef.current)
+    }
+  }, [boxes, formData.deliveryPincode, formData.paymentMode])
+
+  // Convenient display values (already final from API — no markup re-apply)
+  const displaySurfaceRate = surfaceRate?.total ?? null
+  const displayExpressRate = expressRate?.total ?? null
+
+  // Currently selected rate for order submission
+  const selectedRate =
+    formData.shippingMode === "Express" ? displayExpressRate : displaySurfaceRate
+
+  // ── Form handlers ────────────────────────────────────────────────────────────
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  const handleChannelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value
+    setFormData((prev) => ({
+      ...prev,
+      channelName: value,
+      sellerName: value ? (profileData?.agencyName || prev.sellerName) : prev.sellerName,
+      sellerAddress: value ? (profileData?.address || prev.sellerAddress) : prev.sellerAddress,
+      sellerInvoice: value ? (profileData?.gstNumber || prev.sellerInvoice) : prev.sellerInvoice,
+    }))
+    if (value) setShowSellerDetails(true)
+  }
+
+  const handleBoxChange = (id: number, field: keyof BoxDetails, value: string) => {
+    const numericFields: Array<keyof BoxDetails> = ["length", "breadth", "height", "weight"]
+    if (numericFields.includes(field)) {
+      if (!/^\d*$/.test(value)) return
+      if (value !== "" && Number(value) <= 0) return
+    }
+    setBoxes((prev) => prev.map((b) => (b.id === id ? { ...b, [field]: value } : b)))
+  }
+
+  const preventInvalidKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (["-", "+", "e", "E", "."].includes(e.key)) e.preventDefault()
+  }
 
   const addBox = () => {
-    const newId = boxes.length > 0 ? Math.max(...boxes.map((b) => b.id)) + 1 : 1
-    setBoxes([
-      ...boxes,
-      {
-        id: newId,
-        packageType: "",
-        length: "",
-        breadth: "",
-        height: "",
-        weight: "",
-      },
-    ])
+    const newId = boxes.length ? Math.max(...boxes.map((b) => b.id)) + 1 : 1
+    setBoxes([...boxes, { id: newId, packageType: "", length: "", breadth: "", height: "", weight: "" }])
   }
 
   const removeBox = (id: number) => {
-    if (boxes.length > 1) {
-      setBoxes(boxes.filter((box) => box.id !== id))
-    }
+    if (boxes.length > 1) setBoxes(boxes.filter((b) => b.id !== id))
   }
 
+  // ── Submit ───────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validation
     if (!formData.customerName || !formData.customerPhone) {
-      toast.error("Customer name and phone are required")
-      return
+      toast.error("Customer name and phone are required"); return
     }
-
     if (!formData.deliveryAddress || !formData.deliveryPincode) {
-      toast.error("Delivery address and pincode are required")
-      return
+      toast.error("Delivery address and pincode are required"); return
     }
-
     if (formData.customerPhone.length !== 10) {
-      toast.error("Phone number must be 10 digits")
-      return
+      toast.error("Phone number must be 10 digits"); return
     }
-
     if (formData.deliveryPincode.length !== 6) {
-      toast.error("Pincode must be 6 digits")
-      return
+      toast.error("Pincode must be 6 digits"); return
     }
-
-    if (boxes.length === 0 || !boxes[0]?.weight) {
-      toast.error("Please add at least one box with weight")
-      return
+    if (!boxes[0]?.weight) {
+      toast.error("Please add at least one box with weight"); return
     }
-
     if (!formData.pickupLocation) {
-      toast.error("Please enter pickup location/warehouse name")
-      return
+      toast.error("Please enter pickup location/warehouse name"); return
     }
 
     try {
-      // Calculate total weight from all boxes
-      const totalWeight = boxes.reduce((sum, box) => sum + (parseFloat(box.weight) || 0), 0)
-
-      // Use first box dimensions (you can calculate volumetric weight if needed)
+      const totalWeight = boxes.reduce((s, b) => s + (parseFloat(b.weight) || 0), 0)
       const firstBox = boxes[0]
-      const selectedRate =
-        formData.shippingMode === "Express" ? displayExpressRate : displaySurfaceRate
 
       const shipmentData = {
         name: formData.customerName,
@@ -338,20 +288,20 @@ const NewOrderPage: FC = () => {
         phone: formData.customerPhone,
         order: formData.orderId,
         payment_mode: formData.paymentMode,
-        return_pin: profileData.pincode,
-        return_city: profileData.city,
-        return_phone: profileData.phone,
-        return_add: profileData.address,
-        return_state: profileData.state,
+        return_pin: profileData?.pincode || "",
+        return_city: profileData?.city || "",
+        return_phone: profileData?.phone || "",
+        return_add: profileData?.address || "",
+        return_state: profileData?.state || "",
         return_country: formData.returnCountry || "",
         products_desc: formData.productsDesc || "",
         hsn_code: formData.hsnCode || "",
         cod_amount: formData.paymentMode === "COD" ? formData.codAmount : "",
         order_date: new Date().toLocaleString(),
+        // Use the API-returned total for the selected mode
         total_amount: selectedRate?.toString() || formData.totalAmount || formData.codAmount,
-
-        seller_add: profileData.address,
-        seller_name: profileData.agencyOwner,
+        seller_add: profileData?.address || "",
+        seller_name: profileData?.agencyOwner || "",
         seller_inv: formData.sellerInvoice || "",
         quantity: formData.quantity || "",
         waybill: "",
@@ -362,7 +312,7 @@ const NewOrderPage: FC = () => {
         address_type: formData.addressType || "",
       }
 
-      const response = await createDelhiveryShipment(shipmentData, formData.pickupLocation, {
+      await createDelhiveryShipment(shipmentData, formData.pickupLocation, {
         fromName: formData.fromName,
         fromAdd: formData.fromAdd,
         fromPin: formData.fromPin,
@@ -371,54 +321,42 @@ const NewOrderPage: FC = () => {
         fromCountry: formData.fromCountry,
         fromPhone: formData.fromPhone,
       })
-      setTimeout(() => {
-        navigate("/orders")
-      }, 1500)
-    } catch (error) {
-      // Error handled by store
+
+      setTimeout(() => navigate("/orders"), 1500)
+    } catch {
+      // errors handled by orderStore
     }
   }
 
+  // ── Derived display ─────────────────────────────────────────────────────────
+  const cgmDisplay = totalChargeableGrams(boxes)
+
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <NavbarSidebarLayout isFooter={false}>
       <div className="px-4 pt-6 pb-6">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Orders
-          </h1>
-          <Button
-            onClick={() => navigate("/orders")}
-            color="gray"
-          >
-            Back
-          </Button>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Orders</h1>
+          <Button onClick={() => navigate("/orders")} color="gray">Back</Button>
         </div>
 
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-          New Order
-        </h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">New Order</h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-6">
+
             {/* Order Details */}
             <Card>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <span className="text-orange-500">📋</span> Order Details
               </h3>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="channelName">
                     Select Channel Name <span className="text-gray-400">ⓘ</span>
                   </Label>
-                  <Select
-                    id="channelName"
-                    name="channelName"
-                    value={formData.channelName}
-                    onChange={handleChannelChange}
-                    required
-                  >
+                  <Select id="channelName" name="channelName" value={formData.channelName}
+                    onChange={handleChannelChange} required>
                     <option value="">Select Channel Name</option>
                     <option value="Offline">{profileData?.agencyName || "Offline"}</option>
                   </Select>
@@ -426,33 +364,23 @@ const NewOrderPage: FC = () => {
                     Channels are online (Shopify) or custom channel for offline (physical store) orders.
                   </p>
                 </div>
-
                 <div>
                   <Label htmlFor="orderId">
                     Order ID <span className="text-gray-400">ⓘ</span>
                   </Label>
                   <div className="flex gap-2">
-                    <TextInput
-                      id="orderId"
-                      name="orderId"
-                      type="text"
+                    <TextInput id="orderId" name="orderId" type="text"
                       placeholder="Auto-generated Order ID"
-                      value={formData.orderId}
-                      onChange={handleChange}
-                      required
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      color="gray"
+                      value={formData.orderId} onChange={handleChange}
+                      required className="flex-1" />
+                    <Button type="button" color="gray"
                       onClick={() => setFormData({ ...formData, orderId: generateOrderId() })}
-                      title="Generate new Order ID"
-                    >
+                      title="Generate new Order ID">
                       <HiRefresh className="h-5 w-5" />
                     </Button>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Auto-generated unique order ID. Click refresh to generate new one.
+                    Auto-generated unique order ID. Click refresh to generate a new one.
                   </p>
                 </div>
               </div>
@@ -461,379 +389,110 @@ const NewOrderPage: FC = () => {
             {/* Delivery Details */}
             <Card>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <span className="text-orange-500">📍</span> Delivery Details <span className="text-gray-400">ⓘ</span>
+                <span className="text-orange-500">📍</span> Delivery Details
               </h3>
-
               <div className="space-y-4">
-                <Button
-                  type="button"
-                  color="gray"
-                  size="sm"
+
+                {/* Seller */}
+                <Button type="button" color="gray" size="sm"
                   className="w-full border-orange-500 text-orange-500"
-                  onClick={() => setShowSellerDetails(!showSellerDetails)}
-                >
+                  onClick={() => setShowSellerDetails(!showSellerDetails)}>
                   📝 {showSellerDetails ? "Hide" : "Add"} Seller Details
                 </Button>
-
                 {showSellerDetails && (
                   <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="sellerName">Seller Name</Label>
-                      <TextInput
-                        id="sellerName"
-                        name="sellerName"
-                        value={formData.sellerName}
-                        onChange={handleChange}
-                        placeholder="Enter seller name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="sellerAddress">Seller Address</Label>
-                      <TextInput
-                        id="sellerAddress"
-                        name="sellerAddress"
-                        value={formData.sellerAddress}
-                        onChange={handleChange}
-                        placeholder="Enter seller address"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="sellerInvoice">Seller GST Number</Label>
-                      <TextInput
-                        id="sellerInvoice"
-                        name="sellerInvoice"
-                        value={formData.sellerInvoice}
-                        onChange={handleChange}
-                        placeholder="Enter GST number"
-                      />
-                    </div>
+                    {[
+                      { id: "sellerName", label: "Seller Name", ph: "Enter seller name" },
+                      { id: "sellerAddress", label: "Seller Address", ph: "Enter seller address" },
+                      { id: "sellerInvoice", label: "Seller GST Number", ph: "Enter GST number" },
+                    ].map(({ id, label, ph }) => (
+                      <div key={id}>
+                        <Label htmlFor={id}>{label}</Label>
+                        <TextInput id={id} name={id}
+                          value={(formData as any)[id]} onChange={handleChange} placeholder={ph} />
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                <Button
-                  type="button"
-                  color="gray"
-                  size="sm"
+                {/* Customer */}
+                <Button type="button" color="gray" size="sm"
                   className="w-full border-orange-500 text-orange-500"
-                  onClick={() => setShowCustomerDetails(!showCustomerDetails)}
-                >
+                  onClick={() => setShowCustomerDetails(!showCustomerDetails)}>
                   👤 {showCustomerDetails ? "Hide" : "Add"} Customer Details
                 </Button>
-
                 {showCustomerDetails && (
                   <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <Label htmlFor="customerName">Customer Name *</Label>
-                      <TextInput
-                        id="customerName"
-                        name="customerName"
-                        value={formData.customerName}
-                        onChange={handleChange}
-                        placeholder="Enter customer name"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="customerPhone">Customer Phone *</Label>
-                      <TextInput
-                        id="customerPhone"
-                        name="customerPhone"
-                        type="tel"
-                        value={formData.customerPhone}
-                        onChange={handleChange}
-                        placeholder="10 digit mobile number"
-                        maxLength={10}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="customerEmail">Customer Email</Label>
-                      <TextInput
-                        id="customerEmail"
-                        name="customerEmail"
-                        type="email"
-                        value={formData.customerEmail}
-                        onChange={handleChange}
-                        placeholder="Enter email address"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="deliveryAddress">Delivery Address *</Label>
-                      <TextInput
-                        id="deliveryAddress"
-                        name="deliveryAddress"
-                        value={formData.deliveryAddress}
-                        onChange={handleChange}
-                        placeholder="Enter complete delivery address"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="deliveryCity">City</Label>
-                      <TextInput
-                        id="deliveryCity"
-                        name="deliveryCity"
-                        value={formData.deliveryCity}
-                        onChange={handleChange}
-                        placeholder="City"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="deliveryState">State</Label>
-                      <TextInput
-                        id="deliveryState"
-                        name="deliveryState"
-                        value={formData.deliveryState}
-                        onChange={handleChange}
-                        placeholder="State"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="deliveryPincode">Pincode *</Label>
-                      <TextInput
-                        id="deliveryPincode"
-                        name="deliveryPincode"
-                        value={formData.deliveryPincode}
-                        onChange={handleChange}
-                        placeholder="6 digit pincode"
-                        maxLength={6}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="deliveryCountry">Country</Label>
-                      <TextInput
-                        id="deliveryCountry"
-                        name="deliveryCountry"
-                        value={formData.deliveryCountry}
-                        onChange={handleChange}
-                        placeholder="Country"
-                      />
-                    </div>
+                    {[
+                      { id: "customerName", label: "Customer Name *", ph: "Enter customer name", type: "text" },
+                      { id: "customerPhone", label: "Customer Phone *", ph: "10 digit mobile number", type: "tel", max: 10 },
+                      { id: "customerEmail", label: "Customer Email", ph: "Enter email address", type: "email" },
+                      { id: "deliveryAddress", label: "Delivery Address *", ph: "Enter complete delivery address", type: "text" },
+                      { id: "deliveryCity", label: "City", ph: "City", type: "text" },
+                      { id: "deliveryState", label: "State", ph: "State", type: "text" },
+                      { id: "deliveryPincode", label: "Pincode *", ph: "6 digit pincode", type: "text", max: 6 },
+                      { id: "deliveryCountry", label: "Country", ph: "Country", type: "text" },
+                    ].map(({ id, label, ph, type, max }) => (
+                      <div key={id}>
+                        <Label htmlFor={id}>{label}</Label>
+                        <TextInput id={id} name={id} type={type}
+                          value={(formData as any)[id]} onChange={handleChange}
+                          placeholder={ph} maxLength={max} />
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                <Button
-                  type="button"
-                  color="gray"
-                  size="sm"
+                {/* From Address */}
+                <Button type="button" color="gray" size="sm"
                   className="w-full border-orange-500 text-orange-500"
-                  onClick={() => setShowFromDetails(!showFromDetails)}
-                >
+                  onClick={() => setShowFromDetails(!showFromDetails)}>
                   🏬 {showFromDetails ? "Hide" : "Add"} From Address Details
                 </Button>
-
                 {showFromDetails && (
                   <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="fromName">From Name</Label>
-                      <TextInput
-                        id="fromName"
-                        name="fromName"
-                        value={formData.fromName}
-                        onChange={handleChange}
-                        placeholder="Enter sender/store name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="fromPhone">From Phone</Label>
-                      <TextInput
-                        id="fromPhone"
-                        name="fromPhone"
-                        type="tel"
-                        value={formData.fromPhone}
-                        onChange={handleChange}
-                        placeholder="10 digit mobile number"
-                        maxLength={10}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="fromPin">From Pincode</Label>
-                      <TextInput
-                        id="fromPin"
-                        name="fromPin"
-                        value={formData.fromPin}
-                        onChange={handleChange}
-                        placeholder="6 digit pincode"
-                        maxLength={6}
-                      />
-                    </div>
-                    <div className="lg:col-span-3">
-                      <Label htmlFor="fromAdd">From Address</Label>
-                      <TextInput
-                        id="fromAdd"
-                        name="fromAdd"
-                        value={formData.fromAdd}
-                        onChange={handleChange}
-                        placeholder="Enter complete from address"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="fromCity">From City</Label>
-                      <TextInput
-                        id="fromCity"
-                        name="fromCity"
-                        value={formData.fromCity}
-                        onChange={handleChange}
-                        placeholder="City"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="fromState">From State</Label>
-                      <TextInput
-                        id="fromState"
-                        name="fromState"
-                        value={formData.fromState}
-                        onChange={handleChange}
-                        placeholder="State"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="fromCountry">From Country</Label>
-                      <TextInput
-                        id="fromCountry"
-                        name="fromCountry"
-                        value={formData.fromCountry}
-                        onChange={handleChange}
-                        placeholder="Country"
-                      />
-                    </div>
+                    {[
+                      { id: "fromName", label: "From Name", ph: "Enter sender/store name", type: "text" },
+                      { id: "fromPhone", label: "From Phone", ph: "10 digit mobile number", type: "tel", max: 10 },
+                      { id: "fromPin", label: "From Pincode", ph: "6 digit pincode", type: "text", max: 6 },
+                      { id: "fromAdd", label: "From Address", ph: "Enter complete from address", type: "text", span: 3 },
+                      { id: "fromCity", label: "From City", ph: "City", type: "text" },
+                      { id: "fromState", label: "From State", ph: "State", type: "text" },
+                      { id: "fromCountry", label: "From Country", ph: "Country", type: "text" },
+                    ].map(({ id, label, ph, type, max, span }) => (
+                      <div key={id} className={span ? `lg:col-span-${span}` : ""}>
+                        <Label htmlFor={id}>{label}</Label>
+                        <TextInput id={id} name={id} type={type}
+                          value={(formData as any)[id]} onChange={handleChange}
+                          placeholder={ph} maxLength={max} />
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             </Card>
           </div>
 
-          {/* Add Products to be shipped */}
-          {/* 
-          <Card>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <span className="text-orange-500">➕</span> Product Details{" "}
-                <span className="text-gray-400">ⓘ</span>
-              </h3>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="productsDesc">Product Description</Label>
-                <TextInput
-                  id="productsDesc"
-                  name="productsDesc"
-                  value={formData.productsDesc}
-                  onChange={handleChange}
-                  placeholder="Enter product description"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Brief description of products being shipped
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="quantity">Quantity</Label>
-                  <TextInput
-                    id="quantity"
-                    name="quantity"
-                    type="number"
-                    value={formData.quantity}
-                    onChange={handleChange}
-                    placeholder="Enter quantity"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="hsnCode">HSN Code</Label>
-                  <TextInput
-                    id="hsnCode"
-                    name="hsnCode"
-                    value={formData.hsnCode}
-                    onChange={handleChange}
-                    placeholder="Enter HSN code"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="totalAmount">Total Amount (₹)</Label>
-                  <TextInput
-                    id="totalAmount"
-                    name="totalAmount"
-                    type="number"
-                    value={formData.totalAmount}
-                    onChange={handleChange}
-                    placeholder="Enter total amount"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="orderDate">Order Date</Label>
-                  <TextInput
-                    id="orderDate"
-                    name="orderDate"
-                    type="date"
-                    value={formData.orderDate}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-            </div>
-          </Card>
-          */}
-
-          {/* Pickup Location */}
-          {/* <Card>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <span className="text-orange-500">🏭</span> Pickup Location *
-            </h3>
-            <div>
-              <Label htmlFor="pickupLocation">Warehouse/Pickup Location Name</Label>
-              <TextInput
-                id="pickupLocation"
-                name="pickupLocation"
-                value={formData.pickupLocation}
-                onChange={handleChange}
-                placeholder={loginType === "franchise" ? "Auto-filled from your profile" : "Enter warehouse or pickup location name"}
-                required
-                disabled={loginType === "franchise"}
-                className={loginType === "franchise" ? "bg-gray-100 dark:bg-gray-700" : ""}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                {loginType === "franchise" 
-                  ? "Auto-filled from your registered franchise location"
-                  : "This must match your registered warehouse name in Delhivery"
-                }
-              </p>
-            </div>
-          </Card> */}
-
           {/* Box Details */}
           <Card>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <span className="text-orange-500">📦</span> Box Details{" "}
-                <span className="text-gray-400">ⓘ</span>
+                <span className="text-orange-500">📦</span> Box Details
               </h3>
-              <Button
-                type="button"
-                size="sm"
-                onClick={addBox}
-                className="bg-orange-500 hover:bg-orange-600"
-              >
+              <Button type="button" size="sm" onClick={addBox}
+                className="bg-orange-500 hover:bg-orange-600">
                 + Add Box
               </Button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               {boxes.map((box, index) => (
-                <div key={box.id}>
+                <div key={box.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-medium text-gray-900">BOX {index + 1}</h4>
+                    <h4 className="font-medium text-gray-900 dark:text-white">BOX {index + 1}</h4>
                     {boxes.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeBox(box.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
+                      <button type="button" onClick={() => removeBox(box.id)}
+                        className="text-red-500 hover:text-red-700">
                         <HiTrash className="h-5 w-5" />
                       </button>
                     )}
@@ -842,86 +501,78 @@ const NewOrderPage: FC = () => {
                   <div className="space-y-4">
                     <div>
                       <Label>Package Type</Label>
-                      <Select
-                        value={box.packageType}
+                      <Select value={box.packageType}
                         onChange={(e) => handleBoxChange(box.id, "packageType", e.target.value)}
-                        required
-                      >
+                        required>
                         <option value="">Select Package</option>
                         <option value="Box">Box</option>
                         <option value="Envelope">Envelope</option>
                         <option value="Packet">Packet</option>
                       </Select>
+                      {box.packageType && box.packageType !== "Box" && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          Dimensions not used for {box.packageType} — chargeable = actual weight only
+                        </p>
+                      )}
                     </div>
 
                     <div>
-                      <Label>Package Type</Label>
+                      <Label>
+                        Dimensions (cm)
+                        {box.packageType !== "Box" && (
+                          <span className="ml-1 text-gray-400 font-normal">(not applicable for {box.packageType || "this type"})</span>
+                        )}
+                      </Label>
                       <div className="grid grid-cols-3 gap-2">
-                        <TextInput
-                          type="number"
-                          placeholder="L"
-                          value={box.length}
-                          onChange={(e) => handleBoxChange(box.id, "length", e.target.value)}
-                          onKeyDown={preventInvalidNumberKeys}
-                          min={1}
-                          required
-                        />
-                        <TextInput
-                          type="number"
-                          placeholder="B"
-                          value={box.breadth}
-                          onChange={(e) => handleBoxChange(box.id, "breadth", e.target.value)}
-                          onKeyDown={preventInvalidNumberKeys}
-                          min={1}
-                          required
-                        />
-                        <TextInput
-                          type="number"
-                          placeholder="H"
-                          value={box.height}
-                          onChange={(e) => handleBoxChange(box.id, "height", e.target.value)}
-                          onKeyDown={preventInvalidNumberKeys}
-                          min={1}
-                          required
-                        />
+                        {(["length", "breadth", "height"] as const).map((dim, i) => (
+                          <TextInput key={dim} type="number"
+                            placeholder={["L", "B", "H"][i]}
+                            value={(box as any)[dim]}
+                            disabled={box.packageType !== "Box"}
+                            className={box.packageType !== "Box" ? "opacity-40" : ""}
+                            onChange={(e) => handleBoxChange(box.id, dim, e.target.value)}
+                            onKeyDown={preventInvalidKeys} min={1} />
+                        ))}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Length x Breadth x Height should be atleast 15 cm
-                      </p>
+                      <p className="text-xs text-gray-500 mt-1">Length × Breadth × Height (min 15 cm each)</p>
                     </div>
 
                     <div>
-                      <Label>Package weight</Label>
+                      <Label>Package Weight</Label>
                       <div className="flex gap-2 items-center">
-                        <TextInput
-                          type="number"
-                          placeholder="Enter Package weight"
+                        <TextInput type="number" placeholder="Enter package weight"
                           value={box.weight}
                           onChange={(e) => handleBoxChange(box.id, "weight", e.target.value)}
-                          onKeyDown={preventInvalidNumberKeys}
-                          min={1}
-                          required
-                          className="flex-1"
-                        />
+                          onKeyDown={preventInvalidKeys} min={1} required className="flex-1" />
                         <span className="text-gray-500">gm</span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Package weight should be atleast 50 grams
-                      </p>
+                      {/* Per-box volumetric info when box type and all dims are filled */}
+                      {box.packageType === "Box" &&
+                        box.length && box.breadth && box.height && box.weight && (
+                          <p className="text-xs text-blue-600 mt-1">
+                            Volumetric: {volGrams(+box.length, +box.breadth, +box.height)} gm &nbsp;|&nbsp;
+                            Chargeable: <strong>{boxChargeableGrams(box)} gm</strong>
+                          </p>
+                        )}
+                      <p className="text-xs text-gray-500 mt-1">Minimum 50 grams</p>
                     </div>
                   </div>
                 </div>
               ))}
 
-              <div className="bg-orange-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-700 mb-2">
-                  ⓘ The estimated cost may vary from the final shipping cost based on
-                  the package dimensions & weight measured before delivery
+              {/* Summary row */}
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                  ⓘ The estimated cost may vary from the final shipping cost based on actual
+                  dimensions &amp; weight measured before delivery.
                 </p>
                 <div>
                   <Label>Total Chargeable Weight <span>ⓘ</span></Label>
-                  <p className="text-lg font-semibold">
-                    {chargeableWeight ? `${chargeableWeight} gm` : "- gm"}
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {cgmDisplay ? `${cgmDisplay} gm` : "— gm"}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    = sum of max(actual, volumetric) across all boxes
                   </p>
                 </div>
               </div>
@@ -934,99 +585,101 @@ const NewOrderPage: FC = () => {
               Choose shipping mode *
             </h3>
 
+            {rateError && (
+              <p className="text-sm text-red-500 mb-3">{rateError}</p>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
+              {/* Surface */}
+              <button type="button"
                 onClick={() => setFormData({ ...formData, shippingMode: "Surface" })}
-                className={`p-6 rounded-lg border-2 transition-colors ${
-                  formData.shippingMode === "Surface"
-                    ? "border-orange-500 bg-orange-50"
-                    : "border-gray-300 hover:border-gray-400"
-                }`}
-              >
+                className={`p-6 rounded-lg border-2 text-left transition-colors ${formData.shippingMode === "Surface"
+                    ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                    : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
+                  }`}>
                 <div className="text-4xl mb-2">🚚</div>
-                <h4 className="font-semibold">SURFACE</h4>
-                {rateLoading ? "Calculating..." : displaySurfaceRate !== null ? `₹${displaySurfaceRate}` : "-"}
-                <p className="text-sm text-gray-600 mt-2">Standard delivery (5-7 days)</p>
+                <h4 className="font-semibold text-gray-900 dark:text-white">SURFACE</h4>
+                <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
+                  {rateLoading
+                    ? <span className="text-sm font-normal text-gray-500">Calculating…</span>
+                    : displaySurfaceRate !== null
+                      ? `₹${displaySurfaceRate}`
+                      : <span className="text-sm font-normal text-gray-400">—</span>}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Standard delivery (5–7 days)</p>
               </button>
 
-              <button
-                type="button"
+              {/* Express */}
+              <button type="button"
                 onClick={() => setFormData({ ...formData, shippingMode: "Express" })}
-                className={`p-6 rounded-lg border-2 transition-colors ${
-                  formData.shippingMode === "Express"
-                    ? "border-orange-500 bg-orange-50"
-                    : "border-gray-300 hover:border-gray-400"
-                }`}
-              >
+                className={`p-6 rounded-lg border-2 text-left transition-colors ${formData.shippingMode === "Express"
+                    ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                    : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
+                  }`}>
                 <div className="text-4xl mb-2">✈️</div>
-                <h4 className="font-semibold">EXPRESS</h4>
-                {rateLoading ? "Calculating..." : displayExpressRate !== null ? `₹${displayExpressRate}` : "-"}
-                <p className="text-sm text-gray-600 mt-2">Fast delivery (2-3 days)</p>
+                <h4 className="font-semibold text-gray-900 dark:text-white">EXPRESS</h4>
+                <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
+                  {rateLoading
+                    ? <span className="text-sm font-normal text-gray-500">Calculating…</span>
+                    : displayExpressRate !== null
+                      ? `₹${displayExpressRate}`
+                      : <span className="text-sm font-normal text-gray-400">—</span>}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Fast delivery (2–3 days)</p>
               </button>
             </div>
-          </Card>
 
+            {/* Breakdown for selected mode */}
+            {!rateLoading && (formData.shippingMode === "Express" ? expressRate : surfaceRate) && (
+              <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm text-gray-600 dark:text-gray-400 flex gap-6">
+                {(() => {
+                  const r = formData.shippingMode === "Express" ? expressRate : surfaceRate
+                  return <>
+                    <span>Shipping: ₹{r!.shipping}</span>
+                    <span>GST: ₹{r!.gst}</span>
+                    <span>DPH: ₹{r!.dph}</span>
+                    <span>Zone: {r!.zone}</span>
+                  </>
+                })()}
+              </div>
+            )}
+          </Card>
 
           {/* Payment Details */}
           <Card>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <span className="text-orange-500">💳</span> Payment Details *{" "}
-              <span className="text-gray-400">ⓘ</span>
+              <span className="text-orange-500">💳</span> Payment Details *
             </h3>
-
             <div className="space-y-4">
               <div>
                 <Label htmlFor="paymentMode">Payment Mode</Label>
-                <Select
-                  id="paymentMode"
-                  name="paymentMode"
-                  value={formData.paymentMode}
-                  onChange={handleChange}
-                  required
-                >
+                <Select id="paymentMode" name="paymentMode"
+                  value={formData.paymentMode} onChange={handleChange} required>
                   <option value="">Select Payment Mode</option>
                   <option value="Prepaid">Prepaid</option>
                   {/* <option value="COD">Cash on Delivery (COD)</option> */}
                 </Select>
               </div>
-
               {formData.paymentMode === "COD" && (
                 <div>
                   <Label htmlFor="codAmount">COD Amount (₹) *</Label>
-                  <TextInput
-                    id="codAmount"
-                    name="codAmount"
-                    type="number"
-                    value={formData.codAmount}
-                    onChange={handleChange}
-                    placeholder="Enter COD collection amount"
-                    required={formData.paymentMode === "COD"}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Amount to be collected from customer
-                  </p>
+                  <TextInput id="codAmount" name="codAmount" type="number"
+                    value={formData.codAmount} onChange={handleChange}
+                    placeholder="Amount to collect from customer"
+                    required={formData.paymentMode === "COD"} />
+                  <p className="text-xs text-gray-500 mt-1">Amount to be collected from customer</p>
                 </div>
               )}
             </div>
           </Card>
 
-          {/* Action Buttons */}
+          {/* Actions */}
           <div className="flex justify-end gap-4">
-            <Button
-              type="button"
-              color="gray"
-              onClick={() => navigate("/orders")}
-              disabled={loading}
-            >
+            <Button type="button" color="gray" onClick={() => navigate("/orders")} disabled={loading}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              className="bg-orange-500 hover:bg-orange-600"
-              disabled={loading}
-            >
-              {loading ? "Creating..." : "Create Order"}
+            <Button type="submit" className="bg-orange-500 hover:bg-orange-600" disabled={loading}>
+              {loading ? "Creating…" : "Create Order"}
             </Button>
           </div>
         </form>

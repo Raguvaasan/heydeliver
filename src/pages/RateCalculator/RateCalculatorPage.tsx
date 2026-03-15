@@ -1,23 +1,39 @@
-import { FC, useState, useEffect, useCallback } from "react"
+import { FC, useState, useEffect, useRef } from "react"
 import { Button, Card, Label, Select, TextInput, Radio, Spinner, Alert } from "flowbite-react"
 import { HiInformationCircle, HiCalculator } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
-import { useRateCalculatorStore } from "../../store/rateCalculatorStore"
-import { useMarkupStore } from "../../store/markupStore"
-import { useRateCardStore } from "../../store/rateCardStore"
 import { usePincodeStore } from "../../store/pincodeStore"
 import toast from "react-hot-toast"
+
+// ─── Delhivery rate API ───────────────────────────────────────────────────────
+const RATE_API = "https://admin.heydeliver.in/delhivery-api/api/kinko/v1/invoice/charges/.json"
 
 interface RateDetails {
   shippingCost: number
   gstCharge: number
   dieselCharge: number
   total: number
-  zone?: string
-  chargedWeight?: number
+  zone: string
+  chargedWeight: number
 }
 
+// BFS — find first matching key (case-insensitive) anywhere in nested object
+function deepGet(obj: unknown, keys: string[]): number | string | undefined {
+  const q: unknown[] = [obj]
+  while (q.length) {
+    const n = q.shift()
+    if (!n || typeof n !== "object") continue
+    for (const k of Object.keys(n as Record<string, unknown>)) {
+      if (keys.includes(k.toLowerCase()))
+        return (n as Record<string, unknown>)[k] as number | string
+      q.push((n as Record<string, unknown>)[k])
+    }
+  }
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 const RateCalculatorPage: FC = () => {
+  // Form state
   const [selectedTab, setSelectedTab] = useState<"domestic" | "international">("domestic")
   const [pickupPincode, setPickupPincode] = useState("110042")
   const [deliveryPincode, setDeliveryPincode] = useState("110053")
@@ -28,209 +44,194 @@ const RateCalculatorPage: FC = () => {
   const [height, setHeight] = useState("10")
   const [paymentMode, setPaymentMode] = useState<"Pre-paid" | "COD">("Pre-paid")
   const [shippingType, setShippingType] = useState<"forward" | "rto" | "reverse">("forward")
-  const [deliveryMode, setDeliveryMode] = useState<"E" | "S">("E") // E = Express, S = Surface
+  const [deliveryMode, setDeliveryMode] = useState<"E" | "S">("E")
 
-  const { rateData, loading, error, calculateRate, clearData } = useRateCalculatorStore()
-  const { rateCardMarkup, fetchRateCardMarkup } = useMarkupStore()
-  const { calculateRateFromCard } = useRateCardStore()
+  // Rate result state (all managed locally — no external store needed)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [rateDetails, setRateDetails] = useState<RateDetails | null>(null)
+
+  // Pincode lookup (keep existing store as-is)
   const {
     pickupPincodeData,
     deliveryPincodeData,
     pickupLoading,
     deliveryLoading,
     fetchPickupPincode,
-    fetchDeliveryPincode
+    fetchDeliveryPincode,
   } = usePincodeStore()
 
-  // Fetch rate card markup on component mount
+  // ── Debounced pincode lookup ──────────────────────────────────────────────
   useEffect(() => {
-    fetchRateCardMarkup()
-  }, [])
-
-  // Debounce pincode fetching
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (pickupPincode.length === 6) {
-        fetchPickupPincode(pickupPincode)
-      }
+    const t = setTimeout(() => {
+      if (pickupPincode.length === 6) fetchPickupPincode(pickupPincode)
     }, 500)
-    return () => clearTimeout(timer)
+    return () => clearTimeout(t)
   }, [pickupPincode])
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (deliveryPincode.length === 6) {
-        fetchDeliveryPincode(deliveryPincode)
-      }
+    const t = setTimeout(() => {
+      if (deliveryPincode.length === 6) fetchDeliveryPincode(deliveryPincode)
     }, 500)
-    return () => clearTimeout(timer)
+    return () => clearTimeout(t)
   }, [deliveryPincode])
 
-  const calculateVolumetricWeight = () => {
+  // ── Weight helpers ────────────────────────────────────────────────────────
+  const isBox = packageType === "box"
+
+  // Volumetric weight in GRAMS  =  ceil( L×B×H / 5000 × 1000 )
+  const volumetricGrams = (): number => {
     const l = parseFloat(length) || 0
     const b = parseFloat(breadth) || 0
     const h = parseFloat(height) || 0
-    return ((l * b * h) / 5000).toFixed(2)
+    return Math.ceil((l * b * h) / 5000 * 1000)
   }
 
-  const getChargedWeight = () => {
-    const actualWeight = parseFloat(packageWeight) || 0
-    const volumetricWeight = parseFloat(calculateVolumetricWeight()) || 0
-    return Math.max(actualWeight, volumetricWeight)
+  // Chargeable weight sent as `cgm` (grams)
+  const chargeableGrams = (): number => {
+    const actual = Math.round(parseFloat(packageWeight) || 0)
+    return isBox ? Math.max(actual, volumetricGrams()) : actual
   }
 
-  // Auto-calculate when parameters change
+  // Display value for the info box (kg string)
+  const volKgDisplay = (): string => {
+    const l = parseFloat(length) || 0
+    const b = parseFloat(breadth) || 0
+    const h = parseFloat(height) || 0
+    return ((l * b * h) / 5000).toFixed(3)
+  }
+
+  // ── Auto-recalc when mode/payment toggles (only if already have valid inputs)
+  const autoCalcDeps = [shippingType, deliveryMode, paymentMode]
+  const prevDepsRef = useRef(autoCalcDeps)
+
   useEffect(() => {
-    if (pickupPincode.length === 6 && deliveryPincode.length === 6 && parseFloat(packageWeight) > 0) {
-      handleCalculateRate()
+    const changed = autoCalcDeps.some((v, i) => v !== prevDepsRef.current[i])
+    prevDepsRef.current = autoCalcDeps
+    if (changed && pickupPincode.length === 6 && deliveryPincode.length === 6 && parseFloat(packageWeight) > 0) {
+      callRateAPI()
     }
-  }, [shippingType, deliveryMode, paymentMode, pickupPincode, deliveryPincode, packageWeight])
+  }, autoCalcDeps)
 
-  const handleCalculateRate = async () => {
-    // Validation
-    if (!pickupPincode || pickupPincode.length !== 6) {
-      toast.error("Please enter a valid 6-digit pickup pincode")
-      return
-    }
+  // ── Core API call ─────────────────────────────────────────────────────────
+  const callRateAPI = async () => {
+    if (pickupPincode.length !== 6) { toast.error("Enter a valid 6-digit pickup pincode"); return }
+    if (deliveryPincode.length !== 6) { toast.error("Enter a valid 6-digit delivery pincode"); return }
+    if (!(parseFloat(packageWeight) > 0)) { toast.error("Enter a valid package weight"); return }
 
-    if (!deliveryPincode || deliveryPincode.length !== 6) {
-      toast.error("Please enter a valid 6-digit delivery pincode")
-      return
-    }
+    const cgm = chargeableGrams()
 
-    if (!packageWeight || parseFloat(packageWeight) <= 0) {
-      toast.error("Please enter a valid package weight")
-      return
-    }
-
-    const chargedWeight = getChargedWeight()
-
-    // Map shipping type to status
-    const statusMap = {
+    const statusMap: Record<string, string> = {
       forward: "Delivered",
       rto: "RTO",
-      reverse: "DTO" // Direct To Origin (DTO) for reverse shipments
+      reverse: "DTO",
     }
 
-    await calculateRate({
-      md: deliveryMode, // E or S
-      ss: statusMap[shippingType],
-      d_pin: deliveryPincode,
+    const params = new URLSearchParams({
+      md: deliveryMode,            // E = Express, S = Surface
+      ss: statusMap[shippingType] || "", // Delivered | RTO | DTO
       o_pin: pickupPincode,
-      cgm: Math.ceil(chargedWeight), // Convert to grams and round up
-      pt: paymentMode,
-    })
+      d_pin: deliveryPincode,
+      cgm: String(cgm),            // chargeable weight in grams
+      pt: paymentMode,             // Pre-paid | COD
+    } as Record<string, string>)
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch(`${RATE_API}?${params}`)
+      if (!res.ok) throw new Error(`API responded with ${res.status}`)
+      const data = await res.json()
+
+      // ── Parse API response via BFS key search ──────────────────────────
+      // gross_amount  = base shipping charge (before GST/DPH)
+      const shipping = Number(deepGet(data, ["gross_amount"]) ?? 0)
+
+      // gst / gst_amount / tax_amount — try all aliases
+      const gst = Number(deepGet(data, ["gst_amount", "gst", "tax_amount"]) ?? 0)
+
+      // charge_dph / charge_DPH / charge_dpH — diesel price hike
+      const dph = Number(deepGet(data, ["charge_dph", "charge_dph", "charge_dph"]) ?? 0)
+
+      // zone / zone_code
+      const zone = String(deepGet(data, ["zone", "zone_code"]) ?? "N/A")
+
+      // total_amount from API (most reliable); fallback = sum of parts
+      const apiTotal = Number(deepGet(data, ["total_amount"]) ?? 0)
+      const total = apiTotal > 0 ? apiTotal : shipping + gst + dph
+
+      setRateDetails({
+        shippingCost: Math.round(shipping),
+        gstCharge: Math.round(gst),
+        dieselCharge: Math.round(dph),
+        total: Math.round(total),
+        zone,
+        chargedWeight: cgm,
+      })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to fetch rate"
+      setError(msg)
+      toast.error(msg)
+      setRateDetails(null)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const getRateDetails = (): RateDetails | null => {
-    if (!rateData) return null
-
-    const { charge_DL, tax_data, charge_DPH, zone, charged_weight } = rateData
-
-    // Calculate rate using Rate Card values based on zone and weight
-    const mode = deliveryMode === "E" ? "express" : "surface"
-    const baseRate = calculateRateFromCard(mode, zone, charged_weight, shippingType)
-    const markupValue = rateCardMarkup?.markup_value || 0
-    const markupType = rateCardMarkup?.markup_type || "percentage"
-
-    let finalTotal = baseRate
-
-    // Apply markup based on type (same as Rate Card Page)
-    if (markupValue > 0) {
-      if (markupType === "percentage") {
-        finalTotal = baseRate * (1 + markupValue / 100)
-      } else {
-        finalTotal = baseRate + markupValue
-      }
-    }
-
-    // Add GST (18% on base rate with markup)
-    const gstAmount = finalTotal * 0.18
-
-    // Add DPH (Diesel Price Hike) charges from Delhivery
-    const dphCharge = charge_DPH || 0
-
-    // Calculate total
-    const total = Math.round(finalTotal + gstAmount + dphCharge)
-
-    return {
-      shippingCost: Math.round(finalTotal),
-      gstCharge: Math.round(gstAmount),
-      dieselCharge: Math.round(dphCharge),
-      total: total,
-      zone: zone || "N/A",
-      chargedWeight: charged_weight || 0,
-    }
-  }
-
-  const rateDetails = getRateDetails()
-
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <NavbarSidebarLayout isFooter={false}>
       <div className="px-4 pt-6 pb-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Rate Calculator
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Calculate shipping rates for your packages
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Rate Calculator</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Calculate shipping rates for your packages</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Section - Calculator Form */}
+
+          {/* ── LEFT: Form ─────────────────────────────────────────────────── */}
           <div className="lg:col-span-2">
             <Card>
-              {/* Tab Selection */}
+
+              {/* Domestic / International tabs */}
               <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
                 <div className="flex gap-8">
-                  <button
-                    onClick={() => setSelectedTab("domestic")}
-                    className={`pb-3 px-4 font-medium transition-colors ${selectedTab === "domestic"
+                  {(["domestic", "international"] as const).map((tab) => (
+                    <button key={tab} onClick={() => setSelectedTab(tab)}
+                      className={`pb-3 px-4 font-medium transition-colors capitalize ${selectedTab === tab
                         ? "text-blue-600 border-b-2 border-blue-600"
                         : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
-                      }`}
-                  >
-                    Domestic
-                  </button>
-                  <button
-                    onClick={() => setSelectedTab("international")}
-                    className={`pb-3 px-4 font-medium transition-colors ${selectedTab === "international"
-                        ? "text-blue-600 border-b-2 border-blue-600"
-                        : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
-                      }`}
-                  >
-                    International
-                  </button>
+                        }`}>
+                      {tab}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Pickup and Delivery Pincode */}
+              {/* Pincodes */}
               <div className="mb-6">
                 <Label className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">
                   Pickup and delivery pincode
                 </Label>
                 <div className="flex items-center gap-4">
+
+                  {/* Pickup */}
                   <div className="flex-1">
                     <div className="relative">
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                        <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                        <div className="h-2 w-2 bg-green-500 rounded-full" />
                       </div>
                       <TextInput
-                        type="text"
-                        value={pickupPincode}
-                        onChange={(e) => setPickupPincode(e.target.value)}
-                        className="pl-8"
-                        placeholder="Pickup pincode"
-                        maxLength={6}
+                        type="text" value={pickupPincode} maxLength={6}
+                        onChange={(e) => { setPickupPincode(e.target.value); setRateDetails(null) }}
+                        className="pl-8" placeholder="Pickup pincode"
                       />
                       {pickupLoading && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <Spinner size="sm" />
-                        </div>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2"><Spinner size="sm" /></div>
                       )}
                       {pickupPincodeData && !pickupLoading && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
                           <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
                             {pickupPincodeData.postal_code.state_code}
                           </span>
@@ -247,30 +248,24 @@ const RateCalculatorPage: FC = () => {
                     )}
                   </div>
 
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-px bg-gray-400"></div>
-                  </div>
+                  <div className="flex-shrink-0"><div className="w-8 h-px bg-gray-400" /></div>
 
+                  {/* Delivery */}
                   <div className="flex-1">
                     <div className="relative">
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                        <div className="h-2 w-2 bg-red-500 rounded-full"></div>
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                        <div className="h-2 w-2 bg-red-500 rounded-full" />
                       </div>
                       <TextInput
-                        type="text"
-                        value={deliveryPincode}
-                        onChange={(e) => setDeliveryPincode(e.target.value)}
-                        className="pl-8"
-                        placeholder="Delivery pincode"
-                        maxLength={6}
+                        type="text" value={deliveryPincode} maxLength={6}
+                        onChange={(e) => { setDeliveryPincode(e.target.value); setRateDetails(null) }}
+                        className="pl-8" placeholder="Delivery pincode"
                       />
                       {deliveryLoading && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <Spinner size="sm" />
-                        </div>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2"><Spinner size="sm" /></div>
                       )}
                       {deliveryPincodeData && !deliveryLoading && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
                           <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
                             {deliveryPincodeData.postal_code.state_code}
                           </span>
@@ -289,18 +284,15 @@ const RateCalculatorPage: FC = () => {
                 </div>
               </div>
 
-              {/* Package Type and Weight */}
+              {/* Package Type + Weight */}
               <div className="grid grid-cols-2 gap-6 mb-6">
                 <div>
                   <Label htmlFor="packageType" className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">
                     Package Type
                   </Label>
-                  <Select
-                    id="packageType"
-                    value={packageType}
-                    onChange={(e) => setPackageType(e.target.value)}
-                  >
-                    <option value="plastic">Plastic cover/Flyer</option>
+                  <Select id="packageType" value={packageType}
+                    onChange={(e) => { setPackageType(e.target.value); setRateDetails(null) }}>
+                    <option value="plastic">Plastic cover / Flyer</option>
                     <option value="box">Box</option>
                     <option value="envelope">Envelope</option>
                     <option value="document">Document</option>
@@ -313,252 +305,176 @@ const RateCalculatorPage: FC = () => {
                   </Label>
                   <div className="relative">
                     <TextInput
-                      id="packageWeight"
-                      type="number"
+                      id="packageWeight" type="number" min="1"
                       value={packageWeight}
-                      onChange={(e) => setPackageWeight(e.target.value)}
-                      className="pr-12"
+                      onChange={(e) => { setPackageWeight(e.target.value); setRateDetails(null) }}
                     />
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       <span className="text-sm text-gray-500">gm</span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Package weight: sum of item's weight and weight of packaging (e.g. box)
-                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Item weight + packaging weight</p>
                 </div>
               </div>
 
-              {/* Package Dimensions */}
+              {/* Dimensions — only relevant for box */}
               <div className="mb-6">
                 <Label className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">
                   Package Dimensions
+                  {!isBox && (
+                    <span className="ml-2 text-xs font-normal text-gray-400">
+                      (not applicable for {packageType})
+                    </span>
+                  )}
                 </Label>
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="relative">
-                    <TextInput
-                      type="number"
-                      value={length}
-                      onChange={(e) => setLength(e.target.value)}
-                    />
-                    <div className="absolute right-3 top-5 transform -translate-y-1/2">
-                      <span className="text-sm text-gray-500">cm</span>
+                  {[
+                    { label: "Length", val: length, set: setLength },
+                    { label: "Breadth", val: breadth, set: setBreadth },
+                    { label: "Height", val: height, set: setHeight },
+                  ].map(({ label, val, set }) => (
+                    <div key={label} className="relative">
+                      <TextInput
+                        type="number" min="1" value={val}
+                        disabled={!isBox}
+                        className={!isBox ? "opacity-40" : ""}
+                        onChange={(e) => { set(e.target.value); setRateDetails(null) }}
+                      />
+                      <div className="absolute right-3 top-5 -translate-y-1/2">
+                        <span className="text-sm text-gray-500">cm</span>
+                      </div>
+                      <span className="text-sm text-gray-600 mt-1 block">{label}</span>
                     </div>
-                    <span className="text-sm text-gray-600 mt-1 block">Length</span>
-                  </div>
-
-                  <div className="relative">
-                    <TextInput
-                      type="number"
-                      value={breadth}
-                      onChange={(e) => setBreadth(e.target.value)}
-                    />
-                    <div className="absolute right-3 top-5 transform -translate-y-1/2">
-                      <span className="text-sm text-gray-500">cm</span>
-                    </div>
-                    <span className="text-sm text-gray-600 mt-1 block">Breadth</span>
-                  </div>
-
-                  <div className="relative">
-                    <TextInput
-                      type="number"
-                      value={height}
-                      onChange={(e) => setHeight(e.target.value)}
-                    />
-                    <div className="absolute right-3 top-5 transform -translate-y-1/2">
-                      <span className="text-sm text-gray-500">cm</span>
-                    </div>
-                    <span className="text-sm text-gray-600 mt-1 block">Height</span>
-                  </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Volumetric Weight */}
+              {/* Volumetric info box */}
               <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <div className="flex items-start gap-2">
                   <HiInformationCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                      Volumetric weight calculation
-                    </h4>
-                    <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                      <div className="flex items-center gap-2">
-                        <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
-                        <span>
-                          <strong>Express:</strong> L * B * H / Volumetric Divisor ({length} x {breadth} x {height} / 5000 = {calculateVolumetricWeight()} grams)
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>
-                          <strong>Surface:</strong> L * B * H / Volumetric Divisor ({length} x {breadth} x {height} / 5000 = {calculateVolumetricWeight()} grams)
-                        </span>
-                      </div>
-                    </div>
+                  <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                    <h4 className="font-semibold text-gray-900 dark:text-white">Volumetric weight</h4>
+                    <p>
+                      Formula: L × B × H ÷ 5000 (kg) &nbsp;→&nbsp;
+                      {length} × {breadth} × {height} ÷ 5000 = <strong>{volKgDisplay()} kg</strong>
+                      &nbsp;= <strong>{volumetricGrams()} gm</strong>
+                    </p>
+                    {isBox ? (
+                      <p className="text-blue-700 dark:text-blue-300 font-medium">
+                        Chargeable = max(actual {packageWeight} gm, volumetric {volumetricGrams()} gm)
+                        = <strong>{chargeableGrams()} gm</strong>
+                      </p>
+                    ) : (
+                      <p className="text-gray-500">
+                        Dimensions ignored for {packageType} — chargeable = actual weight ({packageWeight} gm)
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* Payment Mode */}
               <div className="mb-6">
-                <Label className="mb-3 block font-semibold text-gray-700 dark:text-gray-300">
-                  Payment Mode
-                </Label>
+                <Label className="mb-3 block font-semibold text-gray-700 dark:text-gray-300">Payment Mode</Label>
                 <div className="flex gap-6">
-                  <div className="flex items-center gap-2">
-                    <Radio
-                      id="prepaid"
-                      name="paymentMode"
-                      value="Pre-paid"
-                      checked={paymentMode === "Pre-paid"}
-                      onChange={(e) => setPaymentMode(e.target.value as "Pre-paid")}
-                    />
-                    <Label htmlFor="prepaid" className="cursor-pointer">Prepaid</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Radio
-                      id="cod"
-                      name="paymentMode"
-                      value="COD"
-                      checked={paymentMode === "COD"}
-                      onChange={(e) => setPaymentMode(e.target.value as "COD")}
-                    />
-                    <Label htmlFor="cod" className="cursor-pointer">Cash on Delivery (COD)</Label>
-                  </div>
+                  {(["Pre-paid", "COD"] as const).map((mode) => (
+                    <div key={mode} className="flex items-center gap-2">
+                      <Radio id={mode} name="paymentMode" value={mode}
+                        checked={paymentMode === mode}
+                        onChange={() => setPaymentMode(mode)} />
+                      <Label htmlFor={mode} className="cursor-pointer">
+                        {mode === "Pre-paid" ? "Prepaid" : "Cash on Delivery (COD)"}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Calculate Button */}
-              <div>
-                <Button
-                  color="dark"
-                  size="lg"
-                  className="w-full"
-                  onClick={handleCalculateRate}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Spinner size="sm" className="mr-2" />
-                      Calculating...
-                    </>
-                  ) : (
-                    <>
-                      <HiCalculator className="mr-2 h-5 w-5" />
-                      Calculate Rate
-                    </>
-                  )}
-                </Button>
-              </div>
+              {/* Calculate button */}
+              <Button color="dark" size="lg" className="w-full"
+                onClick={callRateAPI} disabled={loading}>
+                {loading
+                  ? <><Spinner size="sm" className="mr-2" /> Calculating…</>
+                  : <><HiCalculator className="mr-2 h-5 w-5" /> Calculate Rate</>}
+              </Button>
             </Card>
           </div>
 
-          {/* Right Section - Rate Display */}
+          {/* ── RIGHT: Result ──────────────────────────────────────────────── */}
           <div className="lg:col-span-1">
             <Card>
-              {/* Shipping Type Tabs */}
+
+              {/* Shipping type — Forward only (RTO/Reverse commented out as in original) */}
               <div className="flex gap-2 mb-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-                <button
-                  onClick={() => setShippingType("forward")}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${shippingType === "forward"
-                      ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                    }`}
-                >
+                <button onClick={() => setShippingType("forward")}
+                  className="flex-1 py-2 px-4 rounded-md text-sm font-medium bg-white dark:bg-gray-700 text-blue-600 shadow-sm">
                   Forward
                 </button>
-                {/* <button
-                  onClick={() => setShippingType("rto")}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    shippingType === "rto"
-                      ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                  }`}
-                >
-                  RTO
-                </button>
-                <button
-                  onClick={() => setShippingType("reverse")}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                    shippingType === "reverse"
-                      ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                  }`}
-                >
-                  Reverse
-                </button> */}
               </div>
 
-              {/* Delivery Mode Tabs */}
+              {/* Express / Surface */}
               <div className="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-                <button
-                  onClick={() => setDeliveryMode("E")}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${deliveryMode === "E"
+                {(["E", "S"] as const).map((m) => (
+                  <button key={m} onClick={() => setDeliveryMode(m)}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${deliveryMode === m
                       ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                    }`}
-                >
-                  Express
-                </button>
-                <button
-                  onClick={() => setDeliveryMode("S")}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${deliveryMode === "S"
-                      ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                    }`}
-                >
-                  Surface
-                </button>
+                      }`}>
+                    {m === "E" ? "Express" : "Surface"}
+                  </button>
+                ))}
               </div>
 
-              {/* Error Display */}
+              {/* Error */}
               {error && (
                 <Alert color="failure" className="mb-4">
-                  <span className="font-medium">Error!</span> {error}
+                  <span className="font-medium">Error! </span>{error}
                 </Alert>
               )}
 
-              {/* Rate Display */}
-              {rateDetails ? (
+              {/* Loading */}
+              {loading && (
+                <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500 dark:text-gray-400">
+                  <Spinner size="xl" />
+                  <p className="text-sm">Fetching rate…</p>
+                </div>
+              )}
+
+              {/* Rate card */}
+              {!loading && rateDetails && (
                 <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
-                        {deliveryMode === "E" ? "Express" : "Surface"} - {shippingType.charAt(0).toUpperCase() + shippingType.slice(1)}
-                      </h3>
-                    </div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                      {deliveryMode === "E" ? "Express" : "Surface"} — Forward
+                    </h3>
                     <div className="p-2 bg-white dark:bg-gray-800 rounded-lg">
                       <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                       </svg>
                     </div>
                   </div>
 
-                  <div className="mb-4">
-                    <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                      ₹{rateDetails.total}
-                    </div>
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                    ₹{rateDetails.total}
                   </div>
 
                   <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-4">
                     <div className="flex justify-between">
-                      <span>Shipping Cost:</span>
-                      <span className="font-medium">₹{Math.round(rateDetails.shippingCost)}</span>
+                      <span>Shipping Cost</span>
+                      <span className="font-medium">₹{rateDetails.shippingCost}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>GST:</span>
-                      <span className="font-medium">₹{Math.round(rateDetails.gstCharge)}</span>
+                      <span>GST</span>
+                      <span className="font-medium">₹{rateDetails.gstCharge}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>DPH (Diesel):</span>
-                      <span className="font-medium">₹{Math.round(rateDetails.dieselCharge)}</span>
+                      <span>DPH (Diesel)</span>
+                      <span className="font-medium">₹{rateDetails.dieselCharge}</span>
                     </div>
                     <div className="border-t-2 border-blue-400 dark:border-blue-600 pt-2 mt-2 flex justify-between font-bold text-lg">
-                      <span>Total Amount:</span>
+                      <span>Total Amount</span>
                       <span className="text-blue-600">₹{rateDetails.total}</span>
                     </div>
                   </div>
@@ -570,16 +486,20 @@ const RateCalculatorPage: FC = () => {
                     </div>
                     <div className="flex items-center gap-1">
                       <HiInformationCircle className="h-3 w-3" />
-                      <span>Charged Weight: {rateDetails.chargedWeight} grams</span>
+                      <span>Chargeable Weight: {rateDetails.chargedWeight} gm</span>
                     </div>
                   </div>
                 </div>
-              ) : (
+              )}
+
+              {/* Empty state */}
+              {!loading && !rateDetails && !error && (
                 <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                   <HiCalculator className="h-16 w-16 mx-auto mb-4 opacity-50" />
                   <p>Enter shipment details and click "Calculate Rate" to see pricing</p>
                 </div>
               )}
+
             </Card>
           </div>
         </div>
