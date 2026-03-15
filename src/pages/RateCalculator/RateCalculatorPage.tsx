@@ -5,19 +5,38 @@ import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { usePincodeStore } from "../../store/pincodeStore"
 import toast from "react-hot-toast"
 
-// ─── Delhivery rate API ───────────────────────────────────────────────────────
+// ─── API endpoints ────────────────────────────────────────────────────────────
 const RATE_API = "https://admin.heydeliver.in/delhivery-api/api/kinko/v1/invoice/charges/.json"
+const MARKUP_API = "https://freightrekapi.vercel.app/api/v1/settings/public/rate-card-markup"
 
-interface RateDetails {
-  shippingCost: number
-  gstCharge: number
-  dieselCharge: number
-  total: number
-  zone: string
-  chargedWeight: number
+// ─── Markup config (fetched once, cached at module level) ─────────────────────
+interface MarkupConfig {
+  markupType: "percentage" | "flat"
+  markupValue: number
+  isActive: boolean
 }
 
-// BFS — find first matching key (case-insensitive) anywhere in nested object
+let markupCache: MarkupConfig = { markupType: "percentage", markupValue: 63, isActive: true }
+let markupPromise: Promise<MarkupConfig> | null = null
+
+function loadMarkupConfig(): Promise<MarkupConfig> {
+  if (markupPromise) return markupPromise
+  markupPromise = fetch(MARKUP_API)
+    .then((r) => r.json())
+    .then((payload) => {
+      const d = payload?.data ?? payload
+      markupCache = {
+        markupType: d?.markup_type === "flat" ? "flat" : "percentage",
+        markupValue: Math.max(0, Number(d?.markup_value ?? 0)),
+        isActive: Boolean(d?.is_active),
+      }
+      return markupCache
+    })
+    .catch(() => markupCache)   // silently fall back to default (63%)
+  return markupPromise
+}
+
+// ─── BFS key search ───────────────────────────────────────────────────────────
 function deepGet(obj: unknown, keys: string[]): number | string | undefined {
   const q: unknown[] = [obj]
   while (q.length) {
@@ -31,9 +50,50 @@ function deepGet(obj: unknown, keys: string[]): number | string | undefined {
   }
 }
 
+// ─── Markup application ───────────────────────────────────────────────────────
+// Markup is applied only on gross_amount (base shipping).
+// GST is then recomputed at 18% on (shipping + markup).
+// DPH passes through unchanged from the API.
+interface RateDetails {
+  shippingCost: number   // gross_amount + markup
+  gstCharge: number   // 18% of shippingCost
+  dieselCharge: number   // charge_dph from API
+  total: number   // shippingCost + gstCharge + dieselCharge
+  zone: string
+  chargedWeight: number
+}
+
+function applyMarkupToRate(
+  grossAmount: number,
+  dph: number,
+  zone: string,
+  chargedWeight: number
+): RateDetails {
+  const cfg = markupCache
+
+  let markupAmt = 0
+  if (cfg.isActive && cfg.markupValue > 0) {
+    markupAmt = cfg.markupType === "percentage"
+      ? (grossAmount * cfg.markupValue) / 100
+      : cfg.markupValue
+  }
+
+  const shippingWithMarkup = grossAmount + markupAmt
+  const gst = shippingWithMarkup * 0.18
+  const total = Math.round(shippingWithMarkup) + Math.round(gst) + Math.round(dph)
+
+  return {
+    shippingCost: Math.round(shippingWithMarkup),
+    gstCharge: Math.round(gst),
+    dieselCharge: Math.round(dph),
+    total,
+    zone,
+    chargedWeight,
+  }
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 const RateCalculatorPage: FC = () => {
-  // Form state
   const [selectedTab, setSelectedTab] = useState<"domestic" | "international">("domestic")
   const [pickupPincode, setPickupPincode] = useState("110042")
   const [deliveryPincode, setDeliveryPincode] = useState("110053")
@@ -46,40 +106,33 @@ const RateCalculatorPage: FC = () => {
   const [shippingType, setShippingType] = useState<"forward" | "rto" | "reverse">("forward")
   const [deliveryMode, setDeliveryMode] = useState<"E" | "S">("E")
 
-  // Rate result state (all managed locally — no external store needed)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [rateDetails, setRateDetails] = useState<RateDetails | null>(null)
 
-  // Pincode lookup (keep existing store as-is)
   const {
-    pickupPincodeData,
-    deliveryPincodeData,
-    pickupLoading,
-    deliveryLoading,
-    fetchPickupPincode,
-    fetchDeliveryPincode,
+    pickupPincodeData, deliveryPincodeData,
+    pickupLoading, deliveryLoading,
+    fetchPickupPincode, fetchDeliveryPincode,
   } = usePincodeStore()
+
+  // ── Load markup config once on mount ─────────────────────────────────────
+  useEffect(() => { loadMarkupConfig() }, [])
 
   // ── Debounced pincode lookup ──────────────────────────────────────────────
   useEffect(() => {
-    const t = setTimeout(() => {
-      if (pickupPincode.length === 6) fetchPickupPincode(pickupPincode)
-    }, 500)
+    const t = setTimeout(() => { if (pickupPincode.length === 6) fetchPickupPincode(pickupPincode) }, 500)
     return () => clearTimeout(t)
   }, [pickupPincode])
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      if (deliveryPincode.length === 6) fetchDeliveryPincode(deliveryPincode)
-    }, 500)
+    const t = setTimeout(() => { if (deliveryPincode.length === 6) fetchDeliveryPincode(deliveryPincode) }, 500)
     return () => clearTimeout(t)
   }, [deliveryPincode])
 
   // ── Weight helpers ────────────────────────────────────────────────────────
   const isBox = packageType === "box"
 
-  // Volumetric weight in GRAMS  =  ceil( L×B×H / 5000 × 1000 )
   const volumetricGrams = (): number => {
     const l = parseFloat(length) || 0
     const b = parseFloat(breadth) || 0
@@ -87,13 +140,11 @@ const RateCalculatorPage: FC = () => {
     return Math.ceil((l * b * h) / 5000 * 1000)
   }
 
-  // Chargeable weight sent as `cgm` (grams)
   const chargeableGrams = (): number => {
     const actual = Math.round(parseFloat(packageWeight) || 0)
     return isBox ? Math.max(actual, volumetricGrams()) : actual
   }
 
-  // Display value for the info box (kg string)
   const volKgDisplay = (): string => {
     const l = parseFloat(length) || 0
     const b = parseFloat(breadth) || 0
@@ -101,7 +152,7 @@ const RateCalculatorPage: FC = () => {
     return ((l * b * h) / 5000).toFixed(3)
   }
 
-  // ── Auto-recalc when mode/payment toggles (only if already have valid inputs)
+  // ── Auto-recalc when mode/payment toggles ────────────────────────────────
   const autoCalcDeps = [shippingType, deliveryMode, paymentMode]
   const prevDepsRef = useRef(autoCalcDeps)
 
@@ -120,55 +171,36 @@ const RateCalculatorPage: FC = () => {
     if (!(parseFloat(packageWeight) > 0)) { toast.error("Enter a valid package weight"); return }
 
     const cgm = chargeableGrams()
-
-    const statusMap: Record<string, string> = {
-      forward: "Delivered",
-      rto: "RTO",
-      reverse: "DTO",
-    }
+    const statusMap: Record<string, string> = { forward: "Delivered", rto: "RTO", reverse: "DTO" }
 
     const params = new URLSearchParams({
-      md: deliveryMode,            // E = Express, S = Surface
-      ss: statusMap[shippingType] || "", // Delivered | RTO | DTO
+      md: deliveryMode,
+      ss: statusMap[shippingType] || "Delivered",
       o_pin: pickupPincode,
       d_pin: deliveryPincode,
-      cgm: String(cgm),            // chargeable weight in grams
-      pt: paymentMode,             // Pre-paid | COD
-    } as Record<string, string>)
+      cgm: String(cgm),
+      pt: paymentMode,
+    })
 
     setLoading(true)
     setError(null)
 
     try {
+      // Ensure markup is loaded before we need to apply it
+      await loadMarkupConfig()
+
       const res = await fetch(`${RATE_API}?${params}`)
       if (!res.ok) throw new Error(`API responded with ${res.status}`)
       const data = await res.json()
 
-      // ── Parse API response via BFS key search ──────────────────────────
-      // gross_amount  = base shipping charge (before GST/DPH)
-      const shipping = Number(deepGet(data, ["gross_amount"]) ?? 0)
-
-      // gst / gst_amount / tax_amount — try all aliases
-      const gst = Number(deepGet(data, ["gst_amount", "gst", "tax_amount"]) ?? 0)
-
-      // charge_dph / charge_DPH / charge_dpH — diesel price hike
-      const dph = Number(deepGet(data, ["charge_dph", "charge_dph", "charge_dph"]) ?? 0)
-
-      // zone / zone_code
+      // Parse raw fields from API response
+      const grossAmount = Number(deepGet(data, ["gross_amount"]) ?? 0)
+      const dph = Number(deepGet(data, ["charge_dph"]) ?? 0)
       const zone = String(deepGet(data, ["zone", "zone_code"]) ?? "N/A")
+      const cw = Number(deepGet(data, ["charged_weight", "chargeable_weight", "billed_weight"]) ?? cgm)
 
-      // total_amount from API (most reliable); fallback = sum of parts
-      const apiTotal = Number(deepGet(data, ["total_amount"]) ?? 0)
-      const total = apiTotal > 0 ? apiTotal : shipping + gst + dph
-
-      setRateDetails({
-        shippingCost: Math.round(shipping),
-        gstCharge: Math.round(gst),
-        dieselCharge: Math.round(dph),
-        total: Math.round(total),
-        zone,
-        chargedWeight: cgm,
-      })
+      // Apply markup on gross_amount → recompute GST at 18%
+      setRateDetails(applyMarkupToRate(grossAmount, dph, zone, cw))
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to fetch rate"
       setError(msg)
@@ -179,7 +211,7 @@ const RateCalculatorPage: FC = () => {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <NavbarSidebarLayout isFooter={false}>
       <div className="px-4 pt-6 pb-8">
@@ -190,18 +222,18 @@ const RateCalculatorPage: FC = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* ── LEFT: Form ─────────────────────────────────────────────────── */}
+          {/* ── LEFT: Form ─────────────────────────────────────────────── */}
           <div className="lg:col-span-2">
             <Card>
 
-              {/* Domestic / International tabs */}
+              {/* Tabs */}
               <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
                 <div className="flex gap-8">
                   {(["domestic", "international"] as const).map((tab) => (
                     <button key={tab} onClick={() => setSelectedTab(tab)}
                       className={`pb-3 px-4 font-medium transition-colors capitalize ${selectedTab === tab
-                        ? "text-blue-600 border-b-2 border-blue-600"
-                        : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                          ? "text-blue-600 border-b-2 border-blue-600"
+                          : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
                         }`}>
                       {tab}
                     </button>
@@ -222,11 +254,9 @@ const RateCalculatorPage: FC = () => {
                       <div className="absolute left-3 top-1/2 -translate-y-1/2">
                         <div className="h-2 w-2 bg-green-500 rounded-full" />
                       </div>
-                      <TextInput
-                        type="text" value={pickupPincode} maxLength={6}
+                      <TextInput type="text" value={pickupPincode} maxLength={6}
                         onChange={(e) => { setPickupPincode(e.target.value); setRateDetails(null) }}
-                        className="pl-8" placeholder="Pickup pincode"
-                      />
+                        className="pl-8" placeholder="Pickup pincode" />
                       {pickupLoading && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2"><Spinner size="sm" /></div>
                       )}
@@ -256,11 +286,9 @@ const RateCalculatorPage: FC = () => {
                       <div className="absolute left-3 top-1/2 -translate-y-1/2">
                         <div className="h-2 w-2 bg-red-500 rounded-full" />
                       </div>
-                      <TextInput
-                        type="text" value={deliveryPincode} maxLength={6}
+                      <TextInput type="text" value={deliveryPincode} maxLength={6}
                         onChange={(e) => { setDeliveryPincode(e.target.value); setRateDetails(null) }}
-                        className="pl-8" placeholder="Delivery pincode"
-                      />
+                        className="pl-8" placeholder="Delivery pincode" />
                       {deliveryLoading && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2"><Spinner size="sm" /></div>
                       )}
@@ -298,17 +326,14 @@ const RateCalculatorPage: FC = () => {
                     <option value="document">Document</option>
                   </Select>
                 </div>
-
                 <div>
                   <Label htmlFor="packageWeight" className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">
                     Package Weight
                   </Label>
                   <div className="relative">
-                    <TextInput
-                      id="packageWeight" type="number" min="1"
+                    <TextInput id="packageWeight" type="number" min="1"
                       value={packageWeight}
-                      onChange={(e) => { setPackageWeight(e.target.value); setRateDetails(null) }}
-                    />
+                      onChange={(e) => { setPackageWeight(e.target.value); setRateDetails(null) }} />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       <span className="text-sm text-gray-500">gm</span>
                     </div>
@@ -317,7 +342,7 @@ const RateCalculatorPage: FC = () => {
                 </div>
               </div>
 
-              {/* Dimensions — only relevant for box */}
+              {/* Dimensions */}
               <div className="mb-6">
                 <Label className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">
                   Package Dimensions
@@ -334,12 +359,10 @@ const RateCalculatorPage: FC = () => {
                     { label: "Height", val: height, set: setHeight },
                   ].map(({ label, val, set }) => (
                     <div key={label} className="relative">
-                      <TextInput
-                        type="number" min="1" value={val}
+                      <TextInput type="number" min="1" value={val}
                         disabled={!isBox}
                         className={!isBox ? "opacity-40" : ""}
-                        onChange={(e) => { set(e.target.value); setRateDetails(null) }}
-                      />
+                        onChange={(e) => { set(e.target.value); setRateDetails(null) }} />
                       <div className="absolute right-3 top-5 -translate-y-1/2">
                         <span className="text-sm text-gray-500">cm</span>
                       </div>
@@ -349,7 +372,7 @@ const RateCalculatorPage: FC = () => {
                 </div>
               </div>
 
-              {/* Volumetric info box */}
+              {/* Volumetric info */}
               <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <div className="flex items-start gap-2">
                   <HiInformationCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -392,8 +415,7 @@ const RateCalculatorPage: FC = () => {
               </div>
 
               {/* Calculate button */}
-              <Button color="dark" size="lg" className="w-full"
-                onClick={callRateAPI} disabled={loading}>
+              <Button color="dark" size="lg" className="w-full" onClick={callRateAPI} disabled={loading}>
                 {loading
                   ? <><Spinner size="sm" className="mr-2" /> Calculating…</>
                   : <><HiCalculator className="mr-2 h-5 w-5" /> Calculate Rate</>}
@@ -401,11 +423,11 @@ const RateCalculatorPage: FC = () => {
             </Card>
           </div>
 
-          {/* ── RIGHT: Result ──────────────────────────────────────────────── */}
+          {/* ── RIGHT: Result ──────────────────────────────────────────── */}
           <div className="lg:col-span-1">
             <Card>
 
-              {/* Shipping type — Forward only (RTO/Reverse commented out as in original) */}
+              {/* Shipping type */}
               <div className="flex gap-2 mb-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
                 <button onClick={() => setShippingType("forward")}
                   className="flex-1 py-2 px-4 rounded-md text-sm font-medium bg-white dark:bg-gray-700 text-blue-600 shadow-sm">
@@ -418,8 +440,8 @@ const RateCalculatorPage: FC = () => {
                 {(["E", "S"] as const).map((m) => (
                   <button key={m} onClick={() => setDeliveryMode(m)}
                     className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${deliveryMode === m
-                      ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                        ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                       }`}>
                     {m === "E" ? "Express" : "Surface"}
                   </button>
@@ -466,7 +488,7 @@ const RateCalculatorPage: FC = () => {
                       <span className="font-medium">₹{rateDetails.shippingCost}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>GST</span>
+                      <span>GST (18%)</span>
                       <span className="font-medium">₹{rateDetails.gstCharge}</span>
                     </div>
                     <div className="flex justify-between">

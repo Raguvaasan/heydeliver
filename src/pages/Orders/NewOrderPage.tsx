@@ -7,8 +7,67 @@ import { usePincodeStore } from "../../store/pincodeStore"
 import toast from "react-hot-toast"
 import { HiTrash, HiRefresh } from "react-icons/hi"
 
-// ─── Delhivery rate API (same endpoint used in RateCalculatorPage) ─────────────
+// ─── API endpoints ────────────────────────────────────────────────────────────
 const RATE_API = "https://admin.heydeliver.in/delhivery-api/api/kinko/v1/invoice/charges/.json"
+const MARKUP_API = "https://freightrekapi.vercel.app/api/v1/settings/public/rate-card-markup"
+
+// ─── Markup config (fetched once, cached in module scope) ─────────────────────
+interface MarkupConfig {
+  markupType: "percentage" | "flat"
+  markupValue: number
+  isActive: boolean
+}
+
+// Default fallback if API fails — 63% matches the HTML file default
+let markupCache: MarkupConfig = { markupType: "percentage", markupValue: 63, isActive: true }
+let markupPromise: Promise<MarkupConfig> | null = null
+
+function loadMarkupConfig(): Promise<MarkupConfig> {
+  if (markupPromise) return markupPromise
+  markupPromise = fetch(MARKUP_API)
+    .then((r) => r.json())
+    .then((payload) => {
+      const d = payload?.data ?? payload
+      markupCache = {
+        markupType: (d?.markup_type === "flat" ? "flat" : "percentage") as "percentage" | "flat",
+        markupValue: Math.max(0, Number(d?.markup_value ?? 0)),
+        isActive: Boolean(d?.is_active),
+      }
+      return markupCache
+    })
+    .catch(() => markupCache)  // silently fall back to default
+  return markupPromise
+}
+
+// Apply markup on gross_amount, recompute GST at 18%, keep DPH as-is
+function applyMarkup(
+  shipping: number, gstFromApi: number, dph: number,
+  zone: string, chargedWeight: number
+): RateResult {
+  const cfg = markupCache
+
+  // Markup is applied only on the base shipping (gross_amount)
+  let markupAmt = 0
+  if (cfg.isActive && cfg.markupValue > 0) {
+    markupAmt = cfg.markupType === "percentage"
+      ? (shipping * cfg.markupValue) / 100
+      : cfg.markupValue
+  }
+
+  const shippingWithMarkup = shipping + markupAmt
+  // GST is 18% of (shipping + markup) — recalculated, NOT taken from API directly
+  const gst = shippingWithMarkup * 0.18
+  const total = Math.round(shippingWithMarkup) + Math.round(gst) + Math.round(dph)
+
+  return {
+    shipping: Math.round(shippingWithMarkup),
+    gst: Math.round(gst),
+    dph: Math.round(dph),
+    total,
+    zone,
+    chargedWeight,
+  }
+}
 
 // BFS key search — finds first matching key anywhere in nested response
 function deepGet(obj: unknown, keys: string[]): number | string | undefined {
@@ -40,6 +99,7 @@ interface RateResult {
   gst: number
   dph: number
   zone: string
+  chargedWeight: number
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -126,6 +186,9 @@ const NewOrderPage: FC = () => {
   const [rateError, setRateError] = useState<string | null>(null)
   const rateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // ── Load markup config once on mount ────────────────────────────────────────
+  useEffect(() => { loadMarkupConfig() }, [])
+
   // ── Set pickupLocation from profile for franchise login ─────────────────────
   useEffect(() => {
     if (loginType !== "franchise" || !profileDataStr) return
@@ -149,20 +212,17 @@ const NewOrderPage: FC = () => {
     if (!res.ok) throw new Error(`API ${res.status}`)
     const data = await res.json()
 
+    // Parse raw API fields
     const shipping = Number(deepGet(data, ["gross_amount"]) ?? 0)
-    const gst = Number(deepGet(data, ["gst_amount", "gst", "tax_amount"]) ?? 0)
     const dph = Number(deepGet(data, ["charge_dph"]) ?? 0)
     const zone = String(deepGet(data, ["zone", "zone_code"]) ?? "N/A")
-    const apiTotal = Number(deepGet(data, ["total_amount"]) ?? 0)
-    const total = apiTotal > 0 ? apiTotal : shipping + gst + dph
+    const cw = Number(deepGet(data, ["charged_weight", "chargeable_weight", "billed_weight"]) ?? cgm)
 
-    return {
-      total: Math.round(total),
-      shipping: Math.round(shipping),
-      gst: Math.round(gst),
-      dph: Math.round(dph),
-      zone,
-    }
+    // GST from API (only used as fallback if shipping is 0)
+    const gstApi = Number(deepGet(data, ["gst_amount", "gst", "tax_amount"]) ?? 0)
+
+    // Apply markup on gross_amount → recompute GST at 18%
+    return applyMarkup(shipping || Number(deepGet(data, ["total_amount"]) ?? 0), gstApi, dph, zone, cw)
   }
 
   // ── Auto-fetch both rates whenever relevant inputs change ────────────────────
@@ -631,14 +691,15 @@ const NewOrderPage: FC = () => {
 
             {/* Breakdown for selected mode */}
             {!rateLoading && (formData.shippingMode === "Express" ? expressRate : surfaceRate) && (
-              <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm text-gray-600 dark:text-gray-400 flex gap-6">
+              <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm text-gray-600 dark:text-gray-400 flex gap-6 flex-wrap">
                 {(() => {
                   const r = formData.shippingMode === "Express" ? expressRate : surfaceRate
                   return <>
                     <span>Shipping: ₹{r!.shipping}</span>
-                    <span>GST: ₹{r!.gst}</span>
+                    <span>GST (18%): ₹{r!.gst}</span>
                     <span>DPH: ₹{r!.dph}</span>
                     <span>Zone: {r!.zone}</span>
+                    <span>Chargeable: {r!.chargedWeight} gm</span>
                   </>
                 })()}
               </div>
