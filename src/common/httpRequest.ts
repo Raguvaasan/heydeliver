@@ -11,7 +11,7 @@ const httpRequest = axios.create({
   timeout: 15000, // 15s (or remove this line if you don't want a client timeout)
   headers: {
     'Content-Type': 'application/json',
-    'Accept-Encoding': 'gzip, deflate, br', // Enable compression
+    // 'Accept-Encoding' removed: browser manages this header
   },
   // Performance optimizations
   maxRedirects: 5,
@@ -51,7 +51,7 @@ export const httpPublic = axios.create({
   baseURL: API_URL,
   timeout: 5000, // 5 second timeout
   headers: {
-    'Accept-Encoding': 'gzip, deflate, br', // Enable compression
+    // 'Accept-Encoding' removed: browser manages this header
   },
   decompress: true,
 })
