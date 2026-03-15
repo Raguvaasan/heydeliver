@@ -27,23 +27,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const queryString = queryParams.toString();
   const fullUrl = `https://track.delhivery.com/${apiPath}${queryString ? `?${queryString}` : ''}`;
 
-
   try {
-    const response = await fetch(fullUrl, {
+    let fetchOptions: any = {
       method: req.method || 'GET',
       headers: {
         'Authorization': 'Token 76a094c150aed4e3a9c6b41b608ee7174f4d5b51',
-        'Content-Type': 'application/json',
       },
-    });
+    };
 
+    // If POST to create.json, forward as x-www-form-urlencoded
+    if (req.method === 'POST' && apiPath.endsWith('create.json')) {
+      fetchOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      fetchOptions.body = req.body && typeof req.body === 'string' ? req.body : undefined;
+      // If body is not a string (e.g. object), try to reconstruct
+      if (!fetchOptions.body && req.body && typeof req.body === 'object') {
+        fetchOptions.body = Object.entries(req.body)
+          .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v as string)}`)
+          .join('&');
+      }
+    } else if (req.method === 'POST') {
+      // For other POSTs, default to JSON
+      fetchOptions.headers['Content-Type'] = 'application/json';
+      fetchOptions.body = req.body && typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    }
+
+    const response = await fetch(fullUrl, fetchOptions);
     const data = await response.json();
-    
+
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    
+
     res.status(response.status).json(data);
   } catch (error: any) {
     console.error('Delhivery API Error:', error);
