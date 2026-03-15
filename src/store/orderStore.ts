@@ -349,7 +349,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'Authorization': 'Token 76a094c150aed4e3a9c6b41b608ee7174f4d5b51'
           },
           timeout: 5000
         }
