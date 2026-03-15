@@ -967,6 +967,7 @@ const NewOrderPage: FC = () => {
             </div>
           </Card>
 
+
           {/* Payment Details */}
           <Card>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
