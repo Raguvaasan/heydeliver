@@ -109,9 +109,14 @@ const generateOrderId = () => {
   return `ORD${ts}${rnd}`
 }
 
-// Volumetric weight for ONE box in GRAMS  =  ceil( L×B×H / 5000 × 1000 )
-const volGrams = (l: number, b: number, h: number) =>
+// Volumetric weight in GRAMS = ceil( L×B×H / 5000 × 1000 )
+// Math.ceil because Delhivery always rounds UP for billing
+const volGrams = (l: number, b: number, h: number): number =>
   Math.ceil((l * b * h) / 5000 * 1000)
+
+// kg display derived FROM volGrams so both values are always consistent
+const volKgDisplay = (l: number, b: number, h: number): string =>
+  (volGrams(l, b, h) / 1000).toFixed(3)
 
 // Chargeable grams for one box based on its package type
 const boxChargeableGrams = (box: BoxDetails): number => {
@@ -610,8 +615,10 @@ const NewOrderPage: FC = () => {
                       {box.packageType === "Box" &&
                         box.length && box.breadth && box.height && box.weight && (
                           <p className="text-xs text-blue-600 mt-1">
-                            Volumetric: {volGrams(+box.length, +box.breadth, +box.height)} gm &nbsp;|&nbsp;
-                            Chargeable: <strong>{boxChargeableGrams(box)} gm</strong>
+                            {box.length} × {box.breadth} × {box.height} ÷ 5000 × 1000
+                            = <strong>{volGrams(+box.length, +box.breadth, +box.height)} gm</strong>
+                            &nbsp;({volKgDisplay(+box.length, +box.breadth, +box.height)} kg) — ceil
+                            &nbsp;|&nbsp; Chargeable: <strong>{boxChargeableGrams(box)} gm</strong>
                           </p>
                         )}
                       <p className="text-xs text-gray-500 mt-1">Minimum 50 grams</p>

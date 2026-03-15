@@ -145,12 +145,8 @@ const RateCalculatorPage: FC = () => {
     return isBox ? Math.max(actual, volumetricGrams()) : actual
   }
 
-  const volKgDisplay = (): string => {
-    const l = parseFloat(length) || 0
-    const b = parseFloat(breadth) || 0
-    const h = parseFloat(height) || 0
-    return ((l * b * h) / 5000).toFixed(3)
-  }
+  // Derive kg display FROM volumetricGrams() so kg and gm are always consistent
+  const volKgDisplay = (): string => (volumetricGrams() / 1000).toFixed(3)
 
   // ── Auto-recalc when mode/payment toggles ────────────────────────────────
   const autoCalcDeps = [shippingType, deliveryMode, paymentMode]
@@ -379,9 +375,8 @@ const RateCalculatorPage: FC = () => {
                   <div className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
                     <h4 className="font-semibold text-gray-900 dark:text-white">Volumetric weight</h4>
                     <p>
-                      Formula: L × B × H ÷ 5000 (kg) &nbsp;→&nbsp;
-                      {length} × {breadth} × {height} ÷ 5000 = <strong>{volKgDisplay()} kg</strong>
-                      &nbsp;= <strong>{volumetricGrams()} gm</strong>
+                      {length} × {breadth} × {height} ÷ 5000 × 1000 = <strong>{volumetricGrams()} gm</strong>
+                      &nbsp;({volKgDisplay()} kg) — rounded up (ceil)
                     </p>
                     {isBox ? (
                       <p className="text-blue-700 dark:text-blue-300 font-medium">
