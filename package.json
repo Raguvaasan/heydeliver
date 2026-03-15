@@ -7,6 +7,7 @@
   "homepage": "/admin",
   "scripts": {
     "postinstall": "node ./fix-flowbite.js",
+    "api-server": "node --loader ts-node/esm ./api-server.js",
     "build": "vite build",
     "dev": "vite --host",
     "format": "prettier --write .",
