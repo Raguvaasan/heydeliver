@@ -1,4 +1,27 @@
+// Disable body parsing for this API route
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+import { IncomingMessage } from 'http';
+
+function getRawBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.on('data', chunk => {
+      data += chunk;
+    });
+    req.on('end', () => {
+      resolve(data);
+    });
+    req.on('error', err => {
+      reject(err);
+    });
+  });
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Get the path from query params
@@ -38,19 +61,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // If POST to create.json, forward as x-www-form-urlencoded and use raw body
     if (req.method === 'POST' && apiPath.endsWith('create.json')) {
       fetchOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-      let rawBody = undefined;
-      // Vercel/Express: req.body is usually parsed, but we need the raw body string
-      // Try to get raw body from req (Vercel provides req.body as Buffer if no bodyParser)
-      if (Buffer.isBuffer((req as any).body)) {
-        rawBody = (req as any).body.toString('utf8');
-      } else if (typeof req.body === 'string') {
-        rawBody = req.body;
-      } else if (typeof req.body === 'object' && req.body !== null) {
-        // Try to reconstruct if only object is available (last resort)
-        rawBody = Object.entries(req.body)
-          .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v as string)}`)
-          .join('&');
-      }
+      // Read raw body from stream
+      const rawBody = await getRawBody(req);
       fetchOptions.body = rawBody;
     } else if (req.method === 'POST') {
       // For other POSTs, default to JSON
