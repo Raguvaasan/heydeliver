@@ -28,5 +28,9 @@
     "types": ["vite/client"]
   },
   "exclude": ["node_modules"],
-  "include": ["**/*.cjs", "**/*.mjs", "**/*.ts", "**/*.tsx", "src/pages/Job/jobApplicants.js"]
+  "include": ["**/*.cjs", "**/*.mjs", "**/*.ts", "**/*.tsx", "src/pages/Job/jobApplicants.js"],
+
+  "ts-node": {
+    "transpileOnly": true
+  }
 }

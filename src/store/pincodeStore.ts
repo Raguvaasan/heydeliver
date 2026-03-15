@@ -65,7 +65,7 @@ export const usePincodeStore = create<PincodeStoreState>((set, get) => ({
 
     try {
       // Call through serverless function proxy
-      const apiUrl = `/delhivery-api/c/api/pin-codes/json?filter_codes=${pincode}`
+      const apiUrl = `/delhivery-api/c/api/pin-codes/json/?filter_codes=${encodeURIComponent(pincode)}`
       
       const response = await axios.get<DelhiveryResponse>(
         apiUrl,
@@ -134,7 +134,7 @@ export const usePincodeStore = create<PincodeStoreState>((set, get) => ({
 
     try {
       // Call through serverless function proxy
-      const apiUrl = `/delhivery-api/c/api/pin-codes/json?filter_codes=${pincode}`
+      const apiUrl = `/delhivery-api/c/api/pin-codes/json/?filter_codes=${encodeURIComponent(pincode)}`
       
       const response = await axios.get<DelhiveryResponse>(
         apiUrl,

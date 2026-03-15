@@ -32,6 +32,13 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/api\/settings/, "/api/v1/settings"),
           secure: true,
         },
+        "/api/wallet": {
+          target: apiProxyTarget,
+          changeOrigin: true,
+          // Wallet endpoints on backend are mounted under /api/wallet.
+          rewrite: (path) => path,
+          secure: true,
+        },
         "/api": {
           target: apiProxyTarget,
           changeOrigin: true,

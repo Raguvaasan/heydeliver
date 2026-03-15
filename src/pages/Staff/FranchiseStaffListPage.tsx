@@ -114,30 +114,50 @@ const FranchiseStaffListPage: FC = () => {
         const isFranchise = loginType === "franchise" || loginType === "staff"
         const staffEndpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
         const roleEndpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
-        
-        // Fetch all 3 API calls in parallel
-        const [staffRes, rolesRes, agenciesRes] = await Promise.all([
+
+        // Agencies data is not required for franchise/staff list view.
+        // Fetch with allSettled so one failing endpoint doesn't hide staff data.
+        const [staffResult, rolesResult, agenciesResult] = await Promise.allSettled([
           http.get(staffEndpoint),
           http.get(roleEndpoint),
-          http.get("/admin/franchise")
+          isFranchise ? Promise.resolve({ data: { data: [] } }) : http.get("/admin/franchise"),
         ])
-        
-        // Process staff data
-        let staffData = []
-        if (staffRes.data?.data) {
-          if (Array.isArray(staffRes.data.data)) {
-            staffData = staffRes.data.data
-          } else if (staffRes.data.data.staff && Array.isArray(staffRes.data.data.staff)) {
-            staffData = staffRes.data.data.staff
+
+        let staffData: Staff[] = []
+        if (staffResult.status === "fulfilled") {
+          const staffRes = staffResult.value
+          if (staffRes.data?.data) {
+            if (Array.isArray(staffRes.data.data)) {
+              staffData = staffRes.data.data
+            } else if (staffRes.data.data.staff && Array.isArray(staffRes.data.data.staff)) {
+              staffData = staffRes.data.data.staff
+            }
+          } else if (Array.isArray(staffRes.data)) {
+            staffData = staffRes.data
           }
-        } else if (Array.isArray(staffRes.data)) {
-          staffData = staffRes.data
+          setErrorMessage(null)
+        } else {
+          const status = staffResult.reason?.response?.status
+          setErrorMessage(
+            status === 401
+              ? "Access Denied: You don't have permission to access staff data."
+              : "Failed to load staff data. Please try again."
+          )
         }
-        
+
+        if (rolesResult.status === "fulfilled") {
+          setRoles(rolesResult.value.data?.data || [])
+        } else {
+          setRoles([])
+        }
+
+        if (agenciesResult.status === "fulfilled") {
+          setAgencies(agenciesResult.value.data?.data || [])
+        } else {
+          setAgencies([])
+        }
+
         setStaffs(staffData)
-        setRoles(rolesRes.data?.data || [])
-        setAgencies(agenciesRes.data?.data || [])
-        setErrorMessage(null)
       } catch (error: any) {
         if (error.response?.status === 401) {
           setErrorMessage("Access Denied: You don't have permission to access staff data.")
