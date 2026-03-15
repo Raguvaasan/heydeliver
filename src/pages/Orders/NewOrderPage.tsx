@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useOrderStore } from "../../store/orderStore"
 import { useRateCalculatorStore } from "../../store/rateCalculatorStore"
+import { useMarkupStore } from "../../store/markupStore"
 import toast from "react-hot-toast"
 import { HiPlus, HiTrash, HiRefresh } from "react-icons/hi"
 
@@ -27,6 +28,7 @@ const NewOrderPage: FC = () => {
   const navigate = useNavigate()
   const { createDelhiveryShipment, loading } = useOrderStore()
   const { fetchRateData } = useRateCalculatorStore()
+  const { rateCardMarkup, fetchRateCardMarkup } = useMarkupStore()
   const loginType = sessionStorage.getItem("loginType")
   const profileDataStr = sessionStorage.getItem("profileData")
   const profileData = profileDataStr ? JSON.parse(profileDataStr) : null
@@ -93,6 +95,12 @@ const NewOrderPage: FC = () => {
     })
   }, [loginType, profileDataStr])
 
+  useEffect(() => {
+    fetchRateCardMarkup().catch(() => {
+      // Markup is optional for order flow; ignore fetch failures.
+    })
+  }, [fetchRateCardMarkup])
+
   const [boxes, setBoxes] = useState<BoxDetails[]>([
     {
       id: 1,
@@ -112,6 +120,29 @@ const NewOrderPage: FC = () => {
   const [surfaceRate, setSurfaceRate] = useState<number | null>(null)
   const [rateLoading, setRateLoading] = useState(false)
   const [rateError, setRateError] = useState<string | null>(null)
+
+  const applyRateCardMarkup = (baseRate: number | null) => {
+    if (baseRate === null) return null
+
+    if (!rateCardMarkup || !rateCardMarkup.is_active) {
+      return Math.round(baseRate)
+    }
+
+    const markupValue = Number(rateCardMarkup.markup_value || 0)
+    if (!Number.isFinite(markupValue) || markupValue <= 0) {
+      return Math.round(baseRate)
+    }
+
+    const finalRate =
+      rateCardMarkup.markup_type === "percentage"
+        ? baseRate + (baseRate * markupValue) / 100
+        : baseRate + markupValue
+
+    return Math.round(finalRate)
+  }
+
+  const displaySurfaceRate = applyRateCardMarkup(surfaceRate)
+  const displayExpressRate = applyRateCardMarkup(expressRate)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
@@ -294,7 +325,8 @@ const NewOrderPage: FC = () => {
 
       // Use first box dimensions (you can calculate volumetric weight if needed)
       const firstBox = boxes[0]
-      const selectedRate = formData.shippingMode === "Express" ? expressRate : surfaceRate
+      const selectedRate =
+        formData.shippingMode === "Express" ? displayExpressRate : displaySurfaceRate
 
       const shipmentData = {
         name: formData.customerName,
@@ -914,7 +946,7 @@ const NewOrderPage: FC = () => {
               >
                 <div className="text-4xl mb-2">🚚</div>
                 <h4 className="font-semibold">SURFACE</h4>
-                {rateLoading ? "Calculating..." : surfaceRate !== null ? `₹${surfaceRate}` : "-"}
+                {rateLoading ? "Calculating..." : displaySurfaceRate !== null ? `₹${displaySurfaceRate}` : "-"}
                 <p className="text-sm text-gray-600 mt-2">Standard delivery (5-7 days)</p>
               </button>
 
@@ -929,7 +961,7 @@ const NewOrderPage: FC = () => {
               >
                 <div className="text-4xl mb-2">✈️</div>
                 <h4 className="font-semibold">EXPRESS</h4>
-                {rateLoading ? "Calculating..." : expressRate !== null ? `₹${expressRate}` : "-"}
+                {rateLoading ? "Calculating..." : displayExpressRate !== null ? `₹${displayExpressRate}` : "-"}
                 <p className="text-sm text-gray-600 mt-2">Fast delivery (2-3 days)</p>
               </button>
             </div>
