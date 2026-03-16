@@ -61,43 +61,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // If POST to create.json, forward as x-www-form-urlencoded and use raw body
     if (req.method === 'POST' && apiPath.endsWith('create.json')) {
-      fetchOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      // Always forward as raw string, with Content-Type: application/json
+      fetchOptions.headers['Content-Type'] = 'application/json';
       let rawBody = await getRawBody(req);
 
-      // If body is not a string or missing 'format=', try to convert from object
-      if (typeof rawBody !== 'string' || !rawBody.includes('format=')) {
-        let parsedObj;
-        try {
-          parsedObj = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
-        } catch {
-          parsedObj = rawBody;
-        }
-        if (typeof parsedObj === 'object' && parsedObj.format && parsedObj.data) {
-          rawBody = `format=${encodeURIComponent(parsedObj.format)}&data=${encodeURIComponent(
-            typeof parsedObj.data === 'string' ? parsedObj.data : JSON.stringify(parsedObj.data)
-          )}`;
-        }
+      // If body is not a string, convert to string
+      if (typeof rawBody !== 'string') {
+        rawBody = String(rawBody);
       }
 
-      // Fix double-stringified data field
-      const parsed = parseFormUrlEncoded(rawBody);
-      if (parsed.data) {
+      // If body is an object, convert to correct format
+      if (!rawBody.includes('format=json')) {
         try {
-          const maybeObj = JSON.parse(parsed.data);
-          if (typeof maybeObj === 'object') {
-            parsed.data = JSON.stringify(maybeObj);
-            rawBody = Object.entries(parsed)
-              .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-              .join('&');
+          const parsed = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
+          if (parsed.format && parsed.data) {
+            rawBody = `format=${parsed.format}&data=${typeof parsed.data === 'string' ? parsed.data : JSON.stringify(parsed.data)}`;
           }
-        } catch (e) {
-          // If not JSON, leave as is
+        } catch {
+          // leave as is
         }
       }
 
       fetchOptions.body = rawBody;
       // Log for debug
-      console.log('Delhivery Proxy Outgoing data field:', parsed.data);
       console.log('Delhivery Proxy Outgoing body:', rawBody);
     } else if (req.method === 'POST') {
       // For other POSTs, default to JSON
