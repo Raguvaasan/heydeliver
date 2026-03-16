@@ -64,6 +64,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Always forward as raw string, with Content-Type: application/json
       fetchOptions.headers['Content-Type'] = 'application/json';
       let rawBody = await getRawBody(req);
+      // Log the incoming body from the frontend
+      console.log('Delhivery Proxy INCOMING rawBody:', rawBody);
 
       // If body is not a string, convert to string
       if (typeof rawBody !== 'string') {
