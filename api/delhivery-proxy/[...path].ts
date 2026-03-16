@@ -69,21 +69,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // If data field is present and is a stringified object, fix it
       if (parsed.data) {
         try {
-          // If data is double-stringified, parse and re-stringify
-          const test = JSON.parse(parsed.data);
-          if (typeof test === 'string') {
-            // Double-stringified, fix it
-            parsed.data = test;
-            rawBody = Object.entries(parsed)
-              .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-              .join('&');
+          // Fix: If data is double-stringified, parse and re-stringify
+          if (parsed.data) {
+            try {
+              // If data is a stringified object, parse and re-stringify
+              const maybeObj = JSON.parse(parsed.data);
+              if (typeof maybeObj === 'object') {
+                parsed.data = JSON.stringify(maybeObj);
+                rawBody = Object.entries(parsed)
+                  .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+                  .join('&');
+                // Log the corrected data field
+                console.log('Delhivery Proxy Outgoing data field:', parsed.data);
+              }
+            } catch (e) {
+              // If not JSON, leave as is
+            }
           }
-        } catch (e) {
-          // If not JSON, leave as is
-        }
-      }
-      fetchOptions.body = rawBody;
-      // Log outgoing request for debugging
       console.log('Delhivery Proxy Debug:');
       console.log('URL:', fullUrl);
       console.log('Headers:', fetchOptions.headers);
