@@ -62,34 +62,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // If POST to create.json, forward as x-www-form-urlencoded and use raw body
     if (req.method === 'POST' && apiPath.endsWith('create.json')) {
       fetchOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-      // Read raw body from stream
       let rawBody = await getRawBody(req);
-      // Parse and validate the form body
+
+      // If body is not a string or missing 'format=', try to convert from object
+      if (typeof rawBody !== 'string' || !rawBody.includes('format=')) {
+        let parsedObj;
+        try {
+          parsedObj = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
+        } catch {
+          parsedObj = rawBody;
+        }
+        if (typeof parsedObj === 'object' && parsedObj.format && parsedObj.data) {
+          rawBody = `format=${encodeURIComponent(parsedObj.format)}&data=${encodeURIComponent(
+            typeof parsedObj.data === 'string' ? parsedObj.data : JSON.stringify(parsedObj.data)
+          )}`;
+        }
+      }
+
+      // Fix double-stringified data field
       const parsed = parseFormUrlEncoded(rawBody);
-      // If data field is present and is a stringified object, fix it
       if (parsed.data) {
         try {
-          // Fix: If data is double-stringified, parse and re-stringify
-          if (parsed.data) {
-            try {
-              // If data is a stringified object, parse and re-stringify
-              const maybeObj = JSON.parse(parsed.data);
-              if (typeof maybeObj === 'object') {
-                parsed.data = JSON.stringify(maybeObj);
-                rawBody = Object.entries(parsed)
-                  .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-                  .join('&');
-                // Log the corrected data field
-                console.log('Delhivery Proxy Outgoing data field:', parsed.data);
-              }
-            } catch (e) {
-              // If not JSON, leave as is
-            }
+          const maybeObj = JSON.parse(parsed.data);
+          if (typeof maybeObj === 'object') {
+            parsed.data = JSON.stringify(maybeObj);
+            rawBody = Object.entries(parsed)
+              .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+              .join('&');
           }
-      console.log('Delhivery Proxy Debug:');
-      console.log('URL:', fullUrl);
-      console.log('Headers:', fetchOptions.headers);
-      console.log('Body:', rawBody);
+        } catch (e) {
+          // If not JSON, leave as is
+        }
+      }
+
+      fetchOptions.body = rawBody;
+      // Log for debug
+      console.log('Delhivery Proxy Outgoing data field:', parsed.data);
+      console.log('Delhivery Proxy Outgoing body:', rawBody);
     } else if (req.method === 'POST') {
       // For other POSTs, default to JSON
       fetchOptions.headers['Content-Type'] = 'application/json';
