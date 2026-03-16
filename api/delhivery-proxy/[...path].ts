@@ -4,9 +4,10 @@ export const config = {
     bodyParser: false,
   },
 };
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { IncomingMessage } from 'http';
+import { parseFormUrlEncoded } from '../../src/common/parseFormUrlEncoded';
 
 function getRawBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -62,7 +63,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'POST' && apiPath.endsWith('create.json')) {
       fetchOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded';
       // Read raw body from stream
-      const rawBody = await getRawBody(req);
+      let rawBody = await getRawBody(req);
+      // Parse and validate the form body
+      const parsed = parseFormUrlEncoded(rawBody);
+      // If data field is present and is a stringified object, fix it
+      if (parsed.data) {
+        try {
+          // If data is double-stringified, parse and re-stringify
+          const test = JSON.parse(parsed.data);
+          if (typeof test === 'string') {
+            // Double-stringified, fix it
+            parsed.data = test;
+            rawBody = Object.entries(parsed)
+              .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+              .join('&');
+          }
+        } catch (e) {
+          // If not JSON, leave as is
+        }
+      }
       fetchOptions.body = rawBody;
       // Log outgoing request for debugging
       console.log('Delhivery Proxy Debug:');
