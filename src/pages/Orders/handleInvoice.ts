@@ -81,194 +81,237 @@ export const handleInvoice = async (orderId: string): Promise<void> => {
 
     const payload = await response.json()
     const order = payload?.data || {}
-    console.log("order", order)
     const consignee = order?.consignee || {}
     const shipmentDetails = order?.shipmentDetails || {}
     const pickupLocation = order?.pickupLocation || {}
     const from = order?.from || {}
-    const returnAdd = [
-  pickupLocation?.name,
-  pickupLocation?.address,
-  pickupLocation?.pin
-].filter(Boolean).join(", ");
 
-    // Extract fallbacks to match the UI image
-    const awb = String(shipmentDetails?.order)
-
-    const senderName = from?.name
-    const senderAddressStr = from?.address
-    const senderCityStr = from?.city
-    const senderStateStr = from?.state
-    const senderPinStr = from?.pin
-    const defaultSenderAddress = `${senderAddressStr},
-${senderCityStr}, ${senderStateStr} ${senderPinStr},
-${senderPinStr}`;
-
-    const receiverName = consignee?.name
-    const receiverAddress = consignee?.address
-    const receiverCity = consignee?.city
-    const receiverState = consignee?.state
-    const receiverPin = consignee?.pin
-
-    const amount = order?.amount
+    const amount = order?.amount || 0
     const orderDate = order?.createdAt || order?.updatedAt || ""
+    const dObj = orderDate ? new Date(orderDate) : new Date();
+    const dateStr = dObj.toLocaleDateString();
+
+    const awb = String(shipmentDetails?.order || orderId);
 
     const doc = new jsPDF({
       orientation: "portrait",
-      unit: "in",
-      format: [4, 6],
+      unit: "mm",
+      format: "a4",
     })
 
-    doc.setDrawColor(0);
-    // Outer Border
-    doc.setLineWidth(0.025);
-    doc.rect(0.1, 0.1, 3.8, 5.8);
+    const margin = 20;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const contentWidth = pageWidth - (margin * 2);
 
-    doc.setLineWidth(0.015);
-
-    // Row 1: Header (Y: 0.1 -> 0.6)
-    doc.line(0.1, 0.6, 3.9, 0.6);
-    doc.line(2.0, 0.1, 2.0, 0.6);
-
-    const franchiseName = order?.franchiseName || "TrueCargo";
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    const franchiseLines = doc.splitTextToSize(franchiseName.toUpperCase(), 1.8);
-    doc.text(franchiseLines, 1.05, 0.32, { align: "center" });
-
-    // Project Logo instead of "DELHIVERY"
+    // --- Header ---
     try {
       const logoImg = await loadImage("/images/truecargo.png");
-      const logoW = 1.4;
+      const logoW = 40;
       const logoH = (logoImg.height / logoImg.width) * logoW;
-      const logoX = 2.95 - (logoW / 2);
-      const logoY = 0.35 - (logoH / 2);
-      doc.addImage(logoImg, "PNG", logoX, logoY, logoW, logoH);
+      doc.addImage(logoImg, "PNG", margin, margin, logoW, logoH);
     } catch (e) {
-      doc.setFontSize(18);
-      doc.text("TRUECARGO", 2.95, 0.40, { align: "center" });
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(24);
+      doc.setTextColor(249, 115, 22); // Orange-500
+      doc.text("TRUECARGO", margin, margin + 10);
     }
 
-    // Row 2: Top Barcode (Y: 0.6 -> 1.5)
-    doc.line(0.1, 1.5, 3.9, 1.5);
-    drawCode39(doc, awb, 0.4, 0.65, 3.2, 0.55);
+    doc.setTextColor(0);
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text("INVOICE & LABEL", pageWidth - margin, margin + 10, { align: "right" });
+
+    doc.setDrawColor(200);
+    doc.line(margin, margin + 25, pageWidth - margin, margin + 25);
+
+    // --- Info Section ---
+    let currentY = margin + 35;
+
+    // Left: Business Info (Seller)
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("FROM:", margin, currentY);
+    doc.setFont("helvetica", "normal");
+    currentY += 5;
+    
+    // Explicitly use from/seller name and address as per label
+    const senderName = from?.name || order?.franchiseName || "TrueCargo Logistics";
+    doc.text(String(senderName), margin, currentY);
+    
+    currentY += 5;
+    const senderAddr = from?.address || "";
+    const senderCity = from?.city || "";
+    const senderState = from?.state || "";
+    const senderPin = from?.pin || "";
+    
+    let senderFull = "";
+    if (senderAddr) {
+      senderFull = `${senderAddr}, ${senderCity}, ${senderState} ${senderPin}`;
+    } else {
+      // Fallback only if from is completely empty, but prioritize seller data
+      senderFull = pickupLocation?.address ? `${pickupLocation.address}, ${pickupLocation.pin}` : "";
+    }
+    
+    const senderLines = doc.splitTextToSize(senderFull, 80);
+    doc.text(senderLines, margin, currentY);
+
+    // Right: Shipment Barcode & Details
+    let infoY = margin + 35;
+    if (awb) {
+      drawCode39(doc, awb, pageWidth - margin - 50, infoY - 5, 50, 10);
+      doc.setFontSize(8);
+      doc.text(awb, pageWidth - margin - 25, infoY + 8, { align: "center" });
+      infoY += 15;
+    }
 
     doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Invoice #:", pageWidth - 70, infoY);
     doc.setFont("helvetica", "normal");
-    // Ensure string type and pass to center properly aligned
-    doc.text(awb, 2.0, 1.35, { align: "center" });
+    doc.text(String(order.bookingId || order._id), pageWidth - margin, infoY, { align: "right" });
 
-    doc.setFontSize(12);
-    doc.text(String(receiverPin), 0.15, 1.45);
+    infoY += 7;
+    doc.setFont("helvetica", "bold");
+    doc.text("Date:", pageWidth - 70, infoY);
+    doc.setFont("helvetica", "normal");
+    doc.text(dateStr, pageWidth - margin, infoY, { align: "right" });
+
+    infoY += 7;
+    doc.setFont("helvetica", "bold");
+    doc.text("Order ID:", pageWidth - 70, infoY);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(shipmentDetails?.order || "-"), pageWidth - margin, infoY, { align: "right" });
+
+    const receiverCity = consignee?.city || "";
     const validCity = typeof receiverCity === 'string' && receiverCity.length >= 3 ? receiverCity : "MAD";
     const routingCode = validCity.substring(0, 3).toUpperCase() + "/AVA";
+
+    infoY += 7;
     doc.setFont("helvetica", "bold");
-    doc.text(routingCode, 3.85, 1.45, { align: "right" });
+    doc.text("Routing:", pageWidth - 70, infoY);
+    doc.setFont("helvetica", "normal");
+    doc.text(routingCode, pageWidth - margin, infoY, { align: "right" });
 
-    // Row 3: Ship To (Y: 1.5 -> 2.5)
-    doc.line(0.1, 2.5, 3.9, 2.5);
-    // Vertical line connecting Row 3, 4, 5, 6, 7
-    doc.line(2.8, 1.5, 2.8, 4.4);
+    currentY = Math.max(currentY + (senderLines.length * 5), infoY + 10);
 
-    // -- Ship To Left Pane --
+    // --- Billing & Shipping Modes ---
+    doc.setFillColor(245, 245, 245);
+    doc.rect(margin, currentY, contentWidth, 10, "F");
+    doc.setFont("helvetica", "bold");
+    doc.text("BILL TO / SHIP TO", margin + 5, currentY + 7);
+
+    // Modes inline
+    doc.setFontSize(9);
+    doc.text(`MODE: ${shipmentDetails.shippingMode || "-"} | PAY: ${shipmentDetails.paymentMode || "-"}`, pageWidth - margin - 5, currentY + 7, { align: "right" });
+
+    currentY += 15;
+    doc.setFontSize(11);
+    doc.text(String(consignee?.name || "-").toUpperCase(), margin, currentY);
+    currentY += 6;
     doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text("Ship To:", 0.15, 1.65);
-    doc.text(String(receiverName).toUpperCase(), 0.15, 1.80);
-
     doc.setFont("helvetica", "normal");
+    const receiverPin = consignee?.pin || "";
+    const receiverAddr = `${consignee?.address || ""}, ${consignee?.city || ""} (${consignee?.state || ""}) - ${receiverPin}`;
+    const receiverLines = doc.splitTextToSize(receiverAddr, contentWidth - 10);
+    doc.text(receiverLines, margin, currentY);
+    currentY += (receiverLines.length * 5) + 5;
+    doc.text(`Phone: ${consignee?.phone || "-"}`, margin, currentY);
+
+    currentY += 10;
+
+    // --- Shipment Details Row ---
+    doc.setLineWidth(0.1);
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 5;
     doc.setFontSize(9);
-    const fullShipAddr = [
-      receiverName,
-      receiverAddress,
-      `${receiverCity} (${receiverState})`
-    ].filter(Boolean).join("\n");
-    const shipLines = doc.splitTextToSize(fullShipAddr, 2.6);
-    doc.text(shipLines, 0.15, 1.95);
+    doc.text(`Weight: ${order.weight || "-"} gm`, margin, currentY);
+    doc.text(`AWB: ${awb}`, pageWidth / 2, currentY, { align: "center" });
+    doc.text(`Return PIN: ${senderPin}`, pageWidth - margin, currentY, { align: "right" });
+    currentY += 5;
+    doc.line(margin, currentY, pageWidth - margin, currentY);
 
-    const addrHeight = shipLines.length * 0.15;
+    currentY += 10;
+
+    // --- Return Address Section ---
+    const returnAdd = [
+      pickupLocation?.name,
+      pickupLocation?.address,
+      pickupLocation?.pin
+    ].filter(Boolean).join(", ");
+
+    if (returnAdd) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("RETURN ADDRESS:", margin, currentY);
+      doc.setFont("helvetica", "normal");
+      currentY += 5;
+      const retLines = doc.splitTextToSize(returnAdd, contentWidth);
+      doc.text(retLines, margin, currentY);
+      currentY += (retLines.length * 5) + 5;
+    }
+
+    // --- Table ---
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.1);
+    doc.setFillColor(50, 50, 50);
+    doc.rect(margin, currentY, contentWidth, 10, "F");
+
+    doc.setTextColor(255);
     doc.setFont("helvetica", "bold");
-    doc.text(`PIN:${receiverPin}`, 0.15, 1.95 + addrHeight);
+    doc.text("Description", margin + 5, currentY + 7);
+    doc.text("Qty", pageWidth - 70, currentY + 7, { align: "center" });
+    doc.text("Unit Price", pageWidth - 45, currentY + 7, { align: "center" });
+    doc.text("Total", pageWidth - margin - 5, currentY + 7, { align: "right" });
 
-    // -- Ship To Right Pane --
-    doc.setFontSize(12);
-    doc.text(`${shipmentDetails.paymentMode}`, 3.35, 1.70, { align: "center" });
-    doc.text(`${shipmentDetails.shippingMode}`, 3.35, 1.85, { align: "center" });
-    doc.text("INR", 3.35, 2.25, { align: "center" });
-    doc.text(String(amount), 3.35, 2.40, { align: "center" });
+    doc.setTextColor(0);
+    currentY += 10;
 
-    // Row 4: Seller & Date (Y: 2.5 -> 3.3)
-    doc.line(0.1, 3.3, 3.9, 3.3);
+    // Table content
+    doc.setFont("helvetica", "normal");
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 8;
+    doc.text("Logistic Services - Courier Charges", margin + 5, currentY);
+    doc.text("1", pageWidth - 70, currentY, { align: "center" });
+    doc.text(`INR ${amount}`, pageWidth - 45, currentY, { align: "center" });
+    doc.text(`INR ${amount}`, pageWidth - margin - 5, currentY, { align: "right" });
 
-    // -- Seller Left Pane --
+    currentY += 5;
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+
+    // --- Totals ---
+    currentY += 20;
+    const totalX = pageWidth - margin - 80;
+    doc.setFont("helvetica", "bold");
+    doc.text("Subtotal:", totalX, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(`INR ${amount}`, pageWidth - margin - 5, currentY, { align: "right" });
+
+    currentY += 7;
+    doc.setFont("helvetica", "bold");
+    doc.text("Tax (0%):", totalX, currentY);
+    doc.setFont("helvetica", "normal");
+    doc.text(`INR 0.00`, pageWidth - margin - 5, currentY, { align: "right" });
+
+    currentY += 5;
+    doc.setLineWidth(0.5);
+    doc.line(totalX, currentY, pageWidth - margin, currentY);
+
+    currentY += 8;
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Total Amount:", totalX, currentY);
+    doc.setTextColor(249, 115, 22);
+    doc.text(`INR ${amount}`, pageWidth - margin - 5, currentY, { align: "right" });
+
+    // --- Footer ---
+    const footerY = doc.internal.pageSize.getHeight() - 30;
+    doc.setDrawColor(200);
+    doc.line(margin, footerY, pageWidth - margin, footerY);
+    doc.setTextColor(100);
     doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.text("Seller: ", 0.15, 2.65);
     doc.setFont("helvetica", "normal");
-    doc.text(String(senderName), doc.getTextWidth("Seller: ") + 0.15, 2.65);
-
-    doc.setFont("helvetica", "bold");
-    doc.text("Address: ", 0.15, 2.80);
-    doc.setFont("helvetica", "normal");
-    const sellerAddrVal = order?.pickupLocation?.address ?
-      `${senderAddressStr}, ${senderCityStr}, ${senderStateStr} ${senderPinStr}` :
-      defaultSenderAddress;
-    const sellerLines = doc.splitTextToSize(sellerAddrVal, 2.05);
-    doc.text(sellerLines, doc.getTextWidth("Address: ") + 0.15, 2.85);
-
-    // -- Date Right Pane --
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text("Date: ", 2.85, 2.80);
-    doc.setFont("helvetica", "normal");
-    const dObj = orderDate ? new Date(orderDate) : new Date("2026-02-09T21:30:05");
-    const dateStr = `${dObj.getFullYear()}-${dObj.getMonth() + 1}-${dObj.getDate()}`;
-    const timeStr = `${dObj.getHours()}: ${dObj.getMinutes()}: ${dObj.getSeconds()}`;
-    doc.text(dateStr, doc.getTextWidth("Date: ") + 2.85, 2.80);
-    doc.text(timeStr, 2.85, 3.00);
-
-    // Row 5: Table Header (Y: 3.3 -> 3.5)
-    doc.line(0.1, 3.5, 3.9, 3.5);
-    // Vertical line for table price/total column
-    doc.line(3.4, 3.3, 3.4, 4.4);
-
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text("Product(Qty)", 0.15, 3.43);
-    doc.text("Price", 3.1, 3.43, { align: "center" });
-    doc.text("Total", 3.65, 3.43, { align: "center" });
-
-    // Row 6: Table Item Row (Y: 3.5 -> 4.1)
-    doc.line(0.1, 4.1, 3.9, 4.1);
-    // const prodName = doc.splitTextToSize(`${senderName} package`, 2.5);
-    doc.text("", 0.15, 3.75);
-    doc.text("INR", 3.1, 3.70, { align: "center" });
-    doc.text(String(amount), 3.1, 3.90, { align: "center" });
-    doc.text("INR", 3.65, 3.70, { align: "center" });
-    doc.text(String(amount), 3.65, 3.90, { align: "center" });
-
-    // Row 7: Table Total Row (Y: 4.1 -> 4.4)
-    doc.line(0.1, 4.4, 3.9, 4.4);
-    doc.text("Total", 0.15, 4.28);
-    doc.text("INR", 3.1, 4.22, { align: "center" });
-    doc.text(String(amount), 3.1, 4.38, { align: "center" });
-    doc.text("INR", 3.65, 4.22, { align: "center" });
-    doc.text(String(amount), 3.65, 4.38, { align: "center" });
-
-    // Row 8: Bottom barcode (Y: 4.4 -> 4.95)
-    doc.line(0.1, 5.15, 3.9, 5.15);
-    const botBarcodeText = String(shipmentDetails?.order);
-    drawCode39(doc, botBarcodeText, 0.4, 4.55, 3.2, 0.40);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.text(botBarcodeText, 2.0, 5.05, { align: "center" });
-
-    // Row 9: Return Address (Y: 4.95 -> 5.9)
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    const retText = `Return Address: ` + returnAdd;
-    const retLines = doc.splitTextToSize(retText, 3.7);
-    doc.text(retLines, 0.15, 5.30);
+    doc.text("Thank you for your business!", pageWidth / 2, footerY + 10, { align: "center" });
+    doc.text("TrueCargo Logistics | support@truecargo.com | www.truecargo.com", pageWidth / 2, footerY + 15, { align: "center" });
 
     const pdfUrl = doc.output("bloburl")
     window.open(pdfUrl, "_blank", "noopener,noreferrer")

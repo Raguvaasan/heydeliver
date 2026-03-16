@@ -19,8 +19,8 @@ interface MarkupConfig {
 let markupCache: MarkupConfig = { markupType: "percentage", markupValue: 63, isActive: true }
 let markupPromise: Promise<MarkupConfig> | null = null
 
-function loadMarkupConfig(): Promise<MarkupConfig> {
-  if (markupPromise) return markupPromise
+function loadMarkupConfig(force = false): Promise<MarkupConfig> {
+  if (markupPromise && !force) return markupPromise
   markupPromise = fetch(MARKUP_API)
     .then((r) => r.json())
     .then((payload) => {
@@ -48,6 +48,7 @@ function deepGet(obj: unknown, keys: string[]): number | string | undefined {
       q.push((n as Record<string, unknown>)[k])
     }
   }
+  return undefined
 }
 
 // ─── Markup application ───────────────────────────────────────────────────────
@@ -131,7 +132,7 @@ const RateCalculatorPage: FC = () => {
   }, [deliveryPincode])
 
   // ── Weight helpers ────────────────────────────────────────────────────────
-  const isBox = packageType === "box"
+  const supportsDimensions = packageType === "box" || packageType === "plastic"
 
   const volumetricGrams = (): number => {
     const l = parseFloat(length) || 0
@@ -142,7 +143,7 @@ const RateCalculatorPage: FC = () => {
 
   const chargeableGrams = (): number => {
     const actual = Math.round(parseFloat(packageWeight) || 0)
-    return isBox ? Math.max(actual, volumetricGrams()) : actual
+    return supportsDimensions ? Math.max(actual, volumetricGrams()) : actual
   }
 
   // Derive kg display FROM volumetricGrams() so kg and gm are always consistent
@@ -182,8 +183,8 @@ const RateCalculatorPage: FC = () => {
     setError(null)
 
     try {
-      // Ensure markup is loaded before we need to apply it
-      await loadMarkupConfig()
+      // Force refresh markup config every time we calculate to reflect changes immediately
+      await loadMarkupConfig(true)
 
       const res = await fetch(`${RATE_API}?${params}`)
       if (!res.ok) throw new Error(`API responded with ${res.status}`)
@@ -228,8 +229,8 @@ const RateCalculatorPage: FC = () => {
                   {(["domestic", "international"] as const).map((tab) => (
                     <button key={tab} onClick={() => setSelectedTab(tab)}
                       className={`pb-3 px-4 font-medium transition-colors capitalize ${selectedTab === tab
-                          ? "text-blue-600 border-b-2 border-blue-600"
-                          : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                        ? "text-blue-600 border-b-2 border-blue-600"
+                        : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
                         }`}>
                       {tab}
                     </button>
@@ -318,8 +319,6 @@ const RateCalculatorPage: FC = () => {
                     onChange={(e) => { setPackageType(e.target.value); setRateDetails(null) }}>
                     <option value="plastic">Plastic cover / Flyer</option>
                     <option value="box">Box</option>
-                    <option value="envelope">Envelope</option>
-                    <option value="document">Document</option>
                   </Select>
                 </div>
                 <div>
@@ -342,7 +341,7 @@ const RateCalculatorPage: FC = () => {
               <div className="mb-6">
                 <Label className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">
                   Package Dimensions
-                  {!isBox && (
+                  {!supportsDimensions && (
                     <span className="ml-2 text-xs font-normal text-gray-400">
                       (not applicable for {packageType})
                     </span>
@@ -356,8 +355,8 @@ const RateCalculatorPage: FC = () => {
                   ].map(({ label, val, set }) => (
                     <div key={label} className="relative">
                       <TextInput type="number" min="1" value={val}
-                        disabled={!isBox}
-                        className={!isBox ? "opacity-40" : ""}
+                        disabled={!supportsDimensions}
+                        className={!supportsDimensions ? "opacity-40" : ""}
                         onChange={(e) => { set(e.target.value); setRateDetails(null) }} />
                       <div className="absolute right-3 top-5 -translate-y-1/2">
                         <span className="text-sm text-gray-500">cm</span>
@@ -378,7 +377,7 @@ const RateCalculatorPage: FC = () => {
                       {length} × {breadth} × {height} ÷ 5000 × 1000 = <strong>{volumetricGrams()} gm</strong>
                       &nbsp;({volKgDisplay()} kg) — rounded up (ceil)
                     </p>
-                    {isBox ? (
+                    {supportsDimensions ? (
                       <p className="text-blue-700 dark:text-blue-300 font-medium">
                         Chargeable = max(actual {packageWeight} gm, volumetric {volumetricGrams()} gm)
                         = <strong>{chargeableGrams()} gm</strong>
@@ -393,7 +392,7 @@ const RateCalculatorPage: FC = () => {
               </div>
 
               {/* Payment Mode */}
-              <div className="mb-6">
+              {/* <div className="mb-6">
                 <Label className="mb-3 block font-semibold text-gray-700 dark:text-gray-300">Payment Mode</Label>
                 <div className="flex gap-6">
                   {(["Pre-paid", "COD"] as const).map((mode) => (
@@ -407,7 +406,7 @@ const RateCalculatorPage: FC = () => {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div> */}
 
               {/* Calculate button */}
               <Button color="dark" size="lg" className="w-full" onClick={callRateAPI} disabled={loading}>
@@ -435,8 +434,8 @@ const RateCalculatorPage: FC = () => {
                 {(["E", "S"] as const).map((m) => (
                   <button key={m} onClick={() => setDeliveryMode(m)}
                     className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${deliveryMode === m
-                        ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
-                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                      ? "bg-white dark:bg-gray-700 text-blue-600 shadow-sm"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                       }`}>
                     {m === "E" ? "Express" : "Surface"}
                   </button>

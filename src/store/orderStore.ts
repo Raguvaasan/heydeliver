@@ -17,6 +17,7 @@ interface Order {
 }
 
 interface DelhiveryShipment {
+  shipment_length: string | undefined
   name: string
   add: string
   pin: string
@@ -83,6 +84,7 @@ interface FreightrekShipmentRequest {
   quantity?: string
   shipmentWidth?: string
   shipmentHeight?: string
+    shipmentLength?: string
   weight?: string
   shippingMode?: string
   addressType?: string
@@ -319,114 +321,148 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-  createDelhiveryShipment: async (shipmentData: DelhiveryShipment, pickupLocation: string, freightrekExtras) => {
+   createDelhiveryShipment: async (
+    shipmentData: DelhiveryShipment,
+    pickupLocation: string,
+    freightrekExtras?
+  ) => {
     set({ loading: true, error: null })
     try {
+      // ── 1. Wallet balance check ────────────────────────────────────────────
       const loginType = sessionStorage.getItem("loginType") || "admin"
-      const dashboardEndpoint = loginType === "admin" ? "/admin/dashboard" : "/dashboard"
-      const dashboardParams = loginType === "admin" ? { period: "week" } : {}
+      let walletAmount = 0
 
-      const dashboardResponse = await http.get(dashboardEndpoint, { params: dashboardParams })
-      const dashboardData = dashboardResponse.data?.data || dashboardResponse.data
-      const walletAmount = Number(dashboardData?.overview?.wallet?.amount || 0)
-
+      if (loginType === "admin") {
+        const dashboardResponse = await http.get("/admin/dashboard", { params: { period: "week" } })
+        const dashboardData = dashboardResponse.data?.data || dashboardResponse.data
+        walletAmount = Number(dashboardData?.overview?.wallet?.amount ?? 0)
+      } else {
+        const walletBalanceResponse = await http.get("/wallet/balance")
+        const walletBalanceData = walletBalanceResponse.data?.data || walletBalanceResponse.data
+        walletAmount = Number(walletBalanceData?.balance ?? 0)
+      }
+ 
       if (walletAmount <= 50) {
         throw new Error("Insufficient balance")
       }
-
-      const formData = new URLSearchParams()
-      formData.append('format', 'json')
-      formData.append('data', JSON.stringify({
+ 
+      // ── 2. Build Delhivery B2C payload ─────────────────────────────────────
+      // Delhivery expects:  Content-Type: application/x-www-form-urlencoded
+      // Body:               format=json&data=<url-encoded JSON string>
+      const payload = {
         shipments: [shipmentData],
-        pickup_location: {
-          name: pickupLocation
-        }
-      }))
-
-      const response = await axios.post<DelhiveryResponse>(
+        pickup_location: { name: pickupLocation },
+      }
+ 
+      // URLSearchParams correctly encodes both fields as form data
+      const formBody = new URLSearchParams()
+      formBody.append("format", "json")
+      formBody.append("data", JSON.stringify(payload))
+ 
+      const authToken = sessionStorage.getItem("authToken")
+ 
+      const delhiveryResponse = await axios.post<DelhiveryResponse>(
         '/delhivery-api/api/cmu/create.json',
-        formData.toString(),
+        formBody.toString(),            // serialised as  format=json&data=%7B...%7D
         {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json',
-            'Authorization': 'Token 76a094c150aed4e3a9c6b41b608ee7174f4d5b51'
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/json",
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
-          timeout: 5000
+          timeout: 10000,
         }
       )
-
-      if (response.data?.success == true) {
-        const authToken = sessionStorage.getItem("authToken")
-        const freightrekPayload: FreightrekShipmentRequest = {
-          name: shipmentData.name,
-          add: shipmentData.add,
-          pin: shipmentData.pin,
-          city: shipmentData.city,
-          state: shipmentData.state,
-          country: shipmentData.country,
-          phone: shipmentData.phone,
-          order: shipmentData.order,
-          paymentMode: shipmentData.payment_mode,
-
-          fromName: freightrekExtras?.fromName,
-          fromAdd: freightrekExtras?.fromAdd,
-          fromPin: freightrekExtras?.fromPin,
-          fromCity: freightrekExtras?.fromCity,
-          fromState: freightrekExtras?.fromState,
-          fromCountry: freightrekExtras?.fromCountry,
-          fromPhone: freightrekExtras?.fromPhone,
-
-          returnPin: shipmentData.return_pin,
-          returnCity: shipmentData.return_city,
-          returnPhone: shipmentData.return_phone,
-          returnAdd: shipmentData.return_add,
-          returnState: shipmentData.return_state,
-          returnCountry: shipmentData.return_country,
-          productsDesc: shipmentData.products_desc,
-          hsnCode: shipmentData.hsn_code || "",
-          codAmount: shipmentData.cod_amount || "0",
-          orderDate: shipmentData.order_date,
-          totalAmount: shipmentData.total_amount,
-          sellerName: shipmentData.seller_name,
-          sellerAdd: shipmentData.seller_add,
-          sellerInv: shipmentData.seller_inv,
-          quantity: shipmentData.quantity,
-          shipmentWidth: shipmentData.shipment_width,
-          shipmentHeight: shipmentData.shipment_height,
-          weight: shipmentData.weight,
-          shippingMode: shipmentData.shipping_mode,
-          addressType: shipmentData.address_type,
-          pickupLocation: {
-            name: pickupLocation
-          }
-        }
-
-        try {
-          await axios.post(
-            '/api/shipment/create',
-            freightrekPayload,
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
-              },
-              timeout: 5000
-            }
-          )
-        } catch (freightrekErr: any) {
-          // Freightrek shipment failed, continue with Delhivery success
-        }
-
-        set({ loading: false })
-        toast.success("Shipment created successfully!")
-        return response.data
-      } else {
-        set({ loading: false })
-        throw new Error(response.data.rmk || "Failed to create shipment")
+ 
+      const delhiveryData = delhiveryResponse.data
+ 
+      // Delhivery returns success:true on a valid creation
+      if (!delhiveryData?.success) {
+        throw new Error(delhiveryData?.rmk || "Delhivery shipment creation failed")
       }
+ 
+      // ── 3. Mirror to our backend (/api/shipment/create) ────────────────────
+      // Only called after Delhivery confirms success
+      const waybill = delhiveryData?.packages?.[0]?.waybill ?? ""
+ 
+      const freightrekPayload: FreightrekShipmentRequest = {
+        // Consignee / destination
+        name: shipmentData.name,
+        add: shipmentData.add,
+        pin: shipmentData.pin,
+        city: shipmentData.city,
+        state: shipmentData.state,
+        country: shipmentData.country,
+        phone: shipmentData.phone,
+        order: shipmentData.order,
+        paymentMode: shipmentData.payment_mode,
+ 
+        // Sender / from address (optional, passed via freightrekExtras)
+        fromName: freightrekExtras?.fromName,
+        fromAdd: freightrekExtras?.fromAdd,
+        fromPin: freightrekExtras?.fromPin,
+        fromCity: freightrekExtras?.fromCity,
+        fromState: freightrekExtras?.fromState,
+        fromCountry: freightrekExtras?.fromCountry,
+        fromPhone: freightrekExtras?.fromPhone,
+ 
+        // Return address
+        returnPin: shipmentData.return_pin,
+        returnCity: shipmentData.return_city,
+        returnPhone: shipmentData.return_phone,
+        returnAdd: shipmentData.return_add,
+        returnState: shipmentData.return_state,
+        returnCountry: shipmentData.return_country,
+ 
+        // Shipment meta
+        productsDesc: shipmentData.products_desc,
+        hsnCode: shipmentData.hsn_code || "",
+        codAmount: shipmentData.cod_amount || "0",
+        orderDate: shipmentData.order_date,
+        totalAmount: shipmentData.total_amount,
+        sellerName: shipmentData.seller_name,
+        sellerAdd: shipmentData.seller_add,
+        sellerInv: shipmentData.seller_inv,
+        quantity: shipmentData.quantity,
+ 
+        // Dimensions — all three axes now included
+        shipmentLength: shipmentData.shipment_length,
+        shipmentWidth: shipmentData.shipment_width,
+        shipmentHeight: shipmentData.shipment_height,
+ 
+        weight: shipmentData.weight,
+        shippingMode: shipmentData.shipping_mode,
+        addressType: shipmentData.address_type,
+ 
+        // Waybill returned by Delhivery (useful for our records)
+        ...(waybill ? { waybill } : {}),
+ 
+        pickupLocation: { name: pickupLocation },
+      }
+ 
+      try {
+        await axios.post("/api/shipment/create", freightrekPayload, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          timeout: 8000,
+        })
+      } catch (freightrekErr: any) {
+        // Our backend sync failure is non-fatal — Delhivery already accepted the shipment.
+        // Log for debugging but don't surface to the user.
+        console.warn(
+          "[orderStore] /api/shipment/create failed (non-fatal):",
+          freightrekErr?.response?.data || freightrekErr?.message
+        )
+      }
+ 
+      set({ loading: false })
+      toast.success("Shipment created successfully!")
+      return delhiveryData
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.rmk ||
+      const errorMessage =
+        err?.response?.data?.rmk ||
         err?.response?.data?.message ||
         err?.message ||
         "Failed to create shipment"

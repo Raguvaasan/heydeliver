@@ -6,6 +6,7 @@ import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useOrderStore } from "../../store/orderStore"
 import toast from "react-hot-toast"
 import { handleInvoice as generateInvoice } from "./handleInvoice"
+import { handleLabel as generateLabel } from "./handleLabel"
 
 const OrdersPage: FC = () => {
   const navigate = useNavigate()
@@ -58,6 +59,10 @@ const OrdersPage: FC = () => {
 
   const handleInvoice = useCallback(async (orderId: string) => {
     await generateInvoice(orderId)
+  }, [])
+
+  const handleLabel = useCallback(async (orderId: string) => {
+    await generateLabel(orderId)
   }, [])
   const getStatusColor = useCallback((status: string) => {
     const statusLower = status?.toLowerCase()
@@ -179,7 +184,7 @@ const OrdersPage: FC = () => {
                       </button>
                       <button
                         onClick={() =>
-                          handleInvoice(
+                          handleLabel(
                             order.waybill ||
                             order.awb ||
                             order.trackingNumber ||

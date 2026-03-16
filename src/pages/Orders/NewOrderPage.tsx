@@ -3,22 +3,87 @@ import { Button, Card, Label, TextInput, Select } from "flowbite-react"
 import { useNavigate } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useOrderStore } from "../../store/orderStore"
-import { usePincodeStore } from "../../store/pincodeStore"
 import toast from "react-hot-toast"
 import { HiTrash, HiRefresh } from "react-icons/hi"
 
 // ─── API endpoints ────────────────────────────────────────────────────────────
 const RATE_API = "https://admin.heydeliver.in/delhivery-api/api/kinko/v1/invoice/charges/.json"
 const MARKUP_API = "https://freightrekapi.vercel.app/api/v1/settings/public/rate-card-markup"
+const PINCODE_API = "/delhivery-api/c/api/pin-codes/json/"
 
-// ─── Markup config (fetched once, cached in module scope) ─────────────────────
+// ─── State code → full name map ───────────────────────────────────────────────
+const STATE_CODE_MAP: Record<string, string> = {
+  AN: "Andaman and Nicobar Islands",
+  AP: "Andhra Pradesh",
+  AR: "Arunachal Pradesh",
+  AS: "Assam",
+  BR: "Bihar",
+  CH: "Chandigarh",
+  CG: "Chhattisgarh",
+  DN: "Dadra and Nagar Haveli and Daman and Diu",
+  DL: "Delhi",
+  GA: "Goa",
+  GJ: "Gujarat",
+  HR: "Haryana",
+  HP: "Himachal Pradesh",
+  JK: "Jammu and Kashmir",
+  JH: "Jharkhand",
+  KA: "Karnataka",
+  KL: "Kerala",
+  LA: "Ladakh",
+  LD: "Lakshadweep",
+  MP: "Madhya Pradesh",
+  MH: "Maharashtra",
+  MN: "Manipur",
+  ML: "Meghalaya",
+  MZ: "Mizoram",
+  NL: "Nagaland",
+  OD: "Odisha",
+  OR: "Odisha",
+  PY: "Puducherry",
+  PB: "Punjab",
+  RJ: "Rajasthan",
+  SK: "Sikkim",
+  TN: "Tamil Nadu",
+  TS: "Telangana",
+  TR: "Tripura",
+  UP: "Uttar Pradesh",
+  UK: "Uttarakhand",
+  WB: "West Bengal",
+}
+
+// ─── Pincode lookup (module-level cache — same pin never fetched twice) ────────
+interface PincodeInfo { city: string; state: string; country: string }
+const pincodeCache = new Map<string, PincodeInfo | null>()
+
+async function lookupPincode(pin: string): Promise<PincodeInfo | null> {
+  if (pincodeCache.has(pin)) return pincodeCache.get(pin)!
+  try {
+    const res = await fetch(`${PINCODE_API}?filter_codes=${pin}`)
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    const postal = data?.delivery_codes?.[0]?.postal_code
+    if (!postal) { pincodeCache.set(pin, null); return null }
+    const info: PincodeInfo = {
+      city: postal.city || postal.district || "",
+      state: STATE_CODE_MAP[postal.state_code] || postal.state_code || "",
+      country: postal.country_code === "IN" ? "India" : (postal.country_code || "India"),
+    }
+    pincodeCache.set(pin, info)
+    return info
+  } catch {
+    pincodeCache.set(pin, null)
+    return null
+  }
+}
+
+// ─── Markup config ────────────────────────────────────────────────────────────
 interface MarkupConfig {
   markupType: "percentage" | "flat"
   markupValue: number
   isActive: boolean
 }
 
-// Default fallback if API fails — 63% matches the HTML file default
 let markupCache: MarkupConfig = { markupType: "percentage", markupValue: 63, isActive: true }
 let markupPromise: Promise<MarkupConfig> | null = null
 
@@ -35,14 +100,12 @@ function loadMarkupConfig(): Promise<MarkupConfig> {
       }
       return markupCache
     })
-    .catch(() => markupCache)  // silently fall back to default
+    .catch(() => markupCache)
   return markupPromise
 }
 
-// Use shared rate calculation logic
 import { calculateRate, RateMarkupConfig } from "../../common/rateCalculator"
 
-// BFS key search — finds first matching key anywhere in nested response
 function deepGet(obj: unknown, keys: string[]): number | string | undefined {
   const q: unknown[] = [obj]
   while (q.length) {
@@ -82,29 +145,34 @@ const generateOrderId = () => {
   return `ORD${ts}${rnd}`
 }
 
-// Volumetric weight in GRAMS = ceil( L×B×H / 5000 × 1000 )
-// Math.ceil because Delhivery always rounds UP for billing
 const volGrams = (l: number, b: number, h: number): number =>
   Math.ceil((l * b * h) / 5000 * 1000)
 
-// kg display derived FROM volGrams so both values are always consistent
 const volKgDisplay = (l: number, b: number, h: number): string =>
   (volGrams(l, b, h) / 1000).toFixed(3)
 
-// Chargeable grams for one box based on its package type
 const boxChargeableGrams = (box: BoxDetails): number => {
   const actual = Math.round(parseFloat(box.weight) || 0)
-  const isBox = box.packageType.toLowerCase() === "box"
-  if (!isBox) return actual                                     // flyer/envelope/packet → actual only
+  const pType = box.packageType.toLowerCase()
+  const supportsDimensions = pType === "box" || pType === "envelope" // "envelope" is the value for Plastic/Flyer
+  
+  if (!supportsDimensions) return actual
   const l = parseFloat(box.length) || 0
   const b = parseFloat(box.breadth) || 0
   const h = parseFloat(box.height) || 0
-  return Math.max(actual, volGrams(l, b, h))                   // box → max(actual, volumetric)
+  return Math.max(actual, volGrams(l, b, h))
 }
 
-// Sum of chargeable grams across all boxes
 const totalChargeableGrams = (boxes: BoxDetails[]): number =>
   boxes.reduce((sum, box) => sum + boxChargeableGrams(box), 0)
+
+// ─── Spinner icon (inline so no extra dep) ────────────────────────────────────
+const Spinner = () => (
+  <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+  </svg>
+)
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const NewOrderPage: FC = () => {
@@ -127,7 +195,7 @@ const NewOrderPage: FC = () => {
     deliveryCountry: "India",
     orderId: generateOrderId(),
     channelName: "",
-    paymentMode: "",
+    paymentMode: "Prepaid",
     codAmount: "",
     totalAmount: "",
     sellerName: "",
@@ -157,17 +225,19 @@ const NewOrderPage: FC = () => {
   const [showCustomerDetails, setShowCustomerDetails] = useState(false)
   const [showFromDetails, setShowFromDetails] = useState(false)
 
-  // ── Rate state (managed here — no external rate store needed) ───────────────
+  // ── Pincode autofill loading state ──────────────────────────────────────────
+  const [deliveryPinLoading, setDeliveryPinLoading] = useState(false)
+  const [fromPinLoading, setFromPinLoading] = useState(false)
+
+  // ── Rate state ──────────────────────────────────────────────────────────────
   const [expressRate, setExpressRate] = useState<RateResult | null>(null)
   const [surfaceRate, setSurfaceRate] = useState<RateResult | null>(null)
   const [rateLoading, setRateLoading] = useState(false)
   const [rateError, setRateError] = useState<string | null>(null)
   const rateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // ── Load markup config once on mount ────────────────────────────────────────
   useEffect(() => { loadMarkupConfig() }, [])
 
-  // ── Set pickupLocation from profile for franchise login ─────────────────────
   useEffect(() => {
     if (loginType !== "franchise" || !profileDataStr) return
     const p = JSON.parse(profileDataStr)
@@ -175,7 +245,47 @@ const NewOrderPage: FC = () => {
     if (name) setFormData((prev) => ({ ...prev, pickupLocation: name }))
   }, [loginType, profileDataStr])
 
-  // ── Direct API call for a single mode ───────────────────────────────────────
+  // ── Autofill delivery address fields when deliveryPincode = 6 digits ─────────
+  useEffect(() => {
+    const pin = formData.deliveryPincode
+    if (pin.length !== 6) return
+    let cancelled = false
+    setDeliveryPinLoading(true)
+    lookupPincode(pin).then((info) => {
+      if (cancelled) return
+      setDeliveryPinLoading(false)
+      if (!info) { toast.error("Pincode not serviceable or not found"); return }
+      setFormData((prev) => ({
+        ...prev,
+        deliveryCity: info.city,
+        deliveryState: info.state,
+        deliveryCountry: info.country,
+      }))
+    })
+    return () => { cancelled = true }
+  }, [formData.deliveryPincode])
+
+  // ── Autofill from address fields when fromPin = 6 digits ─────────────────────
+  useEffect(() => {
+    const pin = formData.fromPin
+    if (pin.length !== 6) return
+    let cancelled = false
+    setFromPinLoading(true)
+    lookupPincode(pin).then((info) => {
+      if (cancelled) return
+      setFromPinLoading(false)
+      if (!info) { toast.error("Pincode not serviceable or not found"); return }
+      setFormData((prev) => ({
+        ...prev,
+        fromCity: info.city,
+        fromState: info.state,
+        fromCountry: info.country,
+      }))
+    })
+    return () => { cancelled = true }
+  }, [formData.fromPin])
+
+  // ── Rate fetch ───────────────────────────────────────────────────────────────
   const fetchRate = async (
     cgm: number, oPin: string, dPin: string,
     md: "E" | "S", pt: string
@@ -190,17 +300,11 @@ const NewOrderPage: FC = () => {
     if (!res.ok) throw new Error(`API ${res.status}`)
     const data = await res.json()
 
-    // Parse raw API fields
     const shipping = Number(deepGet(data, ["gross_amount"]) ?? 0)
     const dph = Number(deepGet(data, ["charge_dph"]) ?? 0)
     const zone = String(deepGet(data, ["zone", "zone_code"]) ?? "N/A")
     const cw = Number(deepGet(data, ["charged_weight", "chargeable_weight", "billed_weight"]) ?? cgm)
 
-    // GST from API (only used as fallback if shipping is 0)
-    const gstApi = Number(deepGet(data, ["gst_amount", "gst", "tax_amount"]) ?? 0)
-
-    // Apply markup on gross_amount → recompute GST at 18%
-    // Use shared rate calculation logic
     const markupConfig: RateMarkupConfig = {
       markupType: (markupCache.markupType === "flat" ? "flat" : "percentage"),
       markupValue: markupCache.markupValue,
@@ -208,20 +312,15 @@ const NewOrderPage: FC = () => {
     }
     return calculateRate({
       grossAmount: shipping || Number(deepGet(data, ["total_amount"]) ?? 0),
-      dph,
-      zone,
-      chargedWeight: cw,
-      markupConfig,
+      dph, zone, chargedWeight: cw, markupConfig,
     })
   }
 
-  // ── Auto-fetch both rates whenever relevant inputs change ────────────────────
   useEffect(() => {
     const cgm = totalChargeableGrams(boxes)
     const oPin = profileData?.pincode || ""
     const dPin = formData.deliveryPincode
 
-    // Reset
     setExpressRate(null)
     setSurfaceRate(null)
     setRateError(null)
@@ -254,11 +353,8 @@ const NewOrderPage: FC = () => {
     }
   }, [boxes, formData.deliveryPincode, formData.paymentMode])
 
-  // Convenient display values (already final from API — no markup re-apply)
   const displaySurfaceRate = surfaceRate?.total ?? null
   const displayExpressRate = expressRate?.total ?? null
-
-  // Currently selected rate for order submission
   const selectedRate =
     formData.shippingMode === "Express" ? displayExpressRate : displaySurfaceRate
 
@@ -348,7 +444,6 @@ const NewOrderPage: FC = () => {
         hsn_code: formData.hsnCode || "",
         cod_amount: formData.paymentMode === "COD" ? formData.codAmount : "",
         order_date: new Date().toLocaleString(),
-        // Use the API-returned total for the selected mode
         total_amount: selectedRate?.toString() || formData.totalAmount || formData.codAmount,
         seller_add: profileData?.address || "",
         seller_name: profileData?.agencyOwner || "",
@@ -357,6 +452,7 @@ const NewOrderPage: FC = () => {
         waybill: "",
         shipment_width: firstBox?.breadth || "100",
         shipment_height: firstBox?.height || "100",
+        shipment_length: firstBox?.length || "100",
         weight: totalWeight.toString(),
         shipping_mode: formData.shippingMode,
         address_type: formData.addressType || "",
@@ -378,8 +474,39 @@ const NewOrderPage: FC = () => {
     }
   }
 
-  // ── Derived display ─────────────────────────────────────────────────────────
   const cgmDisplay = totalChargeableGrams(boxes)
+
+  // ── Autofilled field component ────────────────────────────────────────────────
+  // Green tint + "✓ auto-filled" badge when value came from pincode lookup
+  const AutofilledInput = ({
+    id, label, isLoading, value, onChange,
+  }: {
+    id: string
+    label: string
+    isLoading: boolean
+    value: string
+    onChange: React.ChangeEventHandler<HTMLInputElement>
+  }) => (
+    <div>
+      <Label htmlFor={id} className="flex items-center gap-1.5">
+        {label}
+        {isLoading && (
+          <span className="inline-flex items-center gap-1 text-xs font-normal text-orange-500 animate-pulse">
+            <Spinner /> filling…
+          </span>
+        )}
+        {!isLoading && value && (
+          <span className="text-xs font-normal text-green-600 dark:text-green-400">✓ auto-filled</span>
+        )}
+      </Label>
+      <TextInput
+        id={id} name={id} type="text"
+        value={value} onChange={onChange}
+        placeholder="Auto-filled from pincode"
+        className={!isLoading && value ? "border-green-400 bg-green-50 dark:bg-green-900/20" : ""}
+      />
+    </div>
+  )
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
@@ -395,7 +522,7 @@ const NewOrderPage: FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-6">
 
-            {/* Order Details */}
+            {/* ── Order Details ─────────────────────────────────────────────── */}
             <Card>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <span className="text-orange-500">📋</span> Order Details
@@ -436,7 +563,7 @@ const NewOrderPage: FC = () => {
               </div>
             </Card>
 
-            {/* Delivery Details */}
+            {/* ── Delivery Details ──────────────────────────────────────────── */}
             <Card>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <span className="text-orange-500">📍</span> Delivery Details
@@ -452,8 +579,8 @@ const NewOrderPage: FC = () => {
                 {showSellerDetails && (
                   <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[
-                      { id: "sellerName", label: "Seller Name", ph: "Enter seller name" },
-                      { id: "sellerAddress", label: "Seller Address", ph: "Enter seller address" },
+                      { id: "sellerName",    label: "Seller Name",       ph: "Enter seller name" },
+                      { id: "sellerAddress", label: "Seller Address",    ph: "Enter seller address" },
                       { id: "sellerInvoice", label: "Seller GST Number", ph: "Enter GST number" },
                     ].map(({ id, label, ph }) => (
                       <div key={id}>
@@ -465,7 +592,7 @@ const NewOrderPage: FC = () => {
                   </div>
                 )}
 
-                {/* Customer */}
+                {/* ── Customer Details ──────────────────────────────────────── */}
                 <Button type="button" color="gray" size="sm"
                   className="w-full border-orange-500 text-orange-500"
                   onClick={() => setShowCustomerDetails(!showCustomerDetails)}>
@@ -473,15 +600,13 @@ const NewOrderPage: FC = () => {
                 </Button>
                 {showCustomerDetails && (
                   <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+                    {/* Manual fields */}
                     {[
-                      { id: "customerName", label: "Customer Name *", ph: "Enter customer name", type: "text" },
-                      { id: "customerPhone", label: "Customer Phone *", ph: "10 digit mobile number", type: "tel", max: 10 },
-                      { id: "customerEmail", label: "Customer Email", ph: "Enter email address", type: "email" },
-                      { id: "deliveryAddress", label: "Delivery Address *", ph: "Enter complete delivery address", type: "text" },
-                      { id: "deliveryCity", label: "City", ph: "City", type: "text" },
-                      { id: "deliveryState", label: "State", ph: "State", type: "text" },
-                      { id: "deliveryPincode", label: "Pincode *", ph: "6 digit pincode", type: "text", max: 6 },
-                      { id: "deliveryCountry", label: "Country", ph: "Country", type: "text" },
+                      { id: "customerName",    label: "Customer Name *",        ph: "Enter customer name",             type: "text" },
+                      { id: "customerPhone",   label: "Customer Phone *",        ph: "10 digit mobile number",          type: "tel",  max: 10 },
+                      { id: "customerEmail",   label: "Customer Email",          ph: "Enter email address",             type: "email" },
+                      { id: "deliveryAddress", label: "Delivery Address *",      ph: "Enter complete delivery address", type: "text" },
                     ].map(({ id, label, ph, type, max }) => (
                       <div key={id}>
                         <Label htmlFor={id}>{label}</Label>
@@ -490,10 +615,31 @@ const NewOrderPage: FC = () => {
                           placeholder={ph} maxLength={max} />
                       </div>
                     ))}
+
+                    {/* Pincode — triggers autofill */}
+                    <div>
+                      <Label htmlFor="deliveryPincode" className="flex items-center gap-1.5">
+                        Pincode *
+                        {deliveryPinLoading && (
+                          <span className="inline-flex items-center gap-1 text-xs font-normal text-orange-500 animate-pulse">
+                            <Spinner /> looking up…
+                          </span>
+                        )}
+                      </Label>
+                      <TextInput id="deliveryPincode" name="deliveryPincode" type="text"
+                        value={formData.deliveryPincode} onChange={handleChange}
+                        placeholder="6 digit pincode" maxLength={6} />
+                    </div>
+
+                    {/* Autofilled fields */}
+                    <AutofilledInput id="deliveryCity"    label="City"    isLoading={deliveryPinLoading} value={formData.deliveryCity}    onChange={handleChange} />
+                    <AutofilledInput id="deliveryState"   label="State"   isLoading={deliveryPinLoading} value={formData.deliveryState}   onChange={handleChange} />
+                    <AutofilledInput id="deliveryCountry" label="Country" isLoading={deliveryPinLoading} value={formData.deliveryCountry} onChange={handleChange} />
+
                   </div>
                 )}
 
-                {/* From Address */}
+                {/* ── From Address ──────────────────────────────────────────── */}
                 <Button type="button" color="gray" size="sm"
                   className="w-full border-orange-500 text-orange-500"
                   onClick={() => setShowFromDetails(!showFromDetails)}>
@@ -501,29 +647,55 @@ const NewOrderPage: FC = () => {
                 </Button>
                 {showFromDetails && (
                   <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                    {/* Manual fields */}
                     {[
-                      { id: "fromName", label: "From Name", ph: "Enter sender/store name", type: "text" },
-                      { id: "fromPhone", label: "From Phone", ph: "10 digit mobile number", type: "tel", max: 10 },
-                      { id: "fromPin", label: "From Pincode", ph: "6 digit pincode", type: "text", max: 6 },
-                      { id: "fromAdd", label: "From Address", ph: "Enter complete from address", type: "text", span: 3 },
-                      { id: "fromCity", label: "From City", ph: "City", type: "text" },
-                      { id: "fromState", label: "From State", ph: "State", type: "text" },
-                      { id: "fromCountry", label: "From Country", ph: "Country", type: "text" },
-                    ].map(({ id, label, ph, type, max, span }) => (
-                      <div key={id} className={span ? `lg:col-span-${span}` : ""}>
+                      { id: "fromName",  label: "From Name",  ph: "Enter sender/store name", type: "text" },
+                      { id: "fromPhone", label: "From Phone", ph: "10 digit mobile number",  type: "tel", max: 10 },
+                    ].map(({ id, label, ph, type, max }) => (
+                      <div key={id}>
                         <Label htmlFor={id}>{label}</Label>
                         <TextInput id={id} name={id} type={type}
                           value={(formData as any)[id]} onChange={handleChange}
                           placeholder={ph} maxLength={max} />
                       </div>
                     ))}
+
+                    {/* From Pincode — triggers autofill */}
+                    <div>
+                      <Label htmlFor="fromPin" className="flex items-center gap-1.5">
+                        From Pincode
+                        {fromPinLoading && (
+                          <span className="inline-flex items-center gap-1 text-xs font-normal text-orange-500 animate-pulse">
+                            <Spinner /> looking up…
+                          </span>
+                        )}
+                      </Label>
+                      <TextInput id="fromPin" name="fromPin" type="text"
+                        value={formData.fromPin} onChange={handleChange}
+                        placeholder="6 digit pincode" maxLength={6} />
+                    </div>
+
+                    {/* From Address — full width */}
+                    <div className="lg:col-span-3">
+                      <Label htmlFor="fromAdd">From Address</Label>
+                      <TextInput id="fromAdd" name="fromAdd" type="text"
+                        value={formData.fromAdd} onChange={handleChange}
+                        placeholder="Enter complete from address" />
+                    </div>
+
+                    {/* Autofilled fields */}
+                    <AutofilledInput id="fromCity"    label="From City"    isLoading={fromPinLoading} value={formData.fromCity}    onChange={handleChange} />
+                    <AutofilledInput id="fromState"   label="From State"   isLoading={fromPinLoading} value={formData.fromState}   onChange={handleChange} />
+                    <AutofilledInput id="fromCountry" label="From Country" isLoading={fromPinLoading} value={formData.fromCountry} onChange={handleChange} />
+
                   </div>
                 )}
               </div>
             </Card>
           </div>
 
-          {/* Box Details */}
+          {/* ── Box Details ──────────────────────────────────────────────────── */}
           <Card>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -556,30 +728,19 @@ const NewOrderPage: FC = () => {
                         required>
                         <option value="">Select Package</option>
                         <option value="Box">Box</option>
-                        <option value="Envelope">Envelope</option>
-                        <option value="Packet">Packet</option>
+                        <option value="Envelope">Plastic cover / Flyer</option>
                       </Select>
-                      {box.packageType && box.packageType !== "Box" && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          Dimensions not used for {box.packageType} — chargeable = actual weight only
-                        </p>
-                      )}
                     </div>
 
                     <div>
                       <Label>
                         Dimensions (cm)
-                        {box.packageType !== "Box" && (
-                          <span className="ml-1 text-gray-400 font-normal">(not applicable for {box.packageType || "this type"})</span>
-                        )}
                       </Label>
                       <div className="grid grid-cols-3 gap-2">
                         {(["length", "breadth", "height"] as const).map((dim, i) => (
                           <TextInput key={dim} type="number"
                             placeholder={["L", "B", "H"][i]}
                             value={(box as any)[dim]}
-                            disabled={box.packageType !== "Box"}
-                            className={box.packageType !== "Box" ? "opacity-40" : ""}
                             onChange={(e) => handleBoxChange(box.id, dim, e.target.value)}
                             onKeyDown={preventInvalidKeys} min={1} />
                         ))}
@@ -596,8 +757,7 @@ const NewOrderPage: FC = () => {
                           onKeyDown={preventInvalidKeys} min={1} required className="flex-1" />
                         <span className="text-gray-500">gm</span>
                       </div>
-                      {/* Per-box volumetric info when box type and all dims are filled */}
-                      {box.packageType === "Box" &&
+                      {(box.packageType === "Box" || box.packageType === "Envelope") &&
                         box.length && box.breadth && box.height && box.weight && (
                           <p className="text-xs text-blue-600 mt-1">
                             {box.length} × {box.breadth} × {box.height} ÷ 5000 × 1000
@@ -612,7 +772,6 @@ const NewOrderPage: FC = () => {
                 </div>
               ))}
 
-              {/* Summary row */}
               <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
                 <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
                   ⓘ The estimated cost may vary from the final shipping cost based on actual
@@ -631,24 +790,21 @@ const NewOrderPage: FC = () => {
             </div>
           </Card>
 
-          {/* Shipping Mode */}
+          {/* ── Shipping Mode ─────────────────────────────────────────────────── */}
           <Card>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Choose shipping mode *
             </h3>
 
-            {rateError && (
-              <p className="text-sm text-red-500 mb-3">{rateError}</p>
-            )}
+            {rateError && <p className="text-sm text-red-500 mb-3">{rateError}</p>}
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Surface */}
               <button type="button"
                 onClick={() => setFormData({ ...formData, shippingMode: "Surface" })}
                 className={`p-6 rounded-lg border-2 text-left transition-colors ${formData.shippingMode === "Surface"
-                    ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
-                    : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
-                  }`}>
+                  ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                  : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
+                }`}>
                 <div className="text-4xl mb-2">🚚</div>
                 <h4 className="font-semibold text-gray-900 dark:text-white">SURFACE</h4>
                 <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
@@ -661,13 +817,12 @@ const NewOrderPage: FC = () => {
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Standard delivery (5–7 days)</p>
               </button>
 
-              {/* Express */}
               <button type="button"
                 onClick={() => setFormData({ ...formData, shippingMode: "Express" })}
                 className={`p-6 rounded-lg border-2 text-left transition-colors ${formData.shippingMode === "Express"
-                    ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
-                    : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
-                  }`}>
+                  ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                  : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
+                }`}>
                 <div className="text-4xl mb-2">✈️</div>
                 <h4 className="font-semibold text-gray-900 dark:text-white">EXPRESS</h4>
                 <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
@@ -681,7 +836,6 @@ const NewOrderPage: FC = () => {
               </button>
             </div>
 
-            {/* Breakdown for selected mode */}
             {!rateLoading && (formData.shippingMode === "Express" ? expressRate : surfaceRate) && (
               <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm text-gray-600 dark:text-gray-400 flex gap-6 flex-wrap">
                 {(() => {
@@ -698,35 +852,7 @@ const NewOrderPage: FC = () => {
             )}
           </Card>
 
-          {/* Payment Details */}
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <span className="text-orange-500">💳</span> Payment Details *
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="paymentMode">Payment Mode</Label>
-                <Select id="paymentMode" name="paymentMode"
-                  value={formData.paymentMode} onChange={handleChange} required>
-                  <option value="">Select Payment Mode</option>
-                  <option value="Prepaid">Prepaid</option>
-                  {/* <option value="COD">Cash on Delivery (COD)</option> */}
-                </Select>
-              </div>
-              {formData.paymentMode === "COD" && (
-                <div>
-                  <Label htmlFor="codAmount">COD Amount (₹) *</Label>
-                  <TextInput id="codAmount" name="codAmount" type="number"
-                    value={formData.codAmount} onChange={handleChange}
-                    placeholder="Amount to collect from customer"
-                    required={formData.paymentMode === "COD"} />
-                  <p className="text-xs text-gray-500 mt-1">Amount to be collected from customer</p>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* Actions */}
+          {/* ── Actions ───────────────────────────────────────────────────────── */}
           <div className="flex justify-end gap-4">
             <Button type="button" color="gray" onClick={() => navigate("/orders")} disabled={loading}>
               Cancel
