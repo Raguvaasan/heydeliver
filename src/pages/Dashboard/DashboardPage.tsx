@@ -192,7 +192,7 @@ const DashboardPage: FC = () => {
         },
         {
           icon: <HiCurrencyRupee className="h-5 w-5" />,
-          title: "Revenue Generated",
+          title: "Wallet Balance",
           value: `₹${Number(walletAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           subtitle: walletLabel,
           percentage: undefined,
