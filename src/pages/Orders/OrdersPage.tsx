@@ -7,6 +7,7 @@ import { useOrderStore } from "../../store/orderStore"
 import toast from "react-hot-toast"
 import { handleInvoice as generateInvoice } from "./handleInvoice"
 import { handleLabel as generateLabel } from "./handleLabel"
+import { handleDelhiveryLabel as generateDelhiveryLabel } from "./handleDelhiveryLabel"
 
 const OrdersPage: FC = () => {
   const navigate = useNavigate()
@@ -63,6 +64,10 @@ const OrdersPage: FC = () => {
 
   const handleLabel = useCallback(async (orderId: string) => {
     await generateLabel(orderId)
+  }, [])
+
+  const handleDelhiveryLabel = useCallback(async (waybill: string) => {
+    await generateDelhiveryLabel(waybill)
   }, [])
   const getStatusColor = useCallback((status: string) => {
     const statusLower = status?.toLowerCase()
@@ -143,17 +148,17 @@ const OrdersPage: FC = () => {
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="font-medium text-gray-900 dark:text-white">
-                      {order.bookingId || order._id}
+                      {order.shipmentDetails.order}
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                     {order.bookingDate || new Date(order.createdAt).toLocaleString()}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
-                    {order.customer || order.customerName || "-"}
+                    {order.consignee.name || "-"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
-                    {order.customerNumber || order.phone || "-"}
+                   {order.consignee.phone || "-"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                     ₹{order.amount || 0}
@@ -167,16 +172,7 @@ const OrdersPage: FC = () => {
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() =>
-                          handleInvoice(
-                            order.waybill ||
-                            order.awb ||
-                            order.trackingNumber ||
-                            order.shipmentDetails?.waybill ||
-                            order.orderId ||
-                            order.bookingId ||
-                            order._id
-                          )
-                        }
+                          handleInvoice(order.orderId)}
                         className="p-1.5 text-gray-700 hover:text-gray-900 dark:text-gray-300"
                         title="View Invoice"
                       >
@@ -184,20 +180,19 @@ const OrdersPage: FC = () => {
                       </button>
                       <button
                         onClick={() =>
-                          handleLabel(
-                            order.waybill ||
-                            order.awb ||
-                            order.trackingNumber ||
-                            order.shipmentDetails?.waybill ||
-                            order.orderId ||
-                            order.bookingId ||
-                            order._id
-                          )
-                        }
+                          handleLabel(order.orderId)}
                         className="p-1.5 text-gray-700 hover:text-gray-900 dark:text-gray-300"
                         title="Print Label"
                       >
                         <HiOutlinePrinter className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleDelhiveryLabel(order.waybill)}
+                        className="p-1.5 text-orange-600 hover:text-orange-700 dark:text-orange-400"
+                        title="Delhivery Label"
+                      >
+                        <HiDocumentDownload className="h-5 w-5" />
                       </button>
                       <button
                         onClick={() => handleView(order._id || order.orderId || order.bookingId)}
@@ -229,7 +224,7 @@ const OrdersPage: FC = () => {
         </table>
       </div>
     )
-  }, [loading, selectedOrders, handleSelectAll, handleView, handleEdit, handleDelete, getStatusColor, handleInvoice])
+  }, [loading, selectedOrders, handleSelectAll, handleView, handleEdit, handleDelete, getStatusColor, handleInvoice, handleLabel, handleDelhiveryLabel])
 
   return (
     <NavbarSidebarLayout isFooter={false}>

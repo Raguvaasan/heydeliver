@@ -25,7 +25,10 @@ export interface RateCalculationResult {
 }
 
 /**
- * Applies markup and GST to the base shipping amount, returns all rate details.
+ * Calculates rates using a backward calculation method to ensure precise splits.
+ * 1. Calculate raw total with markup and 18% GST.
+ * 2. Round total to nearest whole number.
+ * 3. Deconstruct: Base = Total / 1.18, GST = Total - Base, Shipping = Base - Diesel.
  */
 export function calculateRate({
   grossAmount,
@@ -41,14 +44,24 @@ export function calculateRate({
         ? (grossAmount * markupConfig.markupValue) / 100
         : markupConfig.markupValue
   }
-  const shippingWithMarkup = grossAmount + markupAmt
-  const gst = shippingWithMarkup * 0.18
-  const total = Math.round(shippingWithMarkup) + Math.round(gst) + Math.round(dph)
+
+  // Step 1: Calculate raw total with 18% GST
+  const rawBase = grossAmount + markupAmt + dph
+  const rawTotal = rawBase * 1.18
+  
+  // Step 2: Final selling price is rounded to 0 decimal places (as per user total 67)
+  const finalTotal = Math.round(rawTotal)
+
+  // Step 3: Backward deconstruction
+  const baseAmount = Number((finalTotal / 1.18).toFixed(2))
+  const gstAmount = Number((finalTotal - baseAmount).toFixed(2))
+  const shippingCost = Number((baseAmount - dph).toFixed(2))
+
   return {
-    shipping: Math.round(shippingWithMarkup),
-    gst: Math.round(gst),
-    dph: Math.round(dph),
-    total,
+    shipping: shippingCost,
+    gst: gstAmount,
+    dph: dph,
+    total: finalTotal,
     zone,
     chargedWeight,
   }

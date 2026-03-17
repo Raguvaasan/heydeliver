@@ -841,9 +841,9 @@ const NewOrderPage: FC = () => {
                 {(() => {
                   const r = formData.shippingMode === "Express" ? expressRate : surfaceRate
                   return <>
-                    <span>Shipping: ₹{r!.shipping}</span>
-                    <span>GST (18%): ₹{r!.gst}</span>
-                    <span>DPH: ₹{r!.dph}</span>
+                    <span>Shipping: ₹{r!.shipping.toFixed(2)}</span>
+                    <span>GST (18%): ₹{r!.gst.toFixed(2)}</span>
+                    <span>DPH: ₹{r!.dph.toFixed(2)}</span>
                     <span>Zone: {r!.zone}</span>
                     <span>Chargeable: {r!.chargedWeight} gm</span>
                   </>

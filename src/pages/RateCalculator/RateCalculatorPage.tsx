@@ -3,6 +3,7 @@ import { Button, Card, Label, Select, TextInput, Radio, Spinner, Alert } from "f
 import { HiInformationCircle, HiCalculator } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { usePincodeStore } from "../../store/pincodeStore"
+import { calculateRate, RateMarkupConfig, RateCalculationResult } from "../../common/rateCalculator"
 import toast from "react-hot-toast"
 
 // ─── API endpoints ────────────────────────────────────────────────────────────
@@ -51,47 +52,7 @@ function deepGet(obj: unknown, keys: string[]): number | string | undefined {
   return undefined
 }
 
-// ─── Markup application ───────────────────────────────────────────────────────
-// Markup is applied only on gross_amount (base shipping).
-// GST is then recomputed at 18% on (shipping + markup).
-// DPH passes through unchanged from the API.
-interface RateDetails {
-  shippingCost: number   // gross_amount + markup
-  gstCharge: number   // 18% of shippingCost
-  dieselCharge: number   // charge_dph from API
-  total: number   // shippingCost + gstCharge + dieselCharge
-  zone: string
-  chargedWeight: number
-}
-
-function applyMarkupToRate(
-  grossAmount: number,
-  dph: number,
-  zone: string,
-  chargedWeight: number
-): RateDetails {
-  const cfg = markupCache
-
-  let markupAmt = 0
-  if (cfg.isActive && cfg.markupValue > 0) {
-    markupAmt = cfg.markupType === "percentage"
-      ? (grossAmount * cfg.markupValue) / 100
-      : cfg.markupValue
-  }
-
-  const shippingWithMarkup = grossAmount + markupAmt
-  const gst = shippingWithMarkup * 0.18
-  const total = Math.round(shippingWithMarkup) + Math.round(gst) + Math.round(dph)
-
-  return {
-    shippingCost: Math.round(shippingWithMarkup),
-    gstCharge: Math.round(gst),
-    dieselCharge: Math.round(dph),
-    total,
-    zone,
-    chargedWeight,
-  }
-}
+// Rate calculation is handled by shared logic in src/common/rateCalculator.ts
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const RateCalculatorPage: FC = () => {
@@ -109,7 +70,7 @@ const RateCalculatorPage: FC = () => {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [rateDetails, setRateDetails] = useState<RateDetails | null>(null)
+  const [rateDetails, setRateDetails] = useState<RateCalculationResult | null>(null)
 
   const {
     pickupPincodeData, deliveryPincodeData,
@@ -196,8 +157,20 @@ const RateCalculatorPage: FC = () => {
       const zone = String(deepGet(data, ["zone", "zone_code"]) ?? "N/A")
       const cw = Number(deepGet(data, ["charged_weight", "chargeable_weight", "billed_weight"]) ?? cgm)
 
-      // Apply markup on gross_amount → recompute GST at 18%
-      setRateDetails(applyMarkupToRate(grossAmount, dph, zone, cw))
+      // Apply markup and backward calculation
+      const markupConfig: RateMarkupConfig = {
+        markupType: markupCache.markupType,
+        markupValue: markupCache.markupValue,
+        isActive: markupCache.isActive,
+      }
+
+      setRateDetails(calculateRate({
+        grossAmount,
+        dph,
+        zone,
+        chargedWeight: cw,
+        markupConfig,
+      }))
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to fetch rate"
       setError(msg)
@@ -479,15 +452,15 @@ const RateCalculatorPage: FC = () => {
                   <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-4">
                     <div className="flex justify-between">
                       <span>Shipping Cost</span>
-                      <span className="font-medium">₹{rateDetails.shippingCost}</span>
+                      <span className="font-medium">₹{rateDetails.shipping.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>GST (18%)</span>
-                      <span className="font-medium">₹{rateDetails.gstCharge}</span>
+                      <span className="font-medium">₹{rateDetails.gst.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>DPH (Diesel)</span>
-                      <span className="font-medium">₹{rateDetails.dieselCharge}</span>
+                      <span className="font-medium">₹{rateDetails.dph.toFixed(2)}</span>
                     </div>
                     <div className="border-t-2 border-blue-400 dark:border-blue-600 pt-2 mt-2 flex justify-between font-bold text-lg">
                       <span>Total Amount</span>
