@@ -91,7 +91,7 @@ const BulkOrderPage: FC = () => {
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         New orders will be created and you can manifest them later. View these
-                        in the Pending Orders tab.
+                        in the All Orders tab.
                       </p>
                     </div>
                     {uploadType === "orders" && (

@@ -66,7 +66,9 @@ const PickupRequestsPage: FC = () => {
         limit,
       };
 
-      if (statusFilter !== "all") {
+      if (statusFilter === "active") {
+        params.status = "active,pending,in_transit,picked_up,out_for_delivery,manifested,shipped,dispatched";
+      } else if (statusFilter !== "all") {
         params.status = statusFilter.replace("-", "_");
       }
 

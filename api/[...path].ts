@@ -265,15 +265,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       if (segments[1] === 'order' && segments[2]) {
         // GET /api/shipment/order/:id
-        if (req.method !== 'GET') return res.status(405).json({ success:false,message:'Method not allowed' })
+        if (req.method !== 'GET' && req.method !== 'DELETE' && req.method !== 'PUT') return res.status(405).json({ success:false,message:'Method not allowed' })
         const id = segments[2]
         const authHeader = req.headers.authorization
         if (!authHeader) return res.status(401).json({ success:false,message:'Authorization token required' })
-        const backendResponse = await axios.get(`${BACKEND_API_URL}/api/shipment/order/${encodeURIComponent(id)}`, {
-          headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
-          timeout: 30000,
-          validateStatus: (status) => status < 500,
-        })
+        
+        let backendResponse
+        if (req.method === 'GET') {
+          backendResponse = await axios.get(`${BACKEND_API_URL}/api/shipment/order/${encodeURIComponent(id)}`, {
+            headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+            timeout: 30000,
+            validateStatus: (status) => status < 500,
+          })
+        } else {
+          backendResponse = await axios({
+            method: req.method,
+            url: `${BACKEND_API_URL}/api/shipment/order/${encodeURIComponent(id)}`,
+            data: req.body,
+            headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+            timeout: 30000,
+            validateStatus: (status) => status < 500,
+          })
+        }
         return res.status(backendResponse.status).json(backendResponse.data)
       }
       if (segments[1] === 'invoice' && segments[2]) {
@@ -461,6 +474,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const response = await axios.post(`${BACKEND_API_URL}/api/wallet/verify-payment`, payload, { headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' } })
         return res.status(200).json(response.data)
       }
+    }
+
+    if (segments[0] === 'orders') {
+      // forward /api/orders/... to the real backend
+      const authHeader = req.headers.authorization
+      const backendUrl = `${BACKEND_API_URL}/${path}`
+      const axiosConfig: any = {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000,
+        validateStatus: (status: number) => status < 500,
+      }
+      if (authHeader) axiosConfig.headers.Authorization = authHeader
+
+      let backendResponse
+      if (req.method === 'GET' || req.method === 'DELETE') {
+        backendResponse = await axios({
+          method: req.method,
+          url: backendUrl,
+          params: parsedUrl.searchParams,
+          ...axiosConfig,
+        })
+      } else {
+        backendResponse = await axios({
+          method: req.method || 'GET',
+          url: backendUrl,
+          data: req.body,
+          ...axiosConfig,
+        })
+      }
+      return res.status(backendResponse.status).json(backendResponse.data)
     }
 
     // catch‑all for any other admin request not handled above

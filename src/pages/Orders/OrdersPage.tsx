@@ -1,7 +1,7 @@
 import { FC, useEffect, useState, useCallback, useMemo } from "react"
 import { Badge, Button, Card, Spinner, Tabs } from "flowbite-react"
 import { HiDocumentDownload, HiEye, HiPencil, HiTrash, HiViewGrid, HiCheckCircle, HiClock, HiTruck, HiXCircle, HiOutlinePrinter } from "react-icons/hi"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useOrderStore } from "../../store/orderStore"
 import toast from "react-hot-toast"
@@ -11,16 +11,25 @@ import { handleDelhiveryLabel as generateDelhiveryLabel } from "./handleDelhiver
 
 const OrdersPage: FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { orders, activeOrders, fetchOrders, fetchActiveOrders, deleteOrder, loading } = useOrderStore()
   const [activeTab, setActiveTab] = useState<"recent" | "active">("recent")
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  
+  // Get initial status from location state if available
+  const initialStatus = (location.state as any)?.status || "all"
+  const [statusFilter, setStatusFilter] = useState<string>(initialStatus)
 
   useEffect(() => {
     fetchOrders()
     fetchActiveOrders()
+    
+    // If status filter was passed in location state, ensure it's set
+    if ((location.state as any)?.status) {
+      setStatusFilter((location.state as any).status)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Run only on mount
+  }, [location.state]) // Re-run if location state changes (e.g. navigating back from dashboard with same route but different state)
 
   // Memoized callbacks to prevent unnecessary re-renders
   const handleSelectOrder = useCallback((orderId: string) => {
@@ -117,6 +126,7 @@ const OrdersPage: FC = () => {
                 />
               </th>
               <th className="px-4 py-3 whitespace-nowrap">Order ID</th>
+              <th className="px-4 py-3 whitespace-nowrap">AWB</th>
               <th className="px-4 py-3 whitespace-nowrap">BOOKING DATE & TIME</th>
               <th className="px-4 py-3 whitespace-nowrap">CUSTOMER</th>
               <th className="px-4 py-3 whitespace-nowrap">CUSTOMER NUMBER</th>
@@ -136,9 +146,10 @@ const OrdersPage: FC = () => {
               ordersList.map((order) => (
                 <tr
                   key={order._id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                  onClick={() => handleView(order._id || order.orderId || order.bookingId)}
                 >
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedOrders.includes(order._id)}
@@ -151,6 +162,11 @@ const OrdersPage: FC = () => {
                       {order.shipmentDetails.order}
                     </span>
                   </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {order.waybill}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                     {order.bookingDate || new Date(order.createdAt).toLocaleString()}
                   </td>
@@ -158,7 +174,7 @@ const OrdersPage: FC = () => {
                     {order.consignee.name || "-"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
-                   {order.consignee.phone || "-"}
+                    {order.consignee.phone || "-"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                     ₹{order.amount || 0}
@@ -168,7 +184,7 @@ const OrdersPage: FC = () => {
                       {order.status || "Pending"}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() =>
@@ -264,7 +280,7 @@ const OrdersPage: FC = () => {
               >
                 Recent Bookings
               </button>
-              <button
+              {/* <button
                 onClick={() => setActiveTab("active")}
                 className={`pb-3 font-medium transition-colors ${activeTab === "active"
                   ? "text-orange-500 border-b-2 border-orange-500"
@@ -272,7 +288,7 @@ const OrdersPage: FC = () => {
                   }`}
               >
                 Pickup Requests
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -282,8 +298,8 @@ const OrdersPage: FC = () => {
               <button
                 onClick={() => setStatusFilter("all")}
                 className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${statusFilter === "all"
-                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                   }`}
               >
                 <HiViewGrid className="h-5 w-5" />
@@ -292,8 +308,8 @@ const OrdersPage: FC = () => {
               <button
                 onClick={() => setStatusFilter("active")}
                 className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${statusFilter === "active"
-                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                   }`}
               >
                 <HiCheckCircle className="h-5 w-5" />
@@ -302,8 +318,8 @@ const OrdersPage: FC = () => {
               <button
                 onClick={() => setStatusFilter("pending")}
                 className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${statusFilter === "pending"
-                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                   }`}
               >
                 <HiClock className="h-5 w-5" />
@@ -312,8 +328,8 @@ const OrdersPage: FC = () => {
               <button
                 onClick={() => setStatusFilter("in-transit")}
                 className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${statusFilter === "in-transit"
-                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                   }`}
               >
                 <HiTruck className="h-5 w-5" />
@@ -322,8 +338,8 @@ const OrdersPage: FC = () => {
               <button
                 onClick={() => setStatusFilter("delivered")}
                 className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${statusFilter === "delivered"
-                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                   }`}
               >
                 <HiCheckCircle className="h-5 w-5" />
@@ -332,8 +348,8 @@ const OrdersPage: FC = () => {
               <button
                 onClick={() => setStatusFilter("cancelled")}
                 className={`inline-flex items-center gap-2 px-4 py-2 border-b-2 font-medium text-sm transition-colors ${statusFilter === "cancelled"
-                    ? "border-orange-500 text-orange-600 dark:text-orange-500"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  ? "border-orange-500 text-orange-600 dark:text-orange-500"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                   }`}
               >
                 <HiXCircle className="h-5 w-5" />

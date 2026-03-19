@@ -8,13 +8,12 @@ const OrderDetailsPage: FC = () => {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const { selectedOrder, getOrderById, loading } = useOrderStore()
-
   useEffect(() => {
     if (id) {
       getOrderById(id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]) // Re-run only when id changes
+  }, [id])
 
   if (loading || !selectedOrder) {
     return (
@@ -36,88 +35,92 @@ const OrderDetailsPage: FC = () => {
 
   return (
     <NavbarSidebarLayout isFooter={false}>
-      <div className="px-4 pt-6 pb-6">
+      <div className="px-4 pt-4 pb-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
             Order Details
           </h1>
-          <div className="flex gap-3">
-            <Button
-              onClick={() => navigate("/orders")}
-              color="gray"
-            >
+          <div className="flex gap-2">
+            <Button onClick={() => navigate("/orders")} color="gray" size="sm">
               Back
             </Button>
             <Button
               onClick={() => navigate(`/orders/edit/${id}`)}
               className="bg-orange-500 hover:bg-orange-600"
+              size="sm"
             >
               Edit Order
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Order Information */}
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <Card className="p-4">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
               Order Information
             </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Booking ID:</span>
-                <span className="font-semibold text-orange-600">
-                  {selectedOrder.bookingId || selectedOrder._id}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Booking ID</span>
+                <span className="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                  {selectedOrder.shipmentDetails.order}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Order Date:</span>
-                <span className="font-medium">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Order Date</span>
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                   {selectedOrder.bookingDate || new Date(selectedOrder.createdAt).toLocaleString()}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Status:</span>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Status</span>
                 <Badge color={getStatusColor(selectedOrder.status)}>
                   {selectedOrder.status || "Pending"}
                 </Badge>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Amount:</span>
-                <span className="font-semibold text-lg">₹{selectedOrder.amount || 0}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Amount</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                  ₹{selectedOrder.amount || 0}
+                </span>
               </div>
               {selectedOrder.paymentMode && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Payment Mode:</span>
-                  <span className="font-medium">{selectedOrder.paymentMode}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Payment Mode</span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {selectedOrder.paymentMode}
+                  </span>
                 </div>
               )}
             </div>
           </Card>
 
           {/* Customer Information */}
-          <Card>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <Card className="p-4">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
               Customer Information
             </h3>
-            <div className="space-y-3">
-              <div>
-                <span className="text-gray-600 block mb-1">Customer Name:</span>
-                <span className="font-medium">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Name</span>
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                   {selectedOrder.customer || selectedOrder.customerName || "-"}
                 </span>
               </div>
-              <div>
-                <span className="text-gray-600 block mb-1">Phone Number:</span>
-                <span className="font-medium">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Phone</span>
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                   {selectedOrder.customerNumber || selectedOrder.phone || "-"}
                 </span>
               </div>
               {selectedOrder.customerEmail && (
-                <div>
-                  <span className="text-gray-600 block mb-1">Email:</span>
-                  <span className="font-medium">{selectedOrder.customerEmail}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Email</span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {selectedOrder.customerEmail}
+                  </span>
                 </div>
               )}
             </div>
@@ -125,14 +128,16 @@ const OrderDetailsPage: FC = () => {
 
           {/* Delivery Address */}
           {selectedOrder.deliveryAddress && (
-            <Card>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <Card className="p-4">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
                 Delivery Address
               </h3>
-              <div className="space-y-3">
-                <p className="text-gray-700">{selectedOrder.deliveryAddress}</p>
+              <div className="space-y-1">
+                <p className="text-sm text-gray-800 dark:text-gray-200">
+                  {selectedOrder.deliveryAddress}
+                </p>
                 {selectedOrder.deliveryCity && (
-                  <p className="text-gray-700">
+                  <p className="text-sm text-gray-800 dark:text-gray-200">
                     {selectedOrder.deliveryCity}
                     {selectedOrder.deliveryState && `, ${selectedOrder.deliveryState}`}
                     {selectedOrder.deliveryPincode && ` - ${selectedOrder.deliveryPincode}`}
@@ -144,19 +149,23 @@ const OrderDetailsPage: FC = () => {
 
           {/* Shipping Details */}
           {selectedOrder.shippingMode && (
-            <Card>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <Card className="p-4">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
                 Shipping Details
               </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping Mode:</span>
-                  <span className="font-medium">{selectedOrder.shippingMode}</span>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Shipping Mode</span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {selectedOrder.shippingMode}
+                  </span>
                 </div>
                 {selectedOrder.trackingNumber && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tracking Number:</span>
-                    <span className="font-medium">{selectedOrder.trackingNumber}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Tracking No.</span>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                      {selectedOrder.trackingNumber}
+                    </span>
                   </div>
                 )}
               </div>
@@ -166,28 +175,37 @@ const OrderDetailsPage: FC = () => {
 
         {/* Box Details */}
         {selectedOrder.boxes && selectedOrder.boxes.length > 0 && (
-          <Card className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <Card className="mt-4 p-4">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
               Box Details
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {selectedOrder.boxes.map((box: any, index: number) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium mb-3">Box {index + 1}</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div
+                  key={index}
+                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                >
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                    Box {index + 1}
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
                     <div>
-                      <span className="text-gray-600">Type:</span>
-                      <p className="font-medium">{box.packageType || "-"}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Dimensions:</span>
-                      <p className="font-medium">
-                        {box.length} x {box.breadth} x {box.height} cm
+                      <span className="text-gray-500 dark:text-gray-400 text-xs">Type</span>
+                      <p className="font-medium text-gray-800 dark:text-gray-200">
+                        {box.packageType || "-"}
                       </p>
                     </div>
                     <div>
-                      <span className="text-gray-600">Weight:</span>
-                      <p className="font-medium">{box.weight} gm</p>
+                      <span className="text-gray-500 dark:text-gray-400 text-xs">Dimensions</span>
+                      <p className="font-medium text-gray-800 dark:text-gray-200">
+                        {box.length} × {box.breadth} × {box.height} cm
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400 text-xs">Weight</span>
+                      <p className="font-medium text-gray-800 dark:text-gray-200">
+                        {box.weight} gm
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -196,34 +214,34 @@ const OrderDetailsPage: FC = () => {
           </Card>
         )}
 
-        {/* Order Timeline / History */}
-        <Card className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        {/* Order Timeline */}
+        <Card className="mt-4 p-4">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
             Order Timeline
           </h3>
-          <div className="space-y-4">
-            <div className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                <div className="w-0.5 h-full bg-gray-300"></div>
+          <div className="space-y-3">
+            <div className="flex gap-3 items-start">
+              <div className="flex flex-col items-center mt-1">
+                <div className="w-2.5 h-2.5 bg-orange-500 rounded-full shrink-0" />
+                <div className="w-px flex-1 bg-gray-200 dark:bg-gray-700 mt-1" />
               </div>
-              <div className="pb-4">
-                <p className="font-medium">Order Created</p>
-                <p className="text-sm text-gray-500">
+              <div className="pb-2">
+                <p className="text-sm font-medium text-gray-900 dark:text-white">Order Created</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {new Date(selectedOrder.createdAt).toLocaleString()}
                 </p>
               </div>
             </div>
 
             {selectedOrder.updatedAt !== selectedOrder.createdAt && (
-              <div className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <div className="w-0.5 h-full bg-gray-300"></div>
+              <div className="flex gap-3 items-start">
+                <div className="flex flex-col items-center mt-1">
+                  <div className="w-2.5 h-2.5 bg-blue-500 rounded-full shrink-0" />
+                  <div className="w-px flex-1 bg-gray-200 dark:bg-gray-700 mt-1" />
                 </div>
-                <div className="pb-4">
-                  <p className="font-medium">Order Updated</p>
-                  <p className="text-sm text-gray-500">
+                <div className="pb-2">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">Order Updated</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {new Date(selectedOrder.updatedAt).toLocaleString()}
                   </p>
                 </div>
@@ -231,13 +249,13 @@ const OrderDetailsPage: FC = () => {
             )}
 
             {selectedOrder.status === "Delivered" && (
-              <div className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <div className="flex gap-3 items-start">
+                <div className="mt-1">
+                  <div className="w-2.5 h-2.5 bg-green-500 rounded-full" />
                 </div>
                 <div>
-                  <p className="font-medium">Order Delivered</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">Order Delivered</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {new Date(selectedOrder.updatedAt).toLocaleString()}
                   </p>
                 </div>

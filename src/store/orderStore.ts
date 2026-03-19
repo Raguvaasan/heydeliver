@@ -490,9 +490,28 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   deleteOrder: async (id) => {
     set({ loading: true, error: null })
     try {
-      await http.delete(`/orders/${id}`)
+      // If it's a Freightrek order (starts with ORD_), we might need to hit the shipment endpoint
+      if (id.startsWith("ORD_")) {
+        try {
+          // We use axios directly to match how generic shipments are handled in getOrderById
+          const authToken = sessionStorage.getItem("authToken")
+          await axios.delete(`/api/shipment/order/${encodeURIComponent(id)}`, {
+            headers: {
+              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            }
+          })
+          toast.success("Shipment deleted successfully!")
+        } catch (shipmentErr: any) {
+          // If shipment delete fails, try the primary orders endpoint as fallback
+          await http.delete(`/orders/${id}`)
+          toast.success("Order deleted successfully!")
+        }
+      } else {
+        await http.delete(`/orders/${id}`)
+        toast.success("Order deleted successfully!")
+      }
+
       await get().fetchOrders()
-      toast.success("Order deleted successfully!")
       set({ loading: false })
     } catch (err: any) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to delete order"

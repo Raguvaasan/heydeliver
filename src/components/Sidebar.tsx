@@ -154,8 +154,7 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/orders",
       submenu: [
         { title: "New Order", path: "/orders/new" },
-        { title: "Pending Orders", path: "/orders" },
-        { title: "Active Orders", path: "/orders/pickup" },
+        { title: "All Orders", path: "/orders" },
       ],
     },
     {

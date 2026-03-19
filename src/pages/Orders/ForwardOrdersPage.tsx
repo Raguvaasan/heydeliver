@@ -97,7 +97,11 @@ const ForwardOrdersPage: FC = () => {
       };
       
       // Always add status filter (active, pending, or in-transit)
-      params.status = statusFilter.replace("-", "_");
+      if (statusFilter === "active") {
+        params.status = "active,pending,in_transit,picked_up,out_for_delivery,manifested,shipped,dispatched";
+      } else {
+        params.status = statusFilter.replace("-", "_");
+      }
       
       const response = await http.get("/shipment/orders", { params });
       let ordersData: ForwardOrder[] = [];
