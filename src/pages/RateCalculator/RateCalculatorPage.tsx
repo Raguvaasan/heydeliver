@@ -7,8 +7,8 @@ import { calculateRate, RateMarkupConfig, RateCalculationResult } from "../../co
 import toast from "react-hot-toast"
 
 // ─── API endpoints ────────────────────────────────────────────────────────────
-const RATE_API = "https://admin.heydeliver.in/delhivery-api/api/kinko/v1/invoice/charges/.json"
-const MARKUP_API = "https://freightrekapi.vercel.app/api/v1/settings/public/rate-card-markup"
+const RATE_API = "/delhivery-api/api/kinko/v1/invoice/charges/.json"
+const MARKUP_API = "/api/settings/public/rate-calculator-markup"
 
 // ─── Markup config (fetched once, cached at module level) ─────────────────────
 interface MarkupConfig {
