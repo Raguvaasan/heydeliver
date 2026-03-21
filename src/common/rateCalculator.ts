@@ -8,7 +8,7 @@ export interface RateMarkupConfig {
 }
 
 export interface RateCalculationInput {
-  grossAmount: number
+  totalAmount: number
   dph: number
   zone: string
   chargedWeight: number
@@ -25,34 +25,30 @@ export interface RateCalculationResult {
 }
 
 /**
- * Calculates rates using a backward calculation method to ensure precise splits.
- * 1. Calculate raw total with markup and 18% GST.
- * 2. Round total to nearest whole number.
- * 3. Deconstruct: Base = Total / 1.18, GST = Total - Base, Shipping = Base - Diesel.
+ * Calculates rates using the required "markup-first on API total_amount" method.
+ * 1. Apply markup directly on API total_amount.
+ * 2. Round final total to 0 decimals.
+ * 3. Reverse split because GST (18%) is included in final total:
+ *    base = finalTotal / 1.18
+ *    gst = finalTotal - base
+ *    shipping = base - dph
  */
 export function calculateRate({
-  grossAmount,
+  totalAmount,
   dph,
   zone,
   chargedWeight,
   markupConfig,
 }: RateCalculationInput): RateCalculationResult {
-  let markupAmt = 0
+  let finalTotalRaw = totalAmount
   if (markupConfig.isActive && markupConfig.markupValue > 0) {
-    markupAmt =
+    finalTotalRaw =
       markupConfig.markupType === "percentage"
-        ? (grossAmount * markupConfig.markupValue) / 100
-        : markupConfig.markupValue
+        ? totalAmount * (1 + markupConfig.markupValue / 100)
+        : totalAmount + markupConfig.markupValue
   }
 
-  // Step 1: Calculate raw total with 18% GST
-  const rawBase = grossAmount + markupAmt + dph
-  const rawTotal = rawBase * 1.18
-  
-  // Step 2: Final selling price is rounded to 0 decimal places (as per user total 67)
-  const finalTotal = Math.round(rawTotal)
-
-  // Step 3: Backward deconstruction
+  const finalTotal = Math.round(finalTotalRaw)
   const baseAmount = Number((finalTotal / 1.18).toFixed(2))
   const gstAmount = Number((finalTotal - baseAmount).toFixed(2))
   const shippingCost = Number((baseAmount - dph).toFixed(2))

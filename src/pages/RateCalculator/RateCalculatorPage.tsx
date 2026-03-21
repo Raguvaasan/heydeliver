@@ -8,7 +8,7 @@ import toast from "react-hot-toast"
 
 // ─── API endpoints ────────────────────────────────────────────────────────────
 const RATE_API = "/delhivery-api/api/kinko/v1/invoice/charges/.json"
-const MARKUP_API = "/api/settings/rate-calculator-markup"
+const MARKUP_API = "/api/settings/rate-card-markup"
 
 // ─── Markup config (fetched once, cached at module level) ─────────────────────
 interface MarkupConfig {
@@ -158,7 +158,7 @@ const RateCalculatorPage: FC = () => {
       const data = await res.json()
 
       // Parse raw fields from API response
-      const grossAmount = Number(deepGet(data, ["gross_amount"]) ?? 0)
+      const totalAmount = Number(deepGet(data, ["total_amount"]) ?? 0)
       const dph = Number(deepGet(data, ["charge_dph"]) ?? 0)
       const zone = String(deepGet(data, ["zone", "zone_code"]) ?? "N/A")
       const cw = Number(deepGet(data, ["charged_weight", "chargeable_weight", "billed_weight"]) ?? cgm)
@@ -171,7 +171,7 @@ const RateCalculatorPage: FC = () => {
       }
 
       setRateDetails(calculateRate({
-        grossAmount,
+        totalAmount,
         dph,
         zone,
         chargedWeight: cw,
@@ -457,7 +457,7 @@ const RateCalculatorPage: FC = () => {
 
                   <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-4">
                     <div className="flex justify-between">
-                      <span>Freight (excl. GST, excl. DPH)</span>
+                      <span>Shipping Cost</span>
                       <span className="font-medium">₹{rateDetails.shipping.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
@@ -488,6 +488,10 @@ const RateCalculatorPage: FC = () => {
                       <span>
                         Rate Card markup and Rate Calculator markup are separate settings.
                       </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <HiInformationCircle className="h-3 w-3" />
+                      <span>Shipping Cost includes your configured markup.</span>
                     </div>
                   </div>
                 </div>

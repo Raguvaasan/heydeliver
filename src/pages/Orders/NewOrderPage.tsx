@@ -7,8 +7,8 @@ import toast from "react-hot-toast"
 import { HiTrash, HiRefresh } from "react-icons/hi"
 
 // ─── API endpoints ────────────────────────────────────────────────────────────
-const RATE_API = "https://admin.heydeliver.in/delhivery-api/api/kinko/v1/invoice/charges/.json"
-const MARKUP_API = "https://freightrekapi.vercel.app/api/v1/settings/public/rate-card-markup"
+const RATE_API = "/delhivery-api/api/kinko/v1/invoice/charges/.json"
+const MARKUP_API = "/api/settings/rate-card-markup"
 const PINCODE_API = "/delhivery-api/c/api/pin-codes/json/"
 
 // ─── State code → full name map ───────────────────────────────────────────────
@@ -87,9 +87,15 @@ interface MarkupConfig {
 let markupCache: MarkupConfig = { markupType: "percentage", markupValue: 63, isActive: true }
 let markupPromise: Promise<MarkupConfig> | null = null
 
-function loadMarkupConfig(): Promise<MarkupConfig> {
-  if (markupPromise) return markupPromise
-  markupPromise = fetch(MARKUP_API)
+function loadMarkupConfig(force = false): Promise<MarkupConfig> {
+  if (markupPromise && !force) return markupPromise
+  const token = sessionStorage.getItem("authToken")
+  markupPromise = fetch(MARKUP_API, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
     .then((r) => r.json())
     .then((payload) => {
       const d = payload?.data ?? payload
@@ -290,6 +296,8 @@ const NewOrderPage: FC = () => {
     cgm: number, oPin: string, dPin: string,
     md: "E" | "S", pt: string
   ): Promise<RateResult | null> => {
+    await loadMarkupConfig(true)
+
     const params = new URLSearchParams({
       md, ss: "Delivered",
       o_pin: oPin, d_pin: dPin,
@@ -300,7 +308,7 @@ const NewOrderPage: FC = () => {
     if (!res.ok) throw new Error(`API ${res.status}`)
     const data = await res.json()
 
-    const shipping = Number(deepGet(data, ["gross_amount"]) ?? 0)
+    const totalAmount = Number(deepGet(data, ["total_amount"]) ?? 0)
     const dph = Number(deepGet(data, ["charge_dph"]) ?? 0)
     const zone = String(deepGet(data, ["zone", "zone_code"]) ?? "N/A")
     const cw = Number(deepGet(data, ["charged_weight", "chargeable_weight", "billed_weight"]) ?? cgm)
@@ -311,14 +319,14 @@ const NewOrderPage: FC = () => {
       isActive: markupCache.isActive,
     }
     return calculateRate({
-      grossAmount: shipping || Number(deepGet(data, ["total_amount"]) ?? 0),
+      totalAmount,
       dph, zone, chargedWeight: cw, markupConfig,
     })
   }
 
   useEffect(() => {
     const cgm = totalChargeableGrams(boxes)
-    const oPin = profileData?.pincode || ""
+    const oPin = formData.fromPin.length === 6 ? formData.fromPin : (profileData?.pincode || "")
     const dPin = formData.deliveryPincode
 
     setExpressRate(null)
@@ -351,7 +359,7 @@ const NewOrderPage: FC = () => {
     return () => {
       if (rateTimerRef.current) clearTimeout(rateTimerRef.current)
     }
-  }, [boxes, formData.deliveryPincode, formData.paymentMode])
+  }, [boxes, formData.deliveryPincode, formData.fromPin, formData.paymentMode])
 
   const displaySurfaceRate = surfaceRate?.total ?? null
   const displayExpressRate = expressRate?.total ?? null
