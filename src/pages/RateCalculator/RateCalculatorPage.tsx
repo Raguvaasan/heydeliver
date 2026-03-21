@@ -8,7 +8,7 @@ import toast from "react-hot-toast"
 
 // ─── API endpoints ────────────────────────────────────────────────────────────
 const RATE_API = "/delhivery-api/api/kinko/v1/invoice/charges/.json"
-const MARKUP_API = "/api/settings/public/rate-calculator-markup"
+const MARKUP_API = "/api/settings/rate-calculator-markup"
 
 // ─── Markup config (fetched once, cached at module level) ─────────────────────
 interface MarkupConfig {
@@ -22,7 +22,13 @@ let markupPromise: Promise<MarkupConfig> | null = null
 
 function loadMarkupConfig(force = false): Promise<MarkupConfig> {
   if (markupPromise && !force) return markupPromise
-  markupPromise = fetch(MARKUP_API)
+  const token = sessionStorage.getItem("authToken")
+  markupPromise = fetch(MARKUP_API, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
     .then((r) => r.json())
     .then((payload) => {
       const d = payload?.data ?? payload
