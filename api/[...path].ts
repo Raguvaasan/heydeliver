@@ -607,7 +607,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(response.status).json(data)
     }
 
-    // if we reach here, path was not matched
+    // ── Generic catch-all proxy ─────────────────────────────────────────────
+    // Forward any unmatched /api/* request to the backend so routes like
+    // /api/customers, /api/careers, /api/applications, etc. work without
+    // needing an explicit handler for each one.
+    if (segments.length > 0) {
+      const authHeader = req.headers.authorization
+      const backendUrl = `${BACKEND_API_URL}/${path}`
+      const axiosConfig: any = {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000,
+        validateStatus: (status: number) => status < 600,
+      }
+      if (authHeader) axiosConfig.headers.Authorization = authHeader
+
+      const qs = parsedUrl.search || ''
+      let backendResponse
+      if (req.method === 'GET' || req.method === 'DELETE') {
+        backendResponse = await axios({
+          method: req.method,
+          url: `${backendUrl}${qs}`,
+          ...axiosConfig,
+        })
+      } else {
+        backendResponse = await axios({
+          method: req.method || 'POST',
+          url: `${backendUrl}${qs}`,
+          data: req.body,
+          ...axiosConfig,
+        })
+      }
+      return res.status(backendResponse.status).json(backendResponse.data)
+    }
+
+    // if we reach here, path was empty
     res.status(404).json({ success: false, message: 'Not found' })
   } catch (error: any) {
     console.error('[Unified API] error', error)
