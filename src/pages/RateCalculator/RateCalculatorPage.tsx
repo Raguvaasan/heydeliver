@@ -457,7 +457,7 @@ const RateCalculatorPage: FC = () => {
 
                   <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-4">
                     <div className="flex justify-between">
-                      <span>Shipping Cost</span>
+                      <span>Freight (excl. GST, excl. DPH)</span>
                       <span className="font-medium">₹{rateDetails.shipping.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
@@ -469,7 +469,7 @@ const RateCalculatorPage: FC = () => {
                       <span className="font-medium">₹{rateDetails.dph.toFixed(2)}</span>
                     </div>
                     <div className="border-t-2 border-blue-400 dark:border-blue-600 pt-2 mt-2 flex justify-between font-bold text-lg">
-                      <span>Total Amount</span>
+                      <span>Customer Price (Final)</span>
                       <span className="text-blue-600">₹{rateDetails.total}</span>
                     </div>
                   </div>
@@ -482,6 +482,12 @@ const RateCalculatorPage: FC = () => {
                     <div className="flex items-center gap-1">
                       <HiInformationCircle className="h-3 w-3" />
                       <span>Chargeable Weight: {rateDetails.chargedWeight} gm</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <HiInformationCircle className="h-3 w-3" />
+                      <span>
+                        Rate Card markup and Rate Calculator markup are separate settings.
+                      </span>
                     </div>
                   </div>
                 </div>

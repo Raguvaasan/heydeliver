@@ -9,6 +9,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { IncomingMessage } from 'http';
 import { parseFormUrlEncoded } from '../../src/common/parseFormUrlEncoded';
 
+const DELHIVERY_TOKEN = process.env.DELHIVERY_TOKEN || "91aeec33f78a2d21a6348658708de71f31489038";
+
 function getRawBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = '';
@@ -55,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let fetchOptions: any = {
       method: req.method || 'GET',
       headers: {
-        'Authorization': 'Token 91aeec33f78a2d21a6348658708de71f31489038',
+        'Authorization': `Token ${DELHIVERY_TOKEN}`,
       },
     };
 

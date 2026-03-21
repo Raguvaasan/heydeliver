@@ -9,6 +9,8 @@ export default defineConfig(({ mode }) => {
     env["VITE_API_PROXY_TARGET"] || "https://freightrekapi.vercel.app"
   const invoiceProxyTarget =
     env["VITE_INVOICE_PROXY_TARGET"] || "http://localhost:3000"
+  const delhiveryToken =
+    env["DELHIVERY_TOKEN"] || "91aeec33f78a2d21a6348658708de71f31489038"
 
   return {
     plugins: [svgr(), react()],
@@ -55,9 +57,8 @@ export default defineConfig(({ mode }) => {
           target: apiProxyTarget,
           changeOrigin: true,
           secure: true,
-          // remove the leading "/api" segment before forwarding so the
-          // backend doesn’t need to know about our development proxy prefix.
-          rewrite: (path) => path.replace(/^\/api/, ""),
+          // Keep the "/api" prefix for backend routes like /api/customers.
+          rewrite: (path) => path,
         },
         "/delhivery-api": {
           target: "https://track.delhivery.com",
@@ -65,7 +66,7 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/delhivery-api/, ""),
           secure: true,
           headers: {
-            Authorization: "Token 91aeec33f78a2d21a6348658708de71f31489038",
+            Authorization: `Token ${delhiveryToken}`,
           },
         },
       },

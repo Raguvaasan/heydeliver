@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+const DELHIVERY_TOKEN = process.env.DELHIVERY_TOKEN || "91aeec33f78a2d21a6348658708de71f31489038";
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let fetchOptions: RequestInit = {
       method: req.method || 'GET',
       headers: {
-        'Authorization': 'Token 91aeec33f78a2d21a6348658708de71f31489038',
+        'Authorization': `Token ${DELHIVERY_TOKEN}`,
         'Content-Type': 'application/json',
         'Accept': '*/*',
       },

@@ -50,8 +50,8 @@ app.use("/api", async (req, res) => {
       // settings lives under /api/v1/settings/ on the backend
       backendPath = "/api/v1/settings/" + segments.slice(1).join("/")
     } else {
-      // everything else: strip leading /api and forward as-is
-      backendPath = req.path // e.g. /customers, /admin/auth/login, /shipment/orders
+      // everything else: keep /api prefix for backend routes
+      backendPath = `/api${req.path}` // e.g. /api/customers, /api/admin/auth/login
     }
 
     // Build query string from req.query (excludes path param added by old api-server)

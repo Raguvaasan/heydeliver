@@ -6,6 +6,7 @@ import url from 'url'
 
 // Helper constants
 const BACKEND_API_URL = process.env['BACKEND_API_URL'] || 'https://freightrekapi.vercel.app'
+const DELHIVERY_TOKEN = process.env.DELHIVERY_TOKEN || '91aeec33f78a2d21a6348658708de71f31489038'
 
 // Helpers for response formatting
 function sendCorsHeaders(res: VercelResponse) {
@@ -547,7 +548,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let delhiveryPath = Array.isArray(pathSegments) ? pathSegments.join('/') : pathSegments
       let delhiveryUrl = ''
       const method = req.method || 'GET'
-      const headers: any = { Authorization: 'Token 91aeec33f78a2d21a6348658708de71f31489038', 'Content-Type': 'application/json', Accept: '*/*' }
+      const headers: any = { Authorization: `Token ${DELHIVERY_TOKEN}`, 'Content-Type': 'application/json', Accept: '*/*' }
       let body: any = undefined
       if (method === 'POST' || method === 'PUT') {
         if (req.body) {
@@ -602,7 +603,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
       const qs = queryParams.toString()
       const fullUrl = `https://track.delhivery.com/${apiPath}${qs ? `?${qs}` : ''}`
-      const response = await fetch(fullUrl, { method: req.method || 'GET', headers: { Authorization: 'Token 91aeec33f78a2d21a6348658708de71f31489038', 'Content-Type': 'application/json' } })
+      const response = await fetch(fullUrl, { method: req.method || 'GET', headers: { Authorization: `Token ${DELHIVERY_TOKEN}`, 'Content-Type': 'application/json' } })
       const data = await response.json()
       return res.status(response.status).json(data)
     }
