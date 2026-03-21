@@ -55,7 +55,7 @@ export const useCustomerStore = create<CustomerState>((set) => ({
       if (search) params["search"] = search
       if (status) params["status"] = status
 
-      const response = await http.get("/api/customers", { params })
+      const response = await http.get("/customers", { params })
 
       const data = response.data?.data || response.data
       const customersRaw = data?.customers || data || []
@@ -89,7 +89,7 @@ export const useCustomerStore = create<CustomerState>((set) => ({
   addCustomer: async (customer) => {
     set({ loading: true, error: null })
     try {
-      const response = await http.post("/api/customers", customer)
+      const response = await http.post("/customers", customer)
 
       const payload = response.data?.data || response.data
       const newCustomer: Customer = {
@@ -129,7 +129,7 @@ export const useCustomerStore = create<CustomerState>((set) => ({
   updateCustomer: async (id, customer) => {
     set({ loading: true, error: null })
     try {
-      const response = await http.put(`/api/customers/${encodeURIComponent(id)}`, customer)
+      const response = await http.put(`/customers/${encodeURIComponent(id)}`, customer)
 
       const payload = response.data?.data || response.data
       const updatedCustomer: Partial<Customer> = {
@@ -174,7 +174,7 @@ export const useCustomerStore = create<CustomerState>((set) => ({
       if (!id) {
         throw new Error("Customer ID is required")
       }
-      await http.delete(`/api/customers/${encodeURIComponent(id)}`)
+      await http.delete(`/customers/${encodeURIComponent(id)}`)
       set((state) => ({
         customers: state.customers.filter((c) => c.id !== id),
         loading: false,
@@ -191,7 +191,7 @@ export const useCustomerStore = create<CustomerState>((set) => ({
   fetchCustomerById: async (id) => {
     set({ loading: true, error: null })
     try {
-      const response = await http.get(`/api/customers/${encodeURIComponent(id)}`)
+      const response = await http.get(`/customers/${encodeURIComponent(id)}`)
       const payload = response.data?.data || response.data
       const customer: Customer = {
         id: payload?._id || payload?.id,

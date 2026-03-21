@@ -62,7 +62,7 @@ export const useApplicationStore = create<ApplicationState>((set) => ({
       if (params.jobPostingId) query.set("jobPostingId", params.jobPostingId)
       if (params.email) query.set("email", params.email)
       const qs = query.toString()
-      const res = await http.get(`/api/applications${qs ? `?${qs}` : ""}`)
+      const res = await http.get(`/applications${qs ? `?${qs}` : ""}`)
       const data = res.data
       const list: Application[] = Array.isArray(data)
         ? data
@@ -78,7 +78,7 @@ export const useApplicationStore = create<ApplicationState>((set) => ({
 
   updateApplication: async (id, payload) => {
     try {
-      const res = await http.put(`/api/applications/${id}`, payload)
+      const res = await http.put(`/applications/${id}`, payload)
       const updated: Application = res.data?.data ?? res.data
       set((state) => ({
         applications: state.applications.map((a) => (a._id === id ? { ...a, ...updated } : a)),
@@ -92,7 +92,7 @@ export const useApplicationStore = create<ApplicationState>((set) => ({
 
   deleteApplication: async (id) => {
     try {
-      await http.delete(`/api/applications/${id}`)
+      await http.delete(`/applications/${id}`)
       set((state) => ({ applications: state.applications.filter((a) => a._id !== id) }))
       toast.success("Application deleted")
     } catch (err: any) {
