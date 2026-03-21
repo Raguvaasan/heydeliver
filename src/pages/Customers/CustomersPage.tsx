@@ -151,8 +151,8 @@ const CustomersPage: FC = () => {
                     <th className="px-4 py-3">Email</th>
                     <th className="px-4 py-3">Phone</th>
                     <th className="px-4 py-3">City</th>
-                    <th className="px-4 py-3">GST</th>
-                    <th className="px-4 py-3">Status</th>
+                    {/* <th className="px-4 py-3">GST</th>
+                    <th className="px-4 py-3">Status</th> */}
                     <th className="px-4 py-3 text-center">Action</th>
                   </tr>
                 </thead>
@@ -177,12 +177,12 @@ const CustomersPage: FC = () => {
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           {customer.phone}
                         </td>
-                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                        {/* <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           {customer.city || "-"}
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           {customer.gstNumber || "-"}
-                        </td>
+                        </td> */}
                         <td className="px-4 py-3">
                           <Badge
                             color={
@@ -266,11 +266,10 @@ const CustomersPage: FC = () => {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                        currentPage === pageNum
+                      className={`px-3 py-1 rounded-lg text-sm font-medium ${currentPage === pageNum
                           ? "bg-orange-500 text-white"
                           : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-                      }`}
+                        }`}
                     >
                       {pageNum}
                     </button>

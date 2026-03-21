@@ -27,7 +27,7 @@ function getRawBody(req: IncomingMessage): Promise<string> {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Get the path from query params
   const pathSegments = req.query.path;
-  
+
   // Reconstruct the API path
   let apiPath = '';
   if (Array.isArray(pathSegments)) {
@@ -35,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } else if (pathSegments) {
     apiPath = pathSegments;
   }
-  
+
   // Get query parameters excluding 'path'
   const queryParams = new URLSearchParams();
   Object.entries(req.query).forEach(([key, value]) => {
@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
   });
-  
+
   const queryString = queryParams.toString();
   const fullUrl = `https://track.delhivery.com/${apiPath}${queryString ? `?${queryString}` : ''}`;
 
@@ -55,7 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let fetchOptions: any = {
       method: req.method || 'GET',
       headers: {
-        'Authorization': 'Token 76a094c150aed4e3a9c6b41b608ee7174f4d5b51',
+        'Authorization': 'Token 91aeec33f78a2d21a6348658708de71f31489038',
       },
     };
 
@@ -104,9 +104,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(response.status).json(data);
   } catch (error: any) {
     console.error('Delhivery API Error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch from Delhivery API',
-      message: error.message 
+      message: error.message
     });
   }
 }

@@ -171,29 +171,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (backendResponse.status === 401 || backendResponse.status === 403) {
         // return same mock data as original file
         if (type === 'top-franchises') {
-          return res.status(200).json({ success: true, data: [
-            { franchiseId: '1', franchiseName: 'Mumbai Franchise', shipmentCount: 245, totalRevenue: 125000 },
-            { franchiseId: '2', franchiseName: 'Delhi Franchise', shipmentCount: 198, totalRevenue: 98000 },
-            { franchiseId: '3', franchiseName: 'Bangalore Franchise', shipmentCount: 176, totalRevenue: 87500 },
-            { franchiseId: '4', franchiseName: 'Chennai Franchise', shipmentCount: 142, totalRevenue: 71000 },
-            { franchiseId: '5', franchiseName: 'Pune Franchise', shipmentCount: 128, totalRevenue: 64000 }
-          ] })
+          return res.status(200).json({
+            success: true, data: [
+              { franchiseId: '1', franchiseName: 'Mumbai Franchise', shipmentCount: 245, totalRevenue: 125000 },
+              { franchiseId: '2', franchiseName: 'Delhi Franchise', shipmentCount: 198, totalRevenue: 98000 },
+              { franchiseId: '3', franchiseName: 'Bangalore Franchise', shipmentCount: 176, totalRevenue: 87500 },
+              { franchiseId: '4', franchiseName: 'Chennai Franchise', shipmentCount: 142, totalRevenue: 71000 },
+              { franchiseId: '5', franchiseName: 'Pune Franchise', shipmentCount: 128, totalRevenue: 64000 }
+            ]
+          })
         }
         if (type === 'wallet-statistics') {
-          return res.status(200).json({ success: true, data: {
-            totalBalance: 184.6,
-            totalWallets: 5,
-            credits: { amount: 308, count: 11 },
-            debits: { amount: 123.4, count: 3 }
-          } })
+          return res.status(200).json({
+            success: true, data: {
+              totalBalance: 184.6,
+              totalWallets: 5,
+              credits: { amount: 308, count: 11 },
+              debits: { amount: 123.4, count: 3 }
+            }
+          })
         }
-        return res.status(200).json({ success: true, data: {
-          overview: { activeShipments: { total:0, inTransit:0, outForDelivery:0 }, totalShipments: { count:0, currentPeriod:0, percentageChange:'0.0' }, revenue: { total:0, percentageChange:'0.0', currency:'₹' }, activeAgencies:0 },
-          revenueTrend: [],
-          shipmentTypeDistribution: [],
-          recentBookings: [],
-          period: period
-        } })
+        return res.status(200).json({
+          success: true, data: {
+            overview: { activeShipments: { total: 0, inTransit: 0, outForDelivery: 0 }, totalShipments: { count: 0, currentPeriod: 0, percentageChange: '0.0' }, revenue: { total: 0, percentageChange: '0.0', currency: '₹' }, activeAgencies: 0 },
+            revenueTrend: [],
+            shipmentTypeDistribution: [],
+            recentBookings: [],
+            period: period
+          }
+        })
       }
       return res.status(backendResponse.status).json(backendResponse.data)
     }
@@ -220,7 +226,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
       if (backendResponse.status === 401 || backendResponse.status === 403) {
         if (backendPath === '/api/dashboard') {
-          return res.status(200).json({ success: true, data: { overview:{ activeShipments:{total:0,inTransit:0,outForDelivery:0}, totalShipments:{count:0,currentPeriod:0,percentageChange:'0.0'}, revenue:{total:0,percentageChange:'0.0',currency:'₹'} }, revenueTrend:[], shipmentTypeDistribution:[], recentBookings:[], period:'week' } })
+          return res.status(200).json({ success: true, data: { overview: { activeShipments: { total: 0, inTransit: 0, outForDelivery: 0 }, totalShipments: { count: 0, currentPeriod: 0, percentageChange: '0.0' }, revenue: { total: 0, percentageChange: '0.0', currency: '₹' } }, revenueTrend: [], shipmentTypeDistribution: [], recentBookings: [], period: 'week' } })
         }
       }
       return res.status(backendResponse.status).json(backendResponse.data)
@@ -253,7 +259,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (req.method === 'OPTIONS') { return res.status(200).end() }
         const { page = 1, limit = 20, status } = req.query as any
         const authHeader = req.headers.authorization
-        if (!authHeader) return res.status(401).json({ success:false,message:'Authorization header is required' })
+        if (!authHeader) return res.status(401).json({ success: false, message: 'Authorization header is required' })
         const params: any = { page, limit }
         if (status && status !== 'all') params.status = status
         const backendResponse = await axios.get(`${BACKEND_API_URL}/api/shipment/orders`, {
@@ -265,11 +271,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       if (segments[1] === 'order' && segments[2]) {
         // GET /api/shipment/order/:id
-        if (req.method !== 'GET' && req.method !== 'DELETE' && req.method !== 'PUT') return res.status(405).json({ success:false,message:'Method not allowed' })
+        if (req.method !== 'GET' && req.method !== 'DELETE' && req.method !== 'PUT') return res.status(405).json({ success: false, message: 'Method not allowed' })
         const id = segments[2]
         const authHeader = req.headers.authorization
-        if (!authHeader) return res.status(401).json({ success:false,message:'Authorization token required' })
-        
+        if (!authHeader) return res.status(401).json({ success: false, message: 'Authorization token required' })
+
         let backendResponse
         if (req.method === 'GET') {
           backendResponse = await axios.get(`${BACKEND_API_URL}/api/shipment/order/${encodeURIComponent(id)}`, {
@@ -291,10 +297,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       if (segments[1] === 'invoice' && segments[2]) {
         // invoice generation
-        if (req.method !== 'GET') return res.status(405).json({ success:false,message:'Method not allowed' })
+        if (req.method !== 'GET') return res.status(405).json({ success: false, message: 'Method not allowed' })
         const id = segments[2]
         const authHeader = req.headers.authorization
-        if (!authHeader) return res.status(401).json({ success:false,message:'Authorization token required' })
+        if (!authHeader) return res.status(401).json({ success: false, message: 'Authorization token required' })
         const backendResponse = await axios.get(`${BACKEND_API_URL}/api/shipment/order/${encodeURIComponent(id)}`, {
           headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
           timeout: 30000,
@@ -454,13 +460,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       if (segments[1] === 'create-payment-order' && req.method === 'POST') {
         const { amount, paymentMethod } = req.body as any
-        if (!amount || !paymentMethod) return res.status(400).json({ success:false,message:'Amount and payment method are required',debug:{receivedBody:req.body}})
-        if (amount <=0) return res.status(400).json({ success:false,message:'Amount must be greater than 0' })
+        if (!amount || !paymentMethod) return res.status(400).json({ success: false, message: 'Amount and payment method are required', debug: { receivedBody: req.body } })
+        if (amount <= 0) return res.status(400).json({ success: false, message: 'Amount must be greater than 0' })
         const response = await axios.post(`${BACKEND_API_URL}/api/wallet/create-payment-order`, { amount, paymentMethod }, { headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' } })
         return res.status(200).json(response.data)
       }
       if (segments[1] === 'transactions' && req.method === 'GET') {
-        const { page='1', limit='20', type } = req.query as any
+        const { page = '1', limit = '20', type } = req.query as any
         let queryString = `page=${page}&limit=${limit}`
         if (type) queryString += `&type=${type}`
         const response = await axios.get(`${BACKEND_API_URL}/api/wallet/transactions?${queryString}`, { headers: { Authorization: `Bearer ${authToken}` } })
@@ -468,7 +474,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       if (segments[1] === 'verify-payment' && req.method === 'POST') {
         const { orderId, paymentId } = req.body as any
-        if (!orderId) return res.status(400).json({ success:false,message:'Order ID is required' })
+        if (!orderId) return res.status(400).json({ success: false, message: 'Order ID is required' })
         const payload: any = { orderId }
         if (paymentId) payload.paymentId = paymentId
         const response = await axios.post(`${BACKEND_API_URL}/api/wallet/verify-payment`, payload, { headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' } })
@@ -541,7 +547,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let delhiveryPath = Array.isArray(pathSegments) ? pathSegments.join('/') : pathSegments
       let delhiveryUrl = ''
       const method = req.method || 'GET'
-      const headers: any = { Authorization: 'Token 76a094c150aed4e3a9c6b41b608ee7174f4d5b51', 'Content-Type': 'application/json', Accept: '*/*' }
+      const headers: any = { Authorization: 'Token 91aeec33f78a2d21a6348658708de71f31489038', 'Content-Type': 'application/json', Accept: '*/*' }
       let body: any = undefined
       if (method === 'POST' || method === 'PUT') {
         if (req.body) {
@@ -552,7 +558,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (delhiveryPath.includes('/api/cmu/create.json')) {
               headers['Content-Type'] = 'application/x-www-form-urlencoded'
               const formData = new URLSearchParams()
-              Object.entries(req.body).forEach(([k,v]) => formData.append(k, String(v)))
+              Object.entries(req.body).forEach(([k, v]) => formData.append(k, String(v)))
               body = formData.toString()
             } else {
               body = JSON.stringify(req.body)
@@ -562,7 +568,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         delhiveryUrl = `https://track.delhivery.com/${delhiveryPath}`
       } else {
         const queryParams = new URLSearchParams()
-        parsedUrl.searchParams.forEach((v,k) => {
+        parsedUrl.searchParams.forEach((v, k) => {
           if (k !== 'path') queryParams.append(k, v)
         })
         const qs = queryParams.toString()
@@ -588,15 +594,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (Array.isArray(pathSegments)) apiPath = pathSegments.join('/')
       else if (pathSegments) apiPath = pathSegments as string
       const queryParams = new URLSearchParams()
-      Object.entries(req.query).forEach(([k,v]) => {
+      Object.entries(req.query).forEach(([k, v]) => {
         if (k !== 'path') {
-          if (Array.isArray(v)) v.forEach(x=> queryParams.append(k,x))
+          if (Array.isArray(v)) v.forEach(x => queryParams.append(k, x))
           else if (v) queryParams.append(k, v as string)
         }
       })
       const qs = queryParams.toString()
       const fullUrl = `https://track.delhivery.com/${apiPath}${qs ? `?${qs}` : ''}`
-      const response = await fetch(fullUrl, { method: req.method || 'GET', headers: { Authorization: 'Token 76a094c150aed4e3a9c6b41b608ee7174f4d5b51', 'Content-Type': 'application/json' } })
+      const response = await fetch(fullUrl, { method: req.method || 'GET', headers: { Authorization: 'Token 91aeec33f78a2d21a6348658708de71f31489038', 'Content-Type': 'application/json' } })
       const data = await response.json()
       return res.status(response.status).json(data)
     }

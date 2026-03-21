@@ -5,7 +5,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
+
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
@@ -14,12 +14,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const url = new URL(req.url || '', `https://${req.headers.host}`);
     const delhiveryPath = url.searchParams.get('path') || 'c/api/pin-codes/json';
-    
+
     let delhiveryUrl = '';
     let fetchOptions: RequestInit = {
       method: req.method || 'GET',
       headers: {
-        'Authorization': 'Token 76a094c150aed4e3a9c6b41b608ee7174f4d5b51',
+        'Authorization': 'Token 91aeec33f78a2d21a6348658708de71f31489038',
         'Content-Type': 'application/json',
         'Accept': '*/*',
       },
@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'POST' || req.method === 'PUT') {
       // For POST/PUT requests
       delhiveryUrl = `https://track.delhivery.com/${delhiveryPath}`;
-      
+
       // Pass through the body
       if (req.body) {
         // If body is form-urlencoded string
@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           queryParams.append(key, value);
         }
       });
-      
+
       const queryString = queryParams.toString();
       delhiveryUrl = `https://track.delhivery.com/${delhiveryPath}${queryString ? `?${queryString}` : ''}`;
     }
@@ -77,10 +77,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const data = await response.json();
     res.status(response.status).json(data);
-    
+
   } catch (error: any) {
     console.error('Delhivery API Error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch from Delhivery API',
       message: error.message,
       details: error.toString()

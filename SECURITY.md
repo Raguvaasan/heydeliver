@@ -79,7 +79,7 @@ Delhivery API token is hardcoded in `vite.config.ts` and visible in browser netw
 
 **Risk Level:** 🔴 **CRITICAL**  
 **Location:** `vite.config.ts` (Line 23)  
-**Exposed Token:** `76a094c150aed4e3a9c6b41b608ee7174f4d5b51`
+**Exposed Token:** `91aeec33f78a2d21a6348658708de71f31489038`
 
 ### **Current Implementation (Vulnerable):**
 ```typescript
@@ -87,7 +87,7 @@ Delhivery API token is hardcoded in `vite.config.ts` and visible in browser netw
 '/delhivery-api': {
   target: 'https://track.delhivery.com',
   headers: {
-    'Authorization': 'Token 76a094c150aed4e3a9c6b41b608ee7174f4d5b51'
+    'Authorization': 'Token 91aeec33f78a2d21a6348658708de71f31489038'
   }
 }
 ```

@@ -42,7 +42,7 @@ export default defineConfig(({ mode }) => {
         "/api/admin": {
           target: apiProxyTarget,
           changeOrigin: true,
-          rewrite: (path) => path,
+          rewrite: (path) => path.replace(/^\/api/, ""),
           secure: true,
         },
         "/api/dashboard": {
@@ -65,7 +65,7 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path.replace(/^\/delhivery-api/, ""),
           secure: true,
           headers: {
-            Authorization: "Token 76a094c150aed4e3a9c6b41b608ee7174f4d5b51",
+            Authorization: "Token 91aeec33f78a2d21a6348658708de71f31489038",
           },
         },
       },
