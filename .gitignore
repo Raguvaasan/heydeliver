@@ -2,7 +2,6 @@ dist
 node_modules
 tsconfig.tsbuildinfo
 yarn-error.log
-.env
 package-lock.json
 
 .vercel
