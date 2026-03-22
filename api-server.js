@@ -35,7 +35,7 @@ app.use("/delhivery-api", async (req, res) => {
     const response = await fetch(fullUrl, {
       method: req.method,
       headers: {
-         Authorization: `Token ${process.env.DELHIVERY_API_TOKEN}`,
+         Authorization: "Token 91aeec33f78a2d21a6348658708de71f31489038",
         "Content-Type": "application/json"
       }
     });
