@@ -53,6 +53,12 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path,
           secure: true,
         },
+        "/api/customers": {
+          target: apiProxyTarget,
+          changeOrigin: true,
+          rewrite: (path) => path,
+          secure: true,
+        },
         "/api": {
           target: apiProxyTarget,
           changeOrigin: true,
