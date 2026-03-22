@@ -11,14 +11,18 @@ interface Staff {
   _id: string
   name: string
   phone: string
+  mobile?: string
   email: string
+  type?: "head_quarter" | "franchise" | "hub"
   role: any
   roleId?: string
   franchiseId?: string
+  hubId?: string
   status: string
   username?: string
   password?: string
   franchise?: string
+  hub?: string
 }
 
 interface StaffState {
