@@ -7,7 +7,6 @@ export const config = {
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { IncomingMessage } from 'http';
-import { parseFormUrlEncoded } from '../../src/common/parseFormUrlEncoded';
 
 const DELHIVERY_TOKEN = process.env['DELHIVERY_API_TOKEN'] || "91aeec33f78a2d21a6348658708de71f31489038";
 
@@ -26,7 +25,15 @@ function getRawBody(req: IncomingMessage): Promise<string> {
   });
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.status(200).end();
+    return;
+  }
+
   // Get the path from query params
   const pathSegments = req.query['path'];
 
@@ -96,7 +103,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const response = await fetch(fullUrl, fetchOptions);
-    const data = await response.json();
+    const rawResponse = await response.text();
+    const contentType = response.headers.get('content-type') || '';
+
+    let data: unknown;
+    if (contentType.includes('application/json')) {
+      try {
+        data = JSON.parse(rawResponse);
+      } catch {
+        data = {
+          error: 'Invalid JSON response from Delhivery',
+          raw: rawResponse,
+        };
+      }
+    } else {
+      try {
+        data = JSON.parse(rawResponse);
+      } catch {
+        data = {
+          error: 'Non-JSON response from Delhivery',
+          raw: rawResponse,
+        };
+      }
+    }
 
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
