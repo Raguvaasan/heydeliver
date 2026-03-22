@@ -608,9 +608,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(response.status).json(data)
     }
 
+    // ── Customers handler ───────────────────────────────────────────────────
+    if (segments[0] === 'customers') {
+      const authHeader = req.headers.authorization
+      if (!authHeader) {
+        return res.status(401).json({ success: false, message: 'Authorization token required' })
+      }
+      const qs = parsedUrl.search || ''
+      const id = segments[1]
+      const baseUrl = `${BACKEND_API_URL}/api/customers`
+      const targetUrl = id ? `${baseUrl}/${encodeURIComponent(id)}${qs}` : `${baseUrl}${qs}`
+      const backendResponse = await axios({
+        method: req.method || 'GET',
+        url: targetUrl,
+        data: req.method !== 'GET' && req.method !== 'DELETE' ? req.body : undefined,
+        headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+        timeout: 30000,
+        validateStatus: (status: number) => status < 600,
+      })
+      return res.status(backendResponse.status).json(backendResponse.data)
+    }
+
     // ── Generic catch-all proxy ─────────────────────────────────────────────
     // Forward any unmatched /api/* request to the backend so routes like
-    // /api/customers, /api/careers, /api/applications, etc. work without
+    // /api/careers, /api/applications, etc. work without
     // needing an explicit handler for each one.
     if (segments.length > 0) {
       const authHeader = req.headers.authorization
