@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import fetch from "node-fetch";
 
 const app = express();
 const PORT = 3000;
@@ -20,64 +21,56 @@ app.get("/api", (req, res) => {
 /*
 ---------------------------------------------------
 Delhivery API Proxy
+Handles:
+https://truecargos.com/delhivery-api/*
 ---------------------------------------------------
 */
 app.use("/delhivery-api", async (req, res) => {
   try {
     const apiPath = req.path;
-    const query = req.url.includes("?")
-      ? req.url.substring(req.url.indexOf("?"))
-      : "";
+    const query = req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : "";
 
     const fullUrl = `https://track.delhivery.com${apiPath}${query}`;
 
     const response = await fetch(fullUrl, {
       method: req.method,
       headers: {
-        Authorization: "Token 91aeec33f78a2d21a6348658708de71f31489038",
-        "Content-Type": "application/json",
-      },
+         Authorization: "Token 91aeec33f78a2d21a6348658708de71f31489038",
+        "Content-Type": "application/json"
+      }
     });
 
     const data = await response.json();
 
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.status(response.status).json(data);
+    res.json(data);
 
   } catch (error) {
     console.error("Delhivery API error:", error);
 
     res.status(500).json({
       error: "Delhivery proxy failed",
-      message: error.message,
+      message: error.message
     });
   }
 });
 
 /*
 ---------------------------------------------------
-API ROUTER (Fix for Vercel-style routes)
+Forward /api routes to Vercel-style handler
 ---------------------------------------------------
 */
 app.use("/api", async (req, res) => {
   try {
-    // remove "/api" prefix
-    const path = req.originalUrl.replace(/^\/api\/?/, "").split("?")[0];
-
-    // split path → required for [...path].ts
-    const pathSegments = path.split("/").filter(Boolean);
-
-    const module = await import(
-      "file:///var/www/heydeliver/api/[...path].ts"
-    );
-
+    const module = await import("/var/www/heydeliver/api/[...path].ts");
     const handler = module.default;
 
-    // override query safely
-    req.query = {
-      ...req.query,
-      path: pathSegments,
-    };
+    const pathSegments = req.path.split("/").filter(Boolean);
+
+    Object.defineProperty(req, "query", {
+      value: { ...req.query, path: pathSegments },
+      writable: true
+    });
 
     await handler(req, res);
 
@@ -86,7 +79,7 @@ app.use("/api", async (req, res) => {
 
     res.status(500).json({
       error: "Internal API error",
-      message: error.message,
+      message: error.message
     });
   }
 });
