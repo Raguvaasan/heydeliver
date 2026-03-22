@@ -12,6 +12,7 @@ import { ChangeEvent, FC, useEffect, useState } from "react"
 import { HiOutlineExclamationCircle, HiEye, HiPencil, HiTrash, HiEyeOff } from "react-icons/hi"
 import { useStaffStore } from "../../store/staffStore"
 import { useAgencyStore } from "../../store/agencyStore"
+import http from "../../common/httpRequest"
 import { useNavigate, useLocation } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { toast, ToastContainer } from "react-toastify"
@@ -38,12 +39,24 @@ const UserPage: FC = function () {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [activeTab, setActiveTab] = useState<"headquarters" | "franchise">("headquarters")
+  const [activeTab, setActiveTab] = useState<"headquarters" | "franchise" | "hub">("headquarters")
+  const [hubs, setHubs] = useState<any[]>([])
 
   useEffect(() => {
     fetchStaffs()
     fetchRoles()
     fetchAgencies()
+
+    const fetchHubs = async () => {
+      try {
+        const response = await http.get("/admin/hub")
+        setHubs(response.data?.data || [])
+      } catch (error) {
+        setHubs([])
+      }
+    }
+
+    fetchHubs()
   }, [fetchStaffs, fetchRoles, fetchAgencies])
 
   // Check if we need to open edit modal from navigation state
@@ -89,12 +102,16 @@ const UserPage: FC = function () {
     const matchesSearch = staff.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.phone?.includes(searchTerm)
-    
-    // Filter by tab - headquarters staff have roles, franchise staff have franchiseId
-    const matchesTab = activeTab === "headquarters" 
-      ? staff.role && !staff.franchiseId  // HQ staff have roles but no franchise
-      : staff.franchiseId  // Franchise staff have franchiseId
-    
+
+    let matchesTab = false
+    if (activeTab === "headquarters") {
+      matchesTab = !!(staff.role && !staff.franchiseId && !staff.hubId)
+    } else if (activeTab === "franchise") {
+      matchesTab = !!staff.franchiseId
+    } else {
+      matchesTab = !!staff.hubId
+    }
+
     return matchesSearch && matchesTab
   })
 
@@ -167,6 +184,16 @@ const UserPage: FC = function () {
               >
                 Franchise
               </button>
+              <button
+                onClick={() => setActiveTab("hub")}
+                className={`pb-3 px-1 font-medium transition-colors ${
+                  activeTab === "hub"
+                    ? "text-orange-500 border-b-2 border-orange-500"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
+              >
+                Hub
+              </button>
             </div>
           </div>
 
@@ -185,8 +212,10 @@ const UserPage: FC = function () {
                     <th className="px-4 py-3">PHONE</th>
                     {activeTab === "headquarters" ? (
                       <th className="px-4 py-3">ROLE</th>
-                    ) : (
+                    ) : activeTab === "franchise" ? (
                       <th className="px-4 py-3">FRANCHISE</th>
+                    ) : (
+                      <th className="px-4 py-3">HUB</th>
                     )}
                     <th className="px-4 py-3">STATUS</th>
                     <th className="px-4 py-3 text-center">ACTION</th>
@@ -213,7 +242,9 @@ const UserPage: FC = function () {
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           {activeTab === "headquarters" 
                             ? getRoleName(staff)
-                            : (typeof staff.franchiseId === 'object' ? (staff.franchiseId as any)?.agencyName : staff.franchise) || "-"
+                            : activeTab === "franchise"
+                              ? (typeof staff.franchiseId === 'object' ? (staff.franchiseId as any)?.agencyName : staff.franchise) || "-"
+                              : (typeof staff.hubId === 'object' ? (staff.hubId as any)?.hubName : staff.hub) || "-"
                           }
                         </td>
                         <td className="px-4 py-3">
@@ -272,6 +303,7 @@ const UserPage: FC = function () {
         onSubmit={addStaff}
         roles={roles}
         agencies={agencies}
+        hubs={hubs}
       />
 
       {/* Edit Staff Modal */}
@@ -286,6 +318,7 @@ const UserPage: FC = function () {
         userData={selectedUser}
         roles={roles}
         agencies={agencies}
+        hubs={hubs}
       />
 
       {/* Delete Confirmation Modal */}
@@ -305,7 +338,8 @@ const AddStaffModal: FC<{
   onSubmit: (data: any) => void
   roles: any[]
   agencies: any[]
-}> = ({ isOpen, onClose, onSubmit, roles, agencies }) => {
+  hubs: any[]
+}> = ({ isOpen, onClose, onSubmit, roles, agencies, hubs }) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -313,12 +347,13 @@ const AddStaffModal: FC<{
     type: "head_quarter",
     roleId: "",
     franchiseId: "",
+    hubId: "",
     username: "",
     password: "",
     status: "Active",
   })
   const [showPasswordAdd, setShowPasswordAdd] = useState(false)
-  const [modalTab, setModalTab] = useState<"headquarters" | "franchise">("headquarters")
+  const [modalTab, setModalTab] = useState<"headquarters" | "franchise" | "hub">("headquarters")
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -328,7 +363,7 @@ const AddStaffModal: FC<{
   }
 
   const handleSubmit = async () => {
-    const { name, email, phone, roleId, franchiseId, username, password, type } = formData
+    const { name, email, phone, roleId, franchiseId, hubId, username, password, type } = formData
 
     // Validate based on staff type
     if (!name || !email || !phone || !username || !password) {
@@ -346,6 +381,11 @@ const AddStaffModal: FC<{
       return
     }
 
+    if (type === "hub" && !hubId) {
+      toast.error("Hub is required for hub staff")
+      return
+    }
+
     try {
       await onSubmit(formData)
       toast.success("Staff added successfully")
@@ -358,6 +398,7 @@ const AddStaffModal: FC<{
         type: "head_quarter",
         roleId: "",
         franchiseId: "",
+        hubId: "",
         username: "",
         password: "",
         status: "Active",
@@ -377,7 +418,7 @@ const AddStaffModal: FC<{
             <button
               onClick={() => {
                 setModalTab("headquarters")
-                setFormData((prev) => ({ ...prev, type: "head_quarter", franchiseId: "" }))
+                setFormData((prev) => ({ ...prev, type: "head_quarter", franchiseId: "", hubId: "" }))
               }}
               className={`pb-3 px-1 font-medium transition-colors ${
                 modalTab === "headquarters"
@@ -390,7 +431,7 @@ const AddStaffModal: FC<{
             <button
               onClick={() => {
                 setModalTab("franchise")
-                setFormData((prev) => ({ ...prev, type: "franchise", roleId: "" }))
+                setFormData((prev) => ({ ...prev, type: "franchise", roleId: "", hubId: "" }))
               }}
               className={`pb-3 px-1 font-medium transition-colors ${
                 modalTab === "franchise"
@@ -399,6 +440,19 @@ const AddStaffModal: FC<{
               }`}
             >
               Franchise
+            </button>
+            <button
+              onClick={() => {
+                setModalTab("hub")
+                setFormData((prev) => ({ ...prev, type: "hub", franchiseId: "", roleId: "" }))
+              }}
+              className={`pb-3 px-1 font-medium transition-colors ${
+                modalTab === "hub"
+                  ? "text-orange-500 border-b-2 border-orange-500"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              }`}
+            >
+              Hub
             </button>
           </div>
         </div>
@@ -469,7 +523,7 @@ const AddStaffModal: FC<{
                     ))}
                   </Select>
                 </div>
-              ) : (
+              ) : modalTab === "franchise" ? (
                 <div>
                   <Label htmlFor="franchiseId">
                     Franchise<span className="text-red-500">*</span>
@@ -487,6 +541,30 @@ const AddStaffModal: FC<{
                         {agency.agencyName}
                       </option>
                     ))}
+                  </Select>
+                </div>
+              ) : (
+                <div>
+                  <Label htmlFor="hubId">
+                    Hub<span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    id="hubId"
+                    name="hubId"
+                    value={formData.hubId}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select Hub</option>
+                    {hubs.length > 0 ? (
+                      hubs.map((hub) => (
+                        <option key={hub._id || hub.id} value={hub._id || hub.id}>
+                          {hub.hubName || hub.name || "Hub"}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">No hubs available</option>
+                    )}
                   </Select>
                 </div>
               )}
@@ -580,7 +658,8 @@ const EditStaffModal: FC<{
   userData: any
   roles: any[]
   agencies: any[]
-}> = ({ isOpen, onClose, onSubmit, userData, roles, agencies }) => {
+  hubs: any[]
+}> = ({ isOpen, onClose, onSubmit, userData, roles, agencies, hubs }) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -588,18 +667,19 @@ const EditStaffModal: FC<{
     type: "head_quarter",
     roleId: "",
     franchiseId: "",
+    hubId: "",
     username: "",
     password: "",
     status: "Active",
   })
   const [showPasswordEdit, setShowPasswordEdit] = useState(false)
-  const [modalTab, setModalTab] = useState<"headquarters" | "franchise">("headquarters")
+  const [modalTab, setModalTab] = useState<"headquarters" | "franchise" | "hub">("headquarters")
 
   useEffect(() => {
     if (userData) {
-      // Determine type based on whether staff has franchiseId or roleId
-      const staffType = userData.franchiseId ? "franchise" : "head_quarter"
-      const tab = userData.franchiseId ? "franchise" : "headquarters"
+      // Determine type based on whether staff has hubId, franchiseId or roleId
+      const staffType = userData.hubId ? "hub" : userData.franchiseId ? "franchise" : "head_quarter"
+      const tab = userData.hubId ? "hub" : userData.franchiseId ? "franchise" : "headquarters"
       
       setFormData({
         name: userData.name || "",
@@ -608,6 +688,7 @@ const EditStaffModal: FC<{
         type: staffType,
         roleId: userData.role?._id || userData.roleId || "",
         franchiseId: userData.franchiseId || userData.franchise || "",
+        hubId: userData.hubId || userData.hub || "",
         username: userData.username || userData.email || "",
         password: "",
         status: userData.status === "Active" || userData.status === true ? "Active" : "Inactive",
@@ -624,7 +705,7 @@ const EditStaffModal: FC<{
   }
 
   const handleSubmit = async () => {
-    const { name, email, phone, roleId, franchiseId, username, type } = formData
+    const { name, email, phone, roleId, franchiseId, hubId, username, type } = formData
 
     // Validate based on staff type
     if (!name || !email || !phone || !username) {
@@ -639,6 +720,11 @@ const EditStaffModal: FC<{
 
     if (type === "franchise" && !franchiseId) {
       toast.error("Franchise is required for franchise staff")
+      return
+    }
+
+    if (type === "hub" && !hubId) {
+      toast.error("Hub is required for hub staff")
       return
     }
 
@@ -659,6 +745,11 @@ const EditStaffModal: FC<{
     // Include franchiseId only for franchise staff
     if (type === "franchise" && franchiseId) {
       payload.franchiseId = franchiseId
+    }
+
+    // Include hubId only for hub staff
+    if (type === "hub" && hubId) {
+      payload.hubId = hubId
     }
 
     if (formData.password) {
@@ -685,7 +776,7 @@ const EditStaffModal: FC<{
               <button
                 onClick={() => {
                   setModalTab("headquarters")
-                  setFormData((prev) => ({ ...prev, type: "head_quarter", franchiseId: "" }))
+                  setFormData((prev) => ({ ...prev, type: "head_quarter", franchiseId: "", hubId: "" }))
                 }}
                 className="pb-3 px-1 font-medium text-orange-500 border-b-2 border-orange-500"
               >
@@ -696,11 +787,22 @@ const EditStaffModal: FC<{
               <button
                 onClick={() => {
                   setModalTab("franchise")
-                  setFormData((prev) => ({ ...prev, type: "franchise", roleId: "" }))
+                  setFormData((prev) => ({ ...prev, type: "franchise", roleId: "", hubId: "" }))
                 }}
                 className="pb-3 px-1 font-medium text-orange-500 border-b-2 border-orange-500"
               >
                 Franchise
+              </button>
+            )}
+            {formData.type === "hub" && (
+              <button
+                onClick={() => {
+                  setModalTab("hub")
+                  setFormData((prev) => ({ ...prev, type: "hub", franchiseId: "", roleId: "" }))
+                }}
+                className="pb-3 px-1 font-medium text-orange-500 border-b-2 border-orange-500"
+              >
+                Hub
               </button>
             )}
           </div>
@@ -772,7 +874,7 @@ const EditStaffModal: FC<{
                     ))}
                   </Select>
                 </div>
-              ) : (
+              ) : modalTab === "franchise" ? (
                 <div>
                   <Label htmlFor="edit-franchiseId-main">
                     Franchise<span className="text-red-500">*</span>
@@ -790,6 +892,30 @@ const EditStaffModal: FC<{
                         {agency.agencyName}
                       </option>
                     ))}
+                  </Select>
+                </div>
+              ) : (
+                <div>
+                  <Label htmlFor="edit-hubId-main">
+                    Hub<span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    id="edit-hubId-main"
+                    name="hubId"
+                    value={formData.hubId}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select Hub</option>
+                    {hubs.length > 0 ? (
+                      hubs.map((hub) => (
+                        <option key={hub._id || hub.id} value={hub._id || hub.id}>
+                          {hub.hubName || hub.name || "Hub"}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">No hubs available</option>
+                    )}
                   </Select>
                 </div>
               )}
