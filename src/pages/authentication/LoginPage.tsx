@@ -4,7 +4,7 @@ import { useEffect, useState, type FC, FormEvent } from "react"
 import { useNavigate } from "react-router-dom"
 import { HiEye, HiEyeOff } from "react-icons/hi"
 import { HiArrowPath } from "react-icons/hi2"
-import { loginAdminUser, loginFranchiseUser, loginStaffUser } from "../../store/loginStore"
+import { loginAdminUser, loginFranchiseUser, loginStaffUser, loginHubUser } from "../../store/loginStore"
 import toast from "react-hot-toast"
 
 interface LoginResponse {
@@ -21,7 +21,7 @@ const LoginPage: FC = function () {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [loginType, setLoginType] = useState<"admin" | "franchise" | "staff">("admin")
+  const [loginType, setLoginType] = useState<"admin" | "franchise" | "staff" | "hub">("admin")
   const [captchaQuestion, setCaptchaQuestion] = useState<string>("")
   const [captchaAnswer, setCaptchaAnswer] = useState<string>("")
   const [captchaInput, setCaptchaInput] = useState<string>("")
@@ -67,6 +67,8 @@ const LoginPage: FC = function () {
       
       if (loginType === "franchise") {
         result = (await loginFranchiseUser(username, password)) as LoginResponse
+      } else if (loginType === "hub") {
+        result = (await loginHubUser(username, password)) as LoginResponse
       } else {
         // Admin login - try admin endpoint first, if it fails try staff endpoint
         try {
@@ -267,22 +269,45 @@ const LoginPage: FC = function () {
                     </div>
                   </div>
                 </label>
+
+                <label className="flex items-center cursor-pointer group relative">
+                  <input
+                    type="radio"
+                    name="loginType"
+                    value="hub"
+                    checked={loginType === "hub"}
+                    onChange={() => setLoginType("hub")}
+                    className="sr-only peer"
+                  />
+                  <div className="px-6 py-3 rounded-xl border-2 border-gray-200 peer-checked:border-primary-200 transition-all duration-300 hover:border-primary-400">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 peer-checked:border-primary-200 flex items-center justify-center">
+                        {loginType === "hub" && (
+                          <div className="w-3 h-3 bg-primary-500 rounded-full"></div>
+                        )}
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700">
+                        Hub
+                      </span>
+                    </div>
+                  </div>
+                </label>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Email/Username Field with Premium Styling */}
                 <div className="space-y-1">
                   <Label
-                    htmlFor={loginType === "admin" ? "email" : "email"}
+                    htmlFor={loginType === "admin" ? "email" : "username"}
                     className="block text-sm font-semibold text-gray-700"
                   >
-                    {loginType === "admin" ? "Email Address" : "Email Address"}
+                    {loginType === "admin" ? "Email Address" : "Username"}
                   </Label>
                   <div className="relative">
                     <input
-                      id={loginType === "admin" ? "email" : "email"}
-                      type={loginType === "admin" ? "email" : "email"}
-                      placeholder={loginType === "admin" ? "you@example.com" : "Enter your email"}
+                      id={loginType === "admin" ? "email" : "username"}
+                      type={loginType === "admin" ? "email" : "text"}
+                      placeholder={loginType === "admin" ? "you@example.com" : "Enter your username"}
                       value={loginType === "admin" ? email : username}
                       onChange={(e) => loginType === "admin" ? setEmail(e.target.value) : setUsername(e.target.value)}
                       required

@@ -166,7 +166,7 @@ const DashboardPage: FC = () => {
   const buildStats = () => {
     if (!dashboardData) return []
 
-    const isFranchise = loginType === "franchise" || loginType === "staff"
+    const isFranchise = loginType === "franchise" || loginType === "staff" || loginType === "hub"
 
     if (isFranchise) {
       // Franchise-specific mapping
@@ -276,7 +276,7 @@ const DashboardPage: FC = () => {
   const recentBookings = dashboardData?.recentBookings || []
 
   // Handle shipment type data - both franchise and admin use shipmentTypeDistribution array
-  const isFranchise = loginType === "franchise" || loginType === "staff"
+  const isFranchise = loginType === "franchise" || loginType === "staff" || loginType === "hub"
   let shipmentTypeDistribution: any[] = []
   let totalShipmentTypes = 0
 

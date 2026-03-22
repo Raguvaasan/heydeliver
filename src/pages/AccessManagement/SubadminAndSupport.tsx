@@ -119,19 +119,19 @@ const UserPage: FC = function () {
   // Helper function to get role name
   const getRoleName = (staff: any) => {
     if (!staff.role) return "-"
-    
+
     // If role is an object with _id, find matching role from roles array
     if (typeof staff.role === 'object' && staff.role._id) {
       const matchedRole = roles.find(r => r._id === staff.role._id)
       return matchedRole?.roleType || "-"
     }
-    
+
     // If role is just an ID string, find from roles array
     if (typeof staff.role === 'string') {
       const matchedRole = roles.find(r => r._id === staff.role)
       return matchedRole?.roleType || "-"
     }
-    
+
     // Fallback to role properties
     return staff.role.roleName || staff.role.roleType || staff.role.name || "-"
   }
@@ -139,7 +139,7 @@ const UserPage: FC = function () {
   return (
     <NavbarSidebarLayout isFooter={false}>
       <ToastContainer position="top-right" autoClose={3000} theme="light" />
-      
+
       <div className="px-4 pt-6">
         {/* Page Header */}
         <div className="mb-6">
@@ -167,31 +167,28 @@ const UserPage: FC = function () {
             <div className="flex gap-8">
               <button
                 onClick={() => setActiveTab("headquarters")}
-                className={`pb-3 px-1 font-medium transition-colors ${
-                  activeTab === "headquarters"
-                    ? "text-orange-500 border-b-2 border-orange-500"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                }`}
+                className={`pb-3 px-1 font-medium transition-colors ${activeTab === "headquarters"
+                  ? "text-orange-500 border-b-2 border-orange-500"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  }`}
               >
                 Head Quarters
               </button>
               <button
                 onClick={() => setActiveTab("franchise")}
-                className={`pb-3 px-1 font-medium transition-colors ${
-                  activeTab === "franchise"
-                    ? "text-orange-500 border-b-2 border-orange-500"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                }`}
+                className={`pb-3 px-1 font-medium transition-colors ${activeTab === "franchise"
+                  ? "text-orange-500 border-b-2 border-orange-500"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  }`}
               >
                 Franchise
               </button>
               <button
                 onClick={() => setActiveTab("hub")}
-                className={`pb-3 px-1 font-medium transition-colors ${
-                  activeTab === "hub"
-                    ? "text-orange-500 border-b-2 border-orange-500"
-                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                }`}
+                className={`pb-3 px-1 font-medium transition-colors ${activeTab === "hub"
+                  ? "text-orange-500 border-b-2 border-orange-500"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  }`}
               >
                 Hub
               </button>
@@ -241,7 +238,7 @@ const UserPage: FC = function () {
                           {staff.phone}
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                          {activeTab === "headquarters" 
+                          {activeTab === "headquarters"
                             ? getRoleName(staff)
                             : activeTab === "franchise"
                               ? (typeof staff.franchiseId === 'object' ? (staff.franchiseId as any)?.agencyName : staff.franchise) || "-"
@@ -421,11 +418,10 @@ const AddStaffModal: FC<{
                 setModalTab("headquarters")
                 setFormData((prev) => ({ ...prev, type: "head_quarter", franchiseId: "", hubId: "" }))
               }}
-              className={`pb-3 px-1 font-medium transition-colors ${
-                modalTab === "headquarters"
-                  ? "text-orange-500 border-b-2 border-orange-500"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
+              className={`pb-3 px-1 font-medium transition-colors ${modalTab === "headquarters"
+                ? "text-orange-500 border-b-2 border-orange-500"
+                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
             >
               Head Quarters
             </button>
@@ -434,11 +430,10 @@ const AddStaffModal: FC<{
                 setModalTab("franchise")
                 setFormData((prev) => ({ ...prev, type: "franchise", roleId: "", hubId: "" }))
               }}
-              className={`pb-3 px-1 font-medium transition-colors ${
-                modalTab === "franchise"
-                  ? "text-orange-500 border-b-2 border-orange-500"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
+              className={`pb-3 px-1 font-medium transition-colors ${modalTab === "franchise"
+                ? "text-orange-500 border-b-2 border-orange-500"
+                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
             >
               Franchise
             </button>
@@ -447,11 +442,10 @@ const AddStaffModal: FC<{
                 setModalTab("hub")
                 setFormData((prev) => ({ ...prev, type: "hub", franchiseId: "", roleId: "" }))
               }}
-              className={`pb-3 px-1 font-medium transition-colors ${
-                modalTab === "hub"
-                  ? "text-orange-500 border-b-2 border-orange-500"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
+              className={`pb-3 px-1 font-medium transition-colors ${modalTab === "hub"
+                ? "text-orange-500 border-b-2 border-orange-500"
+                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                }`}
             >
               Hub
             </button>
@@ -597,12 +591,12 @@ const AddStaffModal: FC<{
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="username">
-                  Username<span className="text-red-500">*</span>
+                  Email<span className="text-red-500">*</span>
                 </Label>
                 <TextInput
                   id="username"
                   name="username"
-                  placeholder="Enter username"
+                  placeholder="Enter email"
                   value={formData.username}
                   onChange={handleChange}
                   required
@@ -683,7 +677,7 @@ const EditStaffModal: FC<{
       // Determine type based on whether staff has hubId, franchiseId or roleId
       const staffType = userData.hubId ? "hub" : userData.franchiseId ? "franchise" : "head_quarter"
       const tab = userData.hubId ? "hub" : userData.franchiseId ? "franchise" : "headquarters"
-      
+
       setFormData({
         name: userData.name || "",
         email: userData.email || "",
@@ -731,13 +725,13 @@ const EditStaffModal: FC<{
       return
     }
 
-    const payload: any = { 
-      name, 
-      email, 
-      phone, 
+    const payload: any = {
+      name,
+      email,
+      phone,
       type,
-      username, 
-      status: formData.status 
+      username,
+      status: formData.status
     }
 
     // Include roleId only for headquarters staff
@@ -950,7 +944,7 @@ const EditStaffModal: FC<{
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-username">
-                  Username<span className="text-red-500">*</span>
+                  Email<span className="text-red-500">*</span>
                 </Label>
                 <TextInput
                   id="edit-username"

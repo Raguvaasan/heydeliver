@@ -63,7 +63,7 @@ const Navbar: FC<NavbarProps> = ({
         }
         
         // Fetch wallet balance for franchise users
-        if (loginTypeValue === "franchise" || loginTypeValue === "staff") {
+        if (loginTypeValue === "franchise" || loginTypeValue === "staff" || loginTypeValue === "hub") {
           fetchBalance()
         }
       }
@@ -135,7 +135,7 @@ const Navbar: FC<NavbarProps> = ({
         {/* Right Section */}
         <div className="flex items-center gap-3">
           {/* Wallet Balance (Franchise) or Notifications (Admin) */}
-          {loginType === "franchise" || loginType === "staff" ? (
+          {loginType === "franchise" || loginType === "staff" || loginType === "hub" ? (
             <div 
               onClick={() => navigate("/wallet")}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"

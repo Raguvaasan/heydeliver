@@ -50,6 +50,21 @@ export const loginStaffUser = (
   return http.post("/admin/staff/login/headquarter", payload)
 }
 
+export const loginHubUser = (
+  username: string,
+  password: string,
+  captchaToken?: string
+) => {
+  const payload: any = {
+    username: username.trim(),
+    password: password.trim(),
+  }
+  if (captchaToken) {
+    payload.captchaToken = captchaToken
+  }
+  return http.post("/admin/staff/login/hub", payload)
+}
+
 interface Profile {
   name: string
   email: string
