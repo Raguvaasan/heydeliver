@@ -9,7 +9,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { IncomingMessage } from 'http';
 import { parseFormUrlEncoded } from '../../src/common/parseFormUrlEncoded';
 
-const DELHIVERY_TOKEN = process.env.DELHIVERY_TOKEN || "91aeec33f78a2d21a6348658708de71f31489038";
+const DELHIVERY_TOKEN = process.env['DELHIVERY_API_TOKEN'] || "91aeec33f78a2d21a6348658708de71f31489038";
 
 function getRawBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -28,7 +28,7 @@ function getRawBody(req: IncomingMessage): Promise<string> {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Get the path from query params
-  const pathSegments = req.query.path;
+  const pathSegments = req.query['path'];
 
   // Reconstruct the API path
   let apiPath = '';
