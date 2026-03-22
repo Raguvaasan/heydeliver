@@ -6,7 +6,7 @@ import dts from "vite-plugin-dts"
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "")
   const apiProxyTarget =
-    env["VITE_API_PROXY_TARGET"] || "https://truecargos.com/api/"
+    env["VITE_API_PROXY_TARGET"] || "https://freightrekapi.vercel.app"
   const invoiceProxyTarget =
     env["VITE_INVOICE_PROXY_TARGET"] || "http://localhost:3000"
   const delhiveryToken =
@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path,
         },
         "/api/shipment": {
-          target: "https://truecargos.com/api/",
+          target: "https://freightrekapi.vercel.app",
           changeOrigin: true,
           rewrite: (path) => path,
           secure: true,

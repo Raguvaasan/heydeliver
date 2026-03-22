@@ -81,9 +81,11 @@ export const useStaffStore = create<StaffState>((set, get) => ({
         role: item.roleId || item.role,
         roleId: typeof item.roleId === 'object' ? item.roleId?._id : item.roleId,
         franchiseId: typeof item.franchiseId === 'object' ? item.franchiseId?._id : item.franchiseId,
+        hubId: typeof item.hubId === 'object' ? item.hubId?._id : item.hubId,
         status: item.status,
         username: item.username,
-        franchise: typeof item.franchiseId === 'object' ? (item.franchiseId?.agencyName || item.franchiseId?.name) : item.franchise
+        franchise: typeof item.franchiseId === 'object' ? (item.franchiseId?.agencyName || item.franchiseId?.name) : item.franchise,
+        hub: typeof item.hubId === 'object' ? (item.hubId?.hubName || item.hubId?.name) : item.hub
       }))
       set({
         staffs: staffList,
@@ -145,7 +147,9 @@ export const useStaffStore = create<StaffState>((set, get) => ({
         type: data.type || "head_quarter", // Default to head_quarter if not specified
         username: data.username,
         password: data.password,
-        status: typeof data.status === 'boolean' ? (data.status ? 'Active' : 'Inactive') : data.status
+      }
+      if (data.type !== "hub") {
+        payload.status = typeof data.status === 'boolean' ? (data.status ? 'Active' : 'Inactive') : data.status
       }
 
       // Include roleId only for headquarters staff
@@ -156,6 +160,11 @@ export const useStaffStore = create<StaffState>((set, get) => ({
       // Include franchiseId only for franchise staff
       if (data.type === "franchise" && (data.franchiseId || data.franchise)) {
         payload.franchiseId = data.franchiseId || data.franchise
+      }
+
+      // Include hubId only for hub staff
+      if (data.type === "hub" && (data.hubId || data.hub)) {
+        payload.hubId = data.hubId || data.hub
       }
 
       await http.post(`/admin/staff`, payload)
@@ -189,7 +198,12 @@ export const useStaffStore = create<StaffState>((set, get) => ({
         payload.franchiseId = updatedStaff.franchiseId || updatedStaff.franchise
       }
       
-      if (updatedStaff.status !== undefined) {
+      // Include hubId only for hub staff
+      if (updatedStaff.type === "hub" && (updatedStaff.hubId || updatedStaff.hub)) {
+        payload.hubId = updatedStaff.hubId || updatedStaff.hub
+      }
+      
+      if (updatedStaff.type !== "hub" && updatedStaff.status !== undefined) {
         payload.status = typeof updatedStaff.status === 'boolean' ? (updatedStaff.status ? 'Active' : 'Inactive') : updatedStaff.status
       }
 
