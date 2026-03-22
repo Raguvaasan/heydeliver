@@ -50,7 +50,8 @@ const UserPage: FC = function () {
     const fetchHubs = async () => {
       try {
         const response = await http.get("/admin/hub")
-        setHubs(response.data?.data || [])
+        const rawData = response.data?.data?.data || response.data?.data?.hubs || response.data?.data || []
+        setHubs(Array.isArray(rawData) ? rawData : [])
       } catch (error) {
         setHubs([])
       }
