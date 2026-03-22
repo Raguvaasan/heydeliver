@@ -526,7 +526,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (authHeader) axiosConfig.headers.Authorization = authHeader
 
       let backendResponse
-      if (req.method === 'GET' || req.method === 'DELETE') {
+      if (req.method === 'GET') {
         backendResponse = await axios.get(backendUrl, {
           ...axiosConfig,
           params: parsedUrl.searchParams,

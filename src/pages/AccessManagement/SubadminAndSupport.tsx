@@ -50,7 +50,8 @@ const UserPage: FC = function () {
     const fetchHubs = async () => {
       try {
         const response = await http.get("/admin/hub")
-        setHubs(response.data?.data || [])
+        const rawData = response.data?.data?.data || response.data?.data?.hubs || response.data?.data || []
+        setHubs(Array.isArray(rawData) ? rawData : [])
       } catch (error) {
         setHubs([])
       }
@@ -568,21 +569,23 @@ const AddStaffModal: FC<{
                   </Select>
                 </div>
               )}
-              <div className="md:col-span-2">
-                <Label htmlFor="status">
-                  Status<span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  id="status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </Select>
-              </div>
+              {modalTab !== "hub" && (
+                <div className="md:col-span-2">
+                  <Label htmlFor="status">
+                    Status<span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    id="status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
 
@@ -919,21 +922,23 @@ const EditStaffModal: FC<{
                   </Select>
                 </div>
               )}
-              <div className="md:col-span-2">
-                <Label htmlFor="edit-status">
-                  Status<span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  id="edit-status"
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  required
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </Select>
-              </div>
+              {modalTab !== "hub" && (
+                <div className="md:col-span-2">
+                  <Label htmlFor="edit-status">
+                    Status<span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    id="edit-status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
 
