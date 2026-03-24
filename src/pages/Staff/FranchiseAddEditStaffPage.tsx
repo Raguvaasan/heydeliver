@@ -48,22 +48,22 @@ const FranchiseAddEditStaffPage: FC = () => {
     const fetchAllData = async () => {
       const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
-      
+
       try {
         if (isFranchise) {
           // For franchise: only fetch roles + staff data (if editing)
           const promises: Promise<any>[] = [
             http.get("/admin/franchise/role")
           ]
-          
+
           if (isEditMode && id) {
             promises.push(http.get(`/admin/franchise/staff/${id}`))
           }
-          
+
           const [rolesRes, staffRes] = await Promise.all(promises)
-          
+
           setRoles(rolesRes.data?.data || [])
-          
+
           // Set franchise from profile
           const profileData = sessionStorage.getItem("profileData")
           if (profileData) {
@@ -77,7 +77,7 @@ const FranchiseAddEditStaffPage: FC = () => {
               // Profile parsing failed
             }
           }
-          
+
           // Update form data if editing
           if (staffRes && staffRes.data?.data) {
             const staff = staffRes.data.data
@@ -99,16 +99,16 @@ const FranchiseAddEditStaffPage: FC = () => {
             http.get("/admin/role"),
             http.get("/admin/franchise")
           ]
-          
+
           if (isEditMode && id) {
             promises.push(http.get(`/admin/staff/${id}`))
           }
-          
+
           const [rolesRes, agenciesRes, staffRes] = await Promise.all(promises)
-          
+
           setRoles(rolesRes.data?.data || [])
           setAgencies(agenciesRes.data?.data || [])
-          
+
           // Update form data if editing
           if (staffRes && staffRes.data?.data) {
             const staff = staffRes.data.data
@@ -129,7 +129,7 @@ const FranchiseAddEditStaffPage: FC = () => {
         toast.error("Failed to load required data")
       }
     }
-    
+
     fetchAllData()
   }, [id, isEditMode])
 
@@ -140,9 +140,9 @@ const FranchiseAddEditStaffPage: FC = () => {
       const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
       const endpoint = isFranchise ? `/admin/franchise/staff/${staffId}` : `/admin/staff/${staffId}`
-            const response = await http.get(endpoint)
+      const response = await http.get(endpoint)
       const staff = response.data?.data
-      
+
       if (staff) {
         setFormData({
           name: staff.name || "",
@@ -169,7 +169,7 @@ const FranchiseAddEditStaffPage: FC = () => {
       const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
       const endpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
-            const response = await http.get(endpoint)
+      const response = await http.get(endpoint)
       const rolesData = response.data?.data || []
       setRoles(rolesData)
     } catch (error) {
@@ -239,7 +239,7 @@ const FranchiseAddEditStaffPage: FC = () => {
       // Check login type to use correct endpoint
       const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
-      
+
       if (isEditMode && id) {
         const endpoint = isFranchise ? `/admin/franchise/staff/${id}` : `/admin/staff/${id}`
         await http.put(endpoint, payload)
@@ -272,7 +272,7 @@ const FranchiseAddEditStaffPage: FC = () => {
       <div className="px-4 pt-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            {isEditMode ? "Edit Staff" : "Add New Staff"} (Franchise)
+            {isEditMode ? "Edit Staff" : "Add New Staff"} {sessionStorage.getItem("loginType") === "hub" ? "" : "(Franchise)"}
           </h1>
         </div>
 

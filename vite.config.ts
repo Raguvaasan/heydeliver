@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => {
         "/api/settings": {
           target: apiProxyTarget,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/settings/, "/api/v1/settings"),
+          rewrite: (path) => path.replace(/^\/api/, ""),
           secure: true,
         },
         "/api/wallet": {
@@ -59,12 +59,11 @@ export default defineConfig(({ mode }) => {
           rewrite: (path) => path,
           secure: true,
         },
-        "/api": {
-          target: apiProxyTarget,
+        "/api/hub": {
+          target: "https://freightrekapi.vercel.app/hub",
           changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/hub/, ""),
           secure: true,
-          // Keep the "/api" prefix for backend routes like /api/customers.
-          rewrite: (path) => path,
         },
         "/delhivery-api": {
           target: "https://track.delhivery.com",
@@ -74,6 +73,13 @@ export default defineConfig(({ mode }) => {
           headers: {
             Authorization: `Token ${delhiveryToken}`,
           },
+        },
+        "/api": {
+          target: apiProxyTarget,
+          changeOrigin: true,
+          secure: true,
+          // Keep the "/api" prefix for backend routes like /api/customers.
+          rewrite: (path) => path,
         },
       },
     },

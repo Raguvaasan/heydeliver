@@ -5,16 +5,16 @@ import { Card, Button } from "flowbite-react"
 
 const TestFranchiseStaffPage: FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  
+
   // DON'T call the store yet - testing if import itself causes issue
   // const { staffs, roles, loading, fetchStaffs, fetchRoles } = useFranchiseStaffStore()
-  
+
   return (
     <NavbarSidebarLayout isFooter={false}>
       <div className="px-4 pt-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Staff Management (Franchise)
+            Staff Management {sessionStorage.getItem("loginType") === "hub" ? "" : "(Franchise)"}
           </h1>
         </div>
 

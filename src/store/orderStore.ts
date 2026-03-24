@@ -93,6 +93,24 @@ interface FreightrekShipmentRequest {
   }
 }
 
+interface HubOrderRequest {
+  name: string
+  add: string
+  pin: string
+  city: string
+  state: string
+  country: string
+  phone: string
+  order: string
+  paymentMode: string
+  shippingMode: string
+  weight: string
+  totalAmount: string
+  pickupLocation: {
+    name: string
+  }
+}
+
 interface DelhiveryResponse {
   success: boolean
   packages: Array<{
@@ -139,6 +157,7 @@ interface OrderState {
   cancelShipment: (waybill: string) => Promise<any>
   updateEwaybill: (waybill: string, dcn: string, ewbn: string) => Promise<any>
   trackShipment: (waybill?: string, ref_ids?: string) => Promise<any>
+  createHubOrder: (data: HubOrderRequest) => Promise<any>
 }
 
 export const useOrderStore = create<OrderState>((set, get) => ({
@@ -652,6 +671,28 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         err?.message ||
         "Failed to track shipment"
       set({ loading: false, error: errorMessage, trackingData: null })
+      toast.error(errorMessage)
+      throw err
+    }
+  },
+
+  createHubOrder: async (data: HubOrderRequest) => {
+    set({ loading: true, error: null })
+    try {
+      const authToken = sessionStorage.getItem("authToken")
+      const response = await axios.post("/api/hub/orders/create", data, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+      })
+      set({ loading: false })
+      toast.success("Hub order created successfully!")
+      return response.data
+    } catch (err: any) {
+      const errorMessage =
+        err?.response?.data?.message || err?.message || "Failed to create hub order"
+      set({ loading: false, error: errorMessage })
       toast.error(errorMessage)
       throw err
     }

@@ -222,8 +222,18 @@ const Sidebar: FC<SidebarProps> = ({
   // Staff menu items (similar to franchise)
   const staffMenuItems: MenuItem[] = franchiseMenuItems
 
-  // Hub menu items (franchise items without Wallet)
-  const hubMenuItems: MenuItem[] = franchiseMenuItems.filter(item => item.title !== "Wallet")
+  // Hub menu items (franchise items without Wallet and without New Order)
+  const hubMenuItems: MenuItem[] = franchiseMenuItems
+    .filter(item => item.title !== "Wallet")
+    .map(item => {
+      if (item.title === "Orders") {
+        return {
+          ...item,
+          submenu: item.submenu?.filter(sub => sub.title !== "New Order")
+        }
+      }
+      return item
+    })
 
   // Select menu items based on login type
   const menuItems = loginType === "franchise" || loginType === "staff" 

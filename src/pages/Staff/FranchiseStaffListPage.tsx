@@ -282,7 +282,7 @@ const FranchiseStaffListPage: FC = () => {
       <div className="px-4 pt-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Staff Management (Franchise)
+            Staff Management {sessionStorage.getItem("loginType") === "hub" ? "" : "(Franchise)"}
           </h1>
         </div>
 
