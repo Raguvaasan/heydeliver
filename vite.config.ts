@@ -25,7 +25,10 @@ export default defineConfig(({ mode }) => {
         "/api/shipment": {
           target: "https://truecargos.com/api/",
           changeOrigin: true,
-          rewrite: (path) => path,
+          rewrite: (path) =>
+            path === "/api/shipment/create"
+              ? "/api/shipment/order"
+              : path,
           secure: true,
         },
         "/api/settings": {

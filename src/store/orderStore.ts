@@ -93,23 +93,23 @@ interface FreightrekShipmentRequest {
   }
 }
 
-interface HubOrderRequest {
-  name: string
-  add: string
-  pin: string
-  city: string
-  state: string
-  country: string
-  phone: string
-  order: string
-  paymentMode: string
-  shippingMode: string
-  weight: string
-  totalAmount: string
-  pickupLocation: {
-    name: string
-  }
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 interface DelhiveryResponse {
   success: boolean
@@ -157,7 +157,7 @@ interface OrderState {
   cancelShipment: (waybill: string) => Promise<any>
   updateEwaybill: (waybill: string, dcn: string, ewbn: string) => Promise<any>
   trackShipment: (waybill?: string, ref_ids?: string) => Promise<any>
-  createHubOrder: (data: HubOrderRequest) => Promise<any>
+
 }
 
 export const useOrderStore = create<OrderState>((set, get) => ({
@@ -360,11 +360,11 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         const walletBalanceData = walletBalanceResponse.data?.data || walletBalanceResponse.data
         walletAmount = Number(walletBalanceData?.balance ?? 0)
       }
- 
+
       if (walletAmount <= 50) {
         throw new Error("Insufficient balance")
       }
- 
+
       // ── 2. Build Delhivery B2C payload ─────────────────────────────────────
       // Delhivery expects:  Content-Type: application/x-www-form-urlencoded
       // Body:               format=json&data=<url-encoded JSON string>
@@ -372,14 +372,14 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         shipments: [shipmentData],
         pickup_location: { name: pickupLocation },
       }
- 
+
       // URLSearchParams correctly encodes both fields as form data
       const formBody = new URLSearchParams()
       formBody.append("format", "json")
       formBody.append("data", JSON.stringify(payload))
- 
+
       const authToken = sessionStorage.getItem("authToken")
- 
+
       const delhiveryResponse = await axios.post<DelhiveryResponse>(
         '/delhivery-api/api/cmu/create.json',
         formBody.toString(),            // serialised as  format=json&data=%7B...%7D
@@ -392,18 +392,18 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           timeout: 10000,
         }
       )
- 
+
       const delhiveryData = delhiveryResponse.data
- 
+
       // Delhivery returns success:true on a valid creation
       if (!delhiveryData?.success) {
         throw new Error(delhiveryData?.rmk || "Delhivery shipment creation failed")
       }
- 
+
       // ── 3. Mirror to our backend (/api/shipment/create) ────────────────────
       // Only called after Delhivery confirms success
       const waybill = delhiveryData?.packages?.[0]?.waybill ?? ""
- 
+
       const freightrekPayload: FreightrekShipmentRequest = {
         // Consignee / destination
         name: shipmentData.name,
@@ -415,7 +415,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         phone: shipmentData.phone,
         order: shipmentData.order,
         paymentMode: shipmentData.payment_mode,
- 
+
         // Sender / from address (optional, passed via freightrekExtras)
         fromName: freightrekExtras?.fromName,
         fromAdd: freightrekExtras?.fromAdd,
@@ -424,7 +424,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         fromState: freightrekExtras?.fromState,
         fromCountry: freightrekExtras?.fromCountry,
         fromPhone: freightrekExtras?.fromPhone,
- 
+
         // Return address
         returnPin: shipmentData.return_pin,
         returnCity: shipmentData.return_city,
@@ -432,7 +432,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         returnAdd: shipmentData.return_add,
         returnState: shipmentData.return_state,
         returnCountry: shipmentData.return_country,
- 
+
         // Shipment meta
         productsDesc: shipmentData.products_desc,
         hsnCode: shipmentData.hsn_code || "",
@@ -443,22 +443,22 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         sellerAdd: shipmentData.seller_add,
         sellerInv: shipmentData.seller_inv,
         quantity: shipmentData.quantity,
- 
+
         // Dimensions — all three axes now included
         shipmentLength: shipmentData.shipment_length,
         shipmentWidth: shipmentData.shipment_width,
         shipmentHeight: shipmentData.shipment_height,
- 
+
         weight: shipmentData.weight,
         shippingMode: shipmentData.shipping_mode,
         addressType: shipmentData.address_type,
- 
+
         // Waybill returned by Delhivery (useful for our records)
         ...(waybill ? { waybill } : {}),
- 
+
         pickupLocation: { name: pickupLocation },
       }
- 
+
       try {
         await axios.post("/api/shipment/create", freightrekPayload, {
           headers: {
@@ -475,7 +475,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           freightrekErr?.response?.data || freightrekErr?.message
         )
       }
- 
+
       set({ loading: false })
       toast.success("Shipment created successfully!")
       return delhiveryData
@@ -671,28 +671,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         err?.message ||
         "Failed to track shipment"
       set({ loading: false, error: errorMessage, trackingData: null })
-      toast.error(errorMessage)
-      throw err
-    }
-  },
-
-  createHubOrder: async (data: HubOrderRequest) => {
-    set({ loading: true, error: null })
-    try {
-      const authToken = sessionStorage.getItem("authToken")
-      const response = await axios.post("/api/hub/orders/create", data, {
-        headers: {
-          "Content-Type": "application/json",
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        },
-      })
-      set({ loading: false })
-      toast.success("Hub order created successfully!")
-      return response.data
-    } catch (err: any) {
-      const errorMessage =
-        err?.response?.data?.message || err?.message || "Failed to create hub order"
-      set({ loading: false, error: errorMessage })
       toast.error(errorMessage)
       throw err
     }
