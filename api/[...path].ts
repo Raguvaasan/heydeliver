@@ -556,7 +556,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
             body = req.body
           } else {
-            if (delhiveryPath.includes('/api/cmu/create.json')) {
+            if (delhiveryPath.includes('create.json')) {
               headers['Content-Type'] = 'application/x-www-form-urlencoded'
               const formData = new URLSearchParams()
               Object.entries(req.body).forEach(([k, v]) => formData.append(k, String(v)))

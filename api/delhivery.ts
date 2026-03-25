@@ -39,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           fetchOptions.body = req.body;
         } else {
           // For shipment creation endpoint, use form-urlencoded
-          if (delhiveryPath.includes('/api/cmu/create.json')) {
+          if (delhiveryPath.includes('create.json')) {
             fetchOptions.headers!['Content-Type'] = 'application/x-www-form-urlencoded';
             const formData = new URLSearchParams();
             Object.entries(req.body).forEach(([key, value]) => {

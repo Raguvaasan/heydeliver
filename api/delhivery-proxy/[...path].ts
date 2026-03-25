@@ -70,8 +70,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
     // If POST to create.json, forward as x-www-form-urlencoded and use raw body
     if (req.method === 'POST' && apiPath.endsWith('create.json')) {
-      // Always forward as raw string, with Content-Type: application/json
-      fetchOptions.headers['Content-Type'] = 'application/json';
+      // Forward as form-urlencoded for Delhivery create.json
+      fetchOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded';
       let rawBody = await getRawBody(req);
       // Log the incoming body from the frontend
       console.log('Delhivery Proxy INCOMING rawBody:', rawBody);
