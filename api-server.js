@@ -32,13 +32,30 @@ app.use("/delhivery-api", async (req, res) => {
 
     const fullUrl = `https://track.delhivery.com${apiPath}${query}`;
 
-    const response = await fetch(fullUrl, {
+    const fetchOptions = {
       method: req.method,
       headers: {
-         Authorization: "Token 91aeec33f78a2d21a6348658708de71f31489038",
-        "Content-Type": "application/json"
+        Authorization: "Token 91aeec33f78a2d21a6348658708de71f31489038",
       }
-    });
+    };
+
+    // Forward body for POST/PUT/PATCH requests
+    if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
+      if (apiPath.includes("create.json")) {
+        // Delhivery create.json expects application/x-www-form-urlencoded
+        fetchOptions.headers["Content-Type"] = "application/x-www-form-urlencoded";
+        const params = new URLSearchParams();
+        for (const [key, value] of Object.entries(req.body)) {
+          params.append(key, typeof value === "object" ? JSON.stringify(value) : String(value));
+        }
+        fetchOptions.body = params.toString();
+      } else {
+        fetchOptions.headers["Content-Type"] = "application/json";
+        fetchOptions.body = JSON.stringify(req.body);
+      }
+    }
+
+    const response = await fetch(fullUrl, fetchOptions);
 
     const data = await response.json();
 
