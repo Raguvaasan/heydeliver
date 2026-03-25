@@ -437,7 +437,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         productsDesc: shipmentData.products_desc,
         hsnCode: shipmentData.hsn_code || "",
         codAmount: shipmentData.cod_amount || "0",
-        orderDate: shipmentData.order_date,
+        orderDate: shipmentData.order_date ? new Date(shipmentData.order_date).toISOString() : new Date().toISOString(),
         totalAmount: shipmentData.total_amount,
         sellerName: shipmentData.seller_name,
         sellerAdd: shipmentData.seller_add,

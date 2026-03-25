@@ -497,7 +497,7 @@ const NewOrderPage: FC = () => {
         products_desc: formData.productsDesc || "",
         hsn_code: formData.hsnCode || "",
         cod_amount: formData.paymentMode === "COD" ? formData.codAmount : "",
-        order_date: new Date().toLocaleString(),
+        order_date: new Date().toISOString(),
         total_amount: selectedRate?.toString() || formData.totalAmount || formData.codAmount,
         seller_add: profileData?.address || "",
         seller_name: profileData?.agencyOwner || "",
