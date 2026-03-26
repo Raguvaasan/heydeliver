@@ -10,7 +10,9 @@ export default defineConfig(({ mode }) => {
   const invoiceProxyTarget =
     env["VITE_INVOICE_PROXY_TARGET"] || "http://localhost:3000"
   const delhiveryToken =
-    env["DELHIVERY_TOKEN"] || "91aeec33f78a2d21a6348658708de71f31489038"
+    env["DELHIVERY_TOKEN"] ||
+    env["DELHIVERY_API_TOKEN"] ||
+    "91aeec33f78a2d21a6348658708de71f31489038"
 
   return {
     plugins: [svgr(), react()],

@@ -119,7 +119,7 @@ export const handleInvoice = async (orderId: string): Promise<void> => {
     doc.setTextColor(0);
     doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
-    doc.text("INVOICE & LABEL", pageWidth - margin, margin + 10, { align: "right" });
+    doc.text("INVOICE", pageWidth - margin, margin + 10, { align: "right" });
 
     doc.setDrawColor(200);
     doc.line(margin, margin + 25, pageWidth - margin, margin + 25);
@@ -288,9 +288,9 @@ export const handleInvoice = async (orderId: string): Promise<void> => {
 
     currentY += 7;
     doc.setFont("helvetica", "bold");
-    doc.text("Tax (0%):", totalX, currentY);
+    // doc.text("Tax (0%):", totalX, currentY);
     doc.setFont("helvetica", "normal");
-    doc.text(`INR 0.00`, pageWidth - margin - 5, currentY, { align: "right" });
+    // doc.text(`INR 0.00`, pageWidth - margin - 5, currentY, { align: "right" });
 
     currentY += 5;
     doc.setLineWidth(0.5);
