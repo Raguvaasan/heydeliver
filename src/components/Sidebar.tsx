@@ -94,9 +94,7 @@ const Sidebar: FC<SidebarProps> = ({
       icon: <HiShoppingCart className="h-5 w-5" />,
       path: "/orders",
       submenu: [
-        { title: "Forward Orders", path: "/orders/forward" },
-        { title: "Completed Orders", path: "/orders/completed" },
-        { title: "All Orders", path: "/orders/pickup" },
+        { title: "All Orders", path: "/orders" },
       ],
     },
     {
@@ -260,20 +258,7 @@ const Sidebar: FC<SidebarProps> = ({
   }
 
   const isMenuOpen = (menuTitle: string) => {
-    const menuItem = menuItems.find(item => item.title === menuTitle)
-    
-    // Check if manually opened
-    if (openMenus.includes(menuTitle)) return true
-    
-    // Check if main menu path is active
-    if (isActive(menuItem?.path || "")) return true
-    
-    // Check if any submenu path is active (auto-expand parent)
-    if (menuItem?.submenu) {
-      return menuItem.submenu.some(subItem => location.pathname === subItem.path || location.pathname.startsWith(subItem.path + "/"))
-    }
-    
-    return false
+    return openMenus.includes(menuTitle)
   }
 
   const handleLogout = () => {

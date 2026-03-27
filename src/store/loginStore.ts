@@ -62,7 +62,7 @@ export const loginHubUser = (
   if (captchaToken) {
     payload.captchaToken = captchaToken
   }
-  return http.post("/admin/staff/login/hub", payload)
+  return http.post("/admin/hub/unified-login", payload)
 }
 
 interface Profile {

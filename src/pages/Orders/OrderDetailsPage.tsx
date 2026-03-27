@@ -147,6 +147,22 @@ const OrderDetailsPage: FC = () => {
             </Card>
           )}
 
+          <Card className="p-4">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+                Franchise Details
+              </h3>
+              <div className="space-y-1">
+                <p className="text-sm text-gray-800 dark:text-gray-200">
+                  {selectedOrder.pickupLocation.name}
+                </p>
+                
+                  <p className="text-sm text-gray-800 dark:text-gray-200">
+                    {selectedOrder.pickupLocation.address}
+                  </p>
+               
+              </div>
+            </Card>
+
           {/* Shipping Details */}
           {selectedOrder.shippingMode && (
             <Card className="p-4">

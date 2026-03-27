@@ -15,6 +15,7 @@ const OrdersPage: FC = () => {
   const { orders, activeOrders, fetchOrders, fetchActiveOrders, deleteOrder, loading } = useOrderStore()
   const [activeTab, setActiveTab] = useState<"recent" | "active">("recent")
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
+  const [franchiseSearch, setFranchiseSearch] = useState("")
   
   // Get initial status from location state if available
   const initialStatus = (location.state as any)?.status || "all"
@@ -91,16 +92,20 @@ const OrdersPage: FC = () => {
     const baseOrders = activeTab === "recent" ? orders : activeOrders
 
     // Apply status filter
-    if (statusFilter === "all") {
-      return baseOrders
-    }
-
-    return baseOrders.filter(order => {
+    const statusFilteredOrders = statusFilter === "all" ? baseOrders : baseOrders.filter(order => {
       const orderStatus = order.status?.toLowerCase().replace(/[\s_-]/g, "")
       const filterStatus = statusFilter.toLowerCase().replace(/[\s_-]/g, "")
       return orderStatus === filterStatus
     })
-  }, [activeTab, orders, activeOrders, statusFilter])
+
+    // Apply franchise search filter
+    const search = franchiseSearch.trim().toLowerCase()
+    if (!search) return statusFilteredOrders
+
+    return statusFilteredOrders.filter((order) =>
+      String(order.franchiseName || "").toLowerCase().includes(search)
+    )
+  }, [activeTab, orders, activeOrders, statusFilter, franchiseSearch])
 
   const renderOrdersTable = useCallback((ordersList: any[]) => {
     if (loading) {
@@ -130,6 +135,7 @@ const OrdersPage: FC = () => {
               <th className="px-4 py-3 whitespace-nowrap">BOOKING DATE & TIME</th>
               <th className="px-4 py-3 whitespace-nowrap">CUSTOMER</th>
               <th className="px-4 py-3 whitespace-nowrap">CUSTOMER NUMBER</th>
+              <th className="px-4 py-3 whitespace-nowrap">FRANCHISE NAME</th>
               <th className="px-4 py-3 whitespace-nowrap">AMOUNT</th>
               <th className="px-4 py-3 whitespace-nowrap">STATUS</th>
               <th className="px-4 py-3 text-center">ACTION</th>
@@ -138,7 +144,7 @@ const OrdersPage: FC = () => {
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {ordersList.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
+                <td colSpan={10} className="px-4 py-12 text-center text-gray-500">
                   No orders found
                 </td>
               </tr>
@@ -175,6 +181,9 @@ const OrdersPage: FC = () => {
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                     {order.consignee.phone || "-"}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
+                    {order.franchiseName || "-"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                     ₹{order.amount || 0}
@@ -270,16 +279,27 @@ const OrdersPage: FC = () => {
         {/* Tabs */}
         <Card>
           <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
-            <div className="flex gap-8">
-              <button
-                onClick={() => setActiveTab("recent")}
-                className={`pb-3 font-medium transition-colors ${activeTab === "recent"
-                  ? "text-orange-500 border-b-2 border-orange-500"
-                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  }`}
-              >
-                Recent Bookings
-              </button>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex gap-8">
+                <button
+                  onClick={() => setActiveTab("recent")}
+                  className={`pb-3 font-medium transition-colors ${activeTab === "recent"
+                    ? "text-orange-500 border-b-2 border-orange-500"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    }`}
+                >
+                  Recent Bookings
+                </button>
+              </div>
+              <div className="pb-2 md:pb-0">
+                <input
+                  type="text"
+                  value={franchiseSearch}
+                  onChange={(e) => setFranchiseSearch(e.target.value)}
+                  placeholder="Search franchise name..."
+                  className="w-full md:w-72 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                />
+              </div>
               {/* <button
                 onClick={() => setActiveTab("active")}
                 className={`pb-3 font-medium transition-colors ${activeTab === "active"

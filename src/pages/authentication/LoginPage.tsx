@@ -89,12 +89,15 @@ const LoginPage: FC = function () {
           }
         }
       }
-
+console.log("result",result)
       const isSuccess = result.data?.success
 
       if (isSuccess) {
         const token = result.data?.token || result.data?.["data"]?.token
-        const userData = result.data?.["data"] || result.data
+        const rawUserData = result.data?.["data"] || result.data
+        const userData = result.data?.["data"]
+          ? { ...rawUserData, data: result.data["data"] }
+          : rawUserData
 
         if (token) {
           sessionStorage.setItem("authToken", token)

@@ -274,6 +274,16 @@ const DashboardPage: FC = () => {
 
   const stats = buildStats()
   const recentBookings = dashboardData?.recentBookings || []
+  const formatBookingDate = (value: string) => {
+    if (!value) return "-"
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return "-"
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+  }
 
   // Handle shipment type data - both franchise and admin use shipmentTypeDistribution array
   const isFranchise = loginType === "franchise" || loginType === "staff" || loginType === "hub"
@@ -677,7 +687,6 @@ const DashboardPage: FC = () => {
                       {loginType === "admin" && <th className="px-4 py-3">Franchise</th>}
                       <th className="px-4 py-3">Amount</th>
                       <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Drop Location</th>
                       <th className="px-4 py-3">Status</th>
                     </tr>
                   </thead>
@@ -705,15 +714,9 @@ const DashboardPage: FC = () => {
                             {booking.amount ? `₹${Number(booking.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}
                           </td>
                           <td className="px-4 py-3 text-gray-900 dark:text-white">
-                            {booking.date ? new Date(booking.date).toLocaleDateString('en-IN', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric'
-                            }) : '-'}
+                            {formatBookingDate(booking.createdAt || booking.date)}
                           </td>
-                          <td className="px-4 py-3 text-gray-900 dark:text-white">
-                            {booking.dropLocation || '-'}
-                          </td>
+            
                           <td className="px-4 py-3">
                             <span className={`font-medium ${booking.status?.toLowerCase() === 'delivered' ? 'text-green-600' :
                                 booking.status?.toLowerCase().includes('transit') ? 'text-blue-600' :
@@ -760,13 +763,13 @@ const DashboardPage: FC = () => {
                               {franchise.franchiseName || franchise.name || "-"}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {franchise.totalOrders || 0} orders
+                              {franchise.orderCount || 0} orders
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-gray-900 dark:text-white">
-                            ₹{Number(franchise.totalRevenue || 0).toLocaleString()}
+                            ₹{Number(franchise.totalValue || 0).toLocaleString()}
                           </p>
                           <p className="text-xs text-gray-500">
                             Revenue
