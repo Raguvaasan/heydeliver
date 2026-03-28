@@ -196,7 +196,10 @@ const NewOrderPage: FC = () => {
   const loginType = sessionStorage.getItem("loginType")
   const profileDataStr = sessionStorage.getItem("profileData")
   const profileData = profileDataStr ? JSON.parse(profileDataStr) : null
-
+  const isHubLogin = loginType === "hub"
+  const channelDisplayName = isHubLogin
+    ? (profileData?.hubId?.hubName || "Offline")
+    : (profileData?.agencyName || "Offline")
   // ── Form state ──────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
     customerName: "",
@@ -257,13 +260,6 @@ const NewOrderPage: FC = () => {
     const p = JSON.parse(profileDataStr)
     const name = p?.agencyName || p?.name || ""
     if (name) setFormData((prev) => ({ ...prev, pickupLocation: name }))
-
-
-
-
-
-
-
   }, [loginType, profileDataStr])
 
   // ── Autofill delivery address fields when deliveryPincode = 6 digits ─────────
@@ -389,13 +385,13 @@ const NewOrderPage: FC = () => {
   const handleChannelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value
     setFormData((prev) => ({
-
-
-
-
       ...prev,
       channelName: value,
-      sellerName: value ? (profileData?.agencyName || prev.sellerName) : prev.sellerName,
+      sellerName: value
+        ? (isHubLogin
+          ? (profileData?.hubId?.hubName || profileData?.data?.hubId?.hubName || prev.sellerName)
+          : (profileData?.agencyName || profileData?.data?.agencyName || prev.sellerName))
+        : prev.sellerName,
       sellerAddress: value ? (profileData?.address || prev.sellerAddress) : prev.sellerAddress,
       sellerInvoice: value ? (profileData?.gstNumber || prev.sellerInvoice) : prev.sellerInvoice,
     }))
@@ -452,29 +448,6 @@ const NewOrderPage: FC = () => {
 
     try {
       const totalWeight = boxes.reduce((s, b) => s + (parseFloat(b.weight) || 0), 0)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
       const firstBox = boxes[0]
 
@@ -589,7 +562,7 @@ const NewOrderPage: FC = () => {
                   <Select id="channelName" name="channelName" value={formData.channelName}
                     onChange={handleChannelChange} required>
                     <option value="">Select Channel Name</option>
-                    <option value="Offline">{profileData?.agencyName || "Offline"}</option>
+                    <option value="Offline">{channelDisplayName}</option>
                   </Select>
                   <p className="text-xs text-gray-500 mt-1">
                     Channels are online (Shopify) or custom channel for offline (physical store) orders.

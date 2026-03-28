@@ -114,7 +114,7 @@ const Sidebar: FC<SidebarProps> = ({
         { title: "Franchise wise", path: "/reports/franchise-wise" },
         { title: "Total orders", path: "/reports/total-orders" },
         { title: "Total Revenue", path: "/reports/total-revenue" },
-        { title: "Delivery Performance", path: "/reports/delivery-performance" },
+        // { title: "Delivery Performance", path: "/reports/delivery-performance" },
       ],
     },
     {
@@ -195,11 +195,11 @@ const Sidebar: FC<SidebarProps> = ({
             { title: "Transaction details", path: "/wallet" },
           ],
     },
-    {
-      title: "Invoice",
-      icon: <HiDocumentText className="h-5 w-5" />,
-      path: "/invoice",
-    },
+    // {
+    //   title: "Invoice",
+    //   icon: <HiDocumentText className="h-5 w-5" />,
+    //   path: "/invoice",
+    // },
     {
       title: "Reports",
       icon: <HiChartBar className="h-5 w-5" />,
@@ -220,18 +220,9 @@ const Sidebar: FC<SidebarProps> = ({
   // Staff menu items (similar to franchise)
   const staffMenuItems: MenuItem[] = franchiseMenuItems
 
-  // Hub menu items (franchise items without Wallet and without New Order)
+  // Hub menu items (franchise items without Wallet)
   const hubMenuItems: MenuItem[] = franchiseMenuItems
     .filter(item => item.title !== "Wallet")
-    .map(item => {
-      if (item.title === "Orders") {
-        return {
-          ...item,
-          submenu: item.submenu?.filter(sub => sub.title !== "New Order")
-        }
-      }
-      return item
-    })
 
   // Select menu items based on login type
   const menuItems = loginType === "franchise" || loginType === "staff" 

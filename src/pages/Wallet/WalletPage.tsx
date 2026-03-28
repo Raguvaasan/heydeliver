@@ -12,6 +12,10 @@ const WalletPage: FC = () => {
   const [rechargeAmount, setRechargeAmount] = useState("")
   const [paymentType, setPaymentType] = useState<"upi" | "card">("upi")
   const [activeTab, setActiveTab] = useState(0)
+  const [transactionsFromDate, setTransactionsFromDate] = useState("")
+  const [transactionsToDate, setTransactionsToDate] = useState("")
+  const [rechargesFromDate, setRechargesFromDate] = useState("")
+  const [rechargesToDate, setRechargesToDate] = useState("")
 
   // Get user role from session storage
   const getProfileData = () => {
@@ -61,6 +65,33 @@ const WalletPage: FC = () => {
   // Order transactions: transactions related to orders (typically debits or with orderId)
   const orderTransactions = safeTransactions.filter((t) => 
     t.type === "debit" || (t.orderId && !t.description?.toLowerCase().includes("recharge"))
+  )
+
+  const isWithinDateRange = (createdAt: string, fromDate: string, toDate: string): boolean => {
+    const txDate = new Date(createdAt)
+    if (Number.isNaN(txDate.getTime())) return false
+
+    if (fromDate) {
+      const from = new Date(fromDate)
+      from.setHours(0, 0, 0, 0)
+      if (txDate < from) return false
+    }
+
+    if (toDate) {
+      const to = new Date(toDate)
+      to.setHours(23, 59, 59, 999)
+      if (txDate > to) return false
+    }
+
+    return true
+  }
+
+  const filteredOrderTransactions = orderTransactions.filter((t) =>
+    isWithinDateRange(t.createdAt, transactionsFromDate, transactionsToDate)
+  )
+
+  const filteredRecharges = recharges.filter((t) =>
+    isWithinDateRange(t.createdAt, rechargesFromDate, rechargesToDate)
   )
 
   // Fetch data on mount - admin gets all franchise transactions, others get their own
@@ -217,21 +248,37 @@ const WalletPage: FC = () => {
           >
             <Tabs.Item active title="Transactions">
               <div className="mb-4 flex gap-4">
-                <TextInput
+                {/* <TextInput
                   placeholder="Search by AWB number"
                   className="flex-1"
-                />
-                <Button color="gray">
-                  Date Range: 8 Jan 2026 to 15 Jan 2026
-                </Button>
-                <select className="border border-gray-300 rounded-lg px-3 py-2">
+                /> */}
+                <div>
+                  <Label htmlFor="transactionsFromDate" value="From Date" />
+                  <TextInput
+                    id="transactionsFromDate"
+                    type="date"
+                    value={transactionsFromDate}
+                    onChange={(e) => setTransactionsFromDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="transactionsToDate" value="To Date" />
+                  <TextInput
+                    id="transactionsToDate"
+                    type="date"
+                    value={transactionsToDate}
+                    min={transactionsFromDate || undefined}
+                    onChange={(e) => setTransactionsToDate(e.target.value)}
+                  />
+                </div>
+                {/* <select className="border border-gray-300 rounded-lg px-3">
                   <option>Transaction Type</option>
                   <option>Credit</option>
                   <option>Debit</option>
-                </select>
-                <select className="border border-gray-300 rounded-lg px-3 py-2">
+                </select> */}
+                {/* <select className="border border-gray-300 rounded-lg px-3 py-2">
                   <option>Account Name</option>
-                </select>
+                </select> */}
               </div>
 
               <div className="overflow-x-auto">
@@ -249,14 +296,14 @@ const WalletPage: FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {orderTransactions.length === 0 ? (
+                    {filteredOrderTransactions.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="text-center py-8">
                           No Records Found
                         </td>
                       </tr>
                     ) : (
-                      orderTransactions.map((transaction, index) => (
+                      filteredOrderTransactions.map((transaction, index) => (
                         <tr key={transaction.id || index} className="border-b dark:border-gray-700">
                           <td className="px-4 py-3">
                             {new Date(transaction.createdAt).toLocaleDateString()}
@@ -281,7 +328,7 @@ const WalletPage: FC = () => {
 
               <div className="flex items-center justify-between mt-4">
                 <p className="text-sm text-gray-500">
-                  Showing 1 - {orderTransactions.length} of {orderTransactions.length}
+                  Showing 1 - {filteredOrderTransactions.length} of {filteredOrderTransactions.length}
                 </p>
                 <div className="flex gap-2">
                   <Button size="sm" color="gray" disabled>Previous</Button>
@@ -296,9 +343,27 @@ const WalletPage: FC = () => {
                   placeholder="Search by transaction ID"
                   className="max-w-sm"
                 />
-                <Button color="gray" className="ml-2">
-                  Date Range: 8 Jan 2026 to 15 Jan 2026
-                </Button>
+                <div className="mt-3 flex gap-2">
+                  <div>
+                    <Label htmlFor="rechargesFromDate" value="From Date" />
+                    <TextInput
+                      id="rechargesFromDate"
+                      type="date"
+                      value={rechargesFromDate}
+                      onChange={(e) => setRechargesFromDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="rechargesToDate" value="To Date" />
+                    <TextInput
+                      id="rechargesToDate"
+                      type="date"
+                      value={rechargesToDate}
+                      min={rechargesFromDate || undefined}
+                      onChange={(e) => setRechargesToDate(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -314,14 +379,14 @@ const WalletPage: FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {recharges.length === 0 ? (
+                    {filteredRecharges.length === 0 ? (
                       <tr>
                         <td colSpan={isAdmin ? 6 : 5} className="text-center py-8">
                           No Records Found
                         </td>
                       </tr>
                     ) : (
-                      recharges.map((recharge, index) => (
+                      filteredRecharges.map((recharge, index) => (
                         <tr key={recharge.id || index} className="border-b dark:border-gray-700">
                           <td className="px-4 py-3">{recharge.id}</td>
                           <td className="px-4 py-3">
@@ -356,7 +421,7 @@ const WalletPage: FC = () => {
 
               <div className="flex items-center justify-between mt-4">
                 <p className="text-sm text-gray-500">
-                  Showing 1 - {recharges.length} of {recharges.length}
+                  Showing 1 - {filteredRecharges.length} of {filteredRecharges.length}
                 </p>
                 <div className="flex gap-2">
                   <Button size="sm" color="gray" disabled>Previous</Button>

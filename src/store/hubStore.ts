@@ -44,7 +44,16 @@ export const useHubStore = create<HubState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const response = await http.get("/admin/hub")
-      const hubs = (response.data?.data?.hubs || response.data?.data || []).map((item: any) => ({
+      const rawData = response.data?.data
+      const hubsList = Array.isArray(rawData?.hubs)
+        ? rawData.hubs
+        : Array.isArray(rawData?.data)
+        ? rawData.data
+        : Array.isArray(rawData)
+        ? rawData
+        : []
+
+      const hubs = hubsList.map((item: any) => ({
         id: item._id || item.id,
         hubName: item.hubName,
         hubManagerName: item.hubManagerName,

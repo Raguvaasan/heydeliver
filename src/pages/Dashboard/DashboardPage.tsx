@@ -248,7 +248,7 @@ const DashboardPage: FC = () => {
           subtitle: "All time revenue",
           percentage: undefined,
           iconBgColor: "bg-green-500",
-          onClick: () => navigate("/reports/revenue")
+          // onClick: () => navigate("/reports/revenue")
         },
         {
           icon: <HiCube className="h-5 w-5" />,
@@ -257,7 +257,7 @@ const DashboardPage: FC = () => {
           subtitle: `Today's orders`,
           percentage: totalOrders.percentageChange ? `${totalOrders.percentageChange}%` : undefined,
           iconBgColor: "bg-orange-500",
-          onClick: () => navigate("/orders", { state: { status: 'all' } })
+          // onClick: () => navigate("/orders", { state: { status: 'all' } })
         },
         {
           icon: <HiCurrencyRupee className="h-5 w-5" />,
@@ -266,7 +266,7 @@ const DashboardPage: FC = () => {
           subtitle: `Today's revenue`,
           percentage: revenue.percentageChange ? `${revenue.percentageChange}%` : undefined,
           iconBgColor: "bg-teal-500",
-          onClick: () => navigate("/reports/revenue")
+          // onClick: () => navigate("/reports/revenue")
         },
       ]
     }
