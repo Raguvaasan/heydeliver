@@ -17,6 +17,7 @@ interface ProfileData {
   phone: string
   franchiseName: string
   franchiseCode: string
+  hubCity: string
   address: string
   gstNumber: string
   panNumber: string
@@ -33,36 +34,68 @@ interface ProfileData {
 const ProfilePageModern: FC = () => {
   const [, setActiveTab] = useState<"profile" | "orders" | "security">("profile")
   const { orders, fetchOrders, loading: ordersLoading } = useOrderStore()
+  const sessionLoginType = sessionStorage.getItem("loginType") || ""
+  const profileDataRaw = (() => {
+    try {
+      return JSON.parse(sessionStorage.getItem("profileData") || "{}")
+    } catch {
+      return {}
+    }
+  })()
 
   // Get profile data from sessionStorage
   const getProfileFromSession = (): ProfileData => {
     try {
       const profileDataStr = sessionStorage.getItem("profileData")
       if (profileDataStr) {
-        const data = JSON.parse(profileDataStr)
-        const fullName = data.name || data.username || data.agencyName || "User"
+        const rawData = JSON.parse(profileDataStr)
+        const baseData = rawData?.data || rawData
+        console.log("baseData",baseData)
+        const hubData = rawData.hubId
+        const isFranchiseUser = sessionLoginType === "franchise"
+        const isHubUser =
+          sessionLoginType === "hub" ||
+          rawData?.type === "hub" ||
+          baseData?.type === "hub" ||
+          rawData?.loginType === "hub_staff" ||
+          baseData?.loginType === "hub_staff"
+
+        const fullName =
+          baseData?.name ||
+          rawData?.name ||
+          baseData?.username ||
+          rawData?.username ||
+          baseData?.agencyName ||
+          "User"
         const nameParts = fullName.trim().split(" ")
         const firstName = nameParts[0] || ""
         const lastName = nameParts.slice(1).join(" ") || ""
         
         return {
-          firstName: data.firstName || firstName,
-          lastName: data.lastName || lastName,
-          email: data.email || "",
-          phone: data.mobile || data.phone || data.phoneNumber || "",
-          franchiseName: data.agencyName || data.franchiseName || "",
-          franchiseCode: data.agencyCode || data.franchiseCode || data.code || "",
-          address: data.address || data.location || "",
-          gstNumber: data.gstNumber || data.gst || "",
-          panNumber: data.panNumber || data.pan || "",
-          bankName: data.bankName || data.bank?.name || "",
-          accountNumber: data.accountNumber || data.bank?.accountNumber || "",
-          ifscCode: data.ifscCode || data.bank?.ifsc || "",
-          walletBalance: data.walletBalance || data.wallet?.balance || 0,
-          totalOrders: data.totalOrders || data.orders?.total || 0,
-          activeOrders: data.activeOrders || data.orders?.active || 0,
-          completedOrders: data.completedOrders || data.orders?.completed || 0,
-          memberSince: data.createdAt || data.memberSince || "N/A"
+          firstName: isFranchiseUser ? (baseData.agencyName || "") : (baseData?.firstName || firstName),
+          lastName: isFranchiseUser ? (baseData?.agencyOwner || "") : (baseData?.lastName || lastName),
+          email: baseData?.email || rawData?.email || "",
+          phone: baseData?.mobile || baseData?.phone || baseData?.phoneNumber || rawData?.phone || "",
+          franchiseName: isHubUser
+            ? (hubData?.hubName || baseData?.hubName || "")
+            : (baseData?.agencyName || baseData?.franchiseName || ""),
+          franchiseCode: isHubUser
+            ? (hubData?.pincode ? String(hubData.pincode) : "")
+            : (baseData?.agencyCode || baseData?.franchiseCode || baseData?.code || ""),
+          hubCity: isHubUser
+            ? (hubData?.city || "")
+            : "",
+          address: baseData?.address || baseData?.location || "",
+          gstNumber: baseData?.gstNumber || baseData?.gst || "",
+          panNumber: baseData?.panNumber || baseData?.pan || "",
+          bankName: baseData?.bankName || baseData?.bank?.name || "",
+          accountNumber: baseData?.accountNumber || baseData?.bank?.accountNumber || "",
+          ifscCode: baseData?.ifscCode || baseData?.bank?.ifsc || "",
+          walletBalance: baseData?.walletBalance || baseData?.wallet?.balance || 0,
+          totalOrders: baseData?.totalOrders || baseData?.orders?.total || 0,
+          activeOrders: baseData?.activeOrders || baseData?.orders?.active || 0,
+          completedOrders: baseData?.completedOrders || baseData?.orders?.completed || 0,
+          memberSince: baseData?.createdAt || rawData?.createdAt || baseData?.memberSince || "N/A"
         }
       }
     } catch (error) {
@@ -75,6 +108,7 @@ const ProfilePageModern: FC = () => {
       phone: "",
       franchiseName: "",
       franchiseCode: "",
+      hubCity: "",
       address: "",
       gstNumber: "",
       panNumber: "",
@@ -90,6 +124,37 @@ const ProfilePageModern: FC = () => {
   }
 
   const [profileData] = useState(getProfileFromSession())
+  const isHubLogin =
+    sessionLoginType === "hub" ||
+    sessionLoginType === "hub_staff" ||
+    profileDataRaw?.type === "hub" ||
+    profileDataRaw?.loginType === "hub_staff" ||
+    profileDataRaw?.data?.type === "hub" ||
+    profileDataRaw?.data?.loginType === "hub_staff"
+  const isFranchiseLogin = sessionLoginType === "franchise"
+
+  const resolvedHub = profileDataRaw?.hubId
+    || profileDataRaw?.data?.hubId
+    || profileDataRaw?.data?.data?.hubId
+    || {}
+  const resolvedHubName =
+    resolvedHub?.hubName ||
+    profileDataRaw?.hubName ||
+    profileDataRaw?.data?.hubName ||
+    profileData.franchiseName ||
+    ""
+  const resolvedHubCity =
+    resolvedHub?.city ||
+    profileDataRaw?.city ||
+    profileDataRaw?.data?.city ||
+    profileData.hubCity ||
+    ""
+  const resolvedHubPincode =
+    resolvedHub?.pincode ||
+    profileDataRaw?.pincode ||
+    profileDataRaw?.data?.pincode ||
+    profileData.franchiseCode ||
+    ""
 
   useEffect(() => {
     fetchOrders(1, 50)
@@ -123,6 +188,12 @@ const ProfilePageModern: FC = () => {
       const updatedData = {
         ...existingData,
         ...sanitizedValues,
+        ...(isFranchiseLogin
+          ? {
+              agencyName: sanitizedValues.firstName,
+              agencyOwner: sanitizedValues.lastName,
+            }
+          : {}),
         name: fullName,
         username: fullName,
         mobile: sanitizedValues.phone
@@ -214,12 +285,14 @@ const ProfilePageModern: FC = () => {
 
           {/* Stats */}
           <div className="mt-4 grid grid-cols-2 gap-3 border-t pt-4 md:grid-cols-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                ₹{profileData.walletBalance.toLocaleString()}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Wallet Balance</p>
-            </div>
+            {!isHubLogin && (
+              <div className="text-center">
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                  ₹{profileData.walletBalance.toLocaleString()}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Wallet Balance</p>
+              </div>
+            )}
             <div className="text-center">
               <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {profileData.totalOrders}
@@ -277,12 +350,12 @@ const ProfilePageModern: FC = () => {
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                           <FormInput
                             name="firstName"
-                            label="First Name"
+                            label={isFranchiseLogin ? "Agency Name" : "First Name"}
                             required
                           />
                           <FormInput
                             name="lastName"
-                            label="Last Name"
+                            label={isFranchiseLogin ? "Agency Owner" : "Last Name"}
                             required
                           />
                         </div>
@@ -299,75 +372,93 @@ const ProfilePageModern: FC = () => {
                           required
                           helperText="10-digit mobile number"
                         />
-                        <FormTextarea
-                          name="address"
-                          label="Address"
-                          rows={3}
-                        />
+                        {!isHubLogin && (
+                          <FormTextarea
+                            name="address"
+                            label="Address"
+                            rows={3}
+                          />
+                        )}
                       </div>
                     </FormSection>
 
-                    {/* Franchise Information */}
+                    {/* Franchise / Hub Information */}
                     <FormSection
-                      title="Franchise Information"
-                      description="Your franchise details (read-only)"
+                      title={isHubLogin ? "Hub Information" : "Franchise Information"}
+                      description={isHubLogin ? "Your hub details (read-only)" : "Your franchise details (read-only)"}
                       icon={<HiOfficeBuilding className="w-5 h-5" />}
                     >
                       <div className="space-y-4">
                         <div className="space-y-4">
                           <div>
                             <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Franchise Name
+                              {isHubLogin ? "Hub Name" : "Franchise Name"}
                             </label>
                             <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
-                              {profileData.franchiseName || "N/A"}
+                              {isHubLogin ? (resolvedHubName || "N/A") : (profileData.franchiseName || "N/A")}
                             </div>
                           </div>
                           <div>
                             <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Franchise Code
+                              {isHubLogin ? "City" : "Franchise Code"}
                             </label>
                             <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
-                              {profileData.franchiseCode || "N/A"}
+                              {isHubLogin ? (resolvedHubCity || "N/A") : (profileData.franchiseCode || "N/A")}
                             </div>
                           </div>
+                          {isHubLogin && (
+                            <div>
+                              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Hub Pincode
+                              </label>
+                              <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
+                                {String(resolvedHubPincode || "N/A")}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <FormInput
-                          name="gstNumber"
-                          label="GST Number"
-                          helperText="15-character GST number"
-                        />
-                        <FormInput
-                          name="panNumber"
-                          label="PAN Number"
-                          helperText="10-character PAN number"
-                        />
+                        {!isHubLogin && (
+                          <FormInput
+                            name="gstNumber"
+                            label="GST Number"
+                            helperText="15-character GST number"
+                          />
+                        )}
+                        {!isHubLogin && (
+                          <FormInput
+                            name="panNumber"
+                            label="PAN Number"
+                            helperText="10-character PAN number"
+                          />
+                        )}
                       </div>
                     </FormSection>
 
                     {/* Bank Details */}
-                    <FormSection
-                      title="Bank Account Details"
-                      description="Update your bank information"
-                      icon={<HiCreditCard className="w-5 h-5" />}
-                      className="lg:col-span-2"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <FormInput
-                          name="bankName"
-                          label="Bank Name"
-                        />
-                        <FormInput
-                          name="accountNumber"
-                          label="Account Number"
-                        />
-                        <FormInput
-                          name="ifscCode"
-                          label="IFSC Code"
-                          helperText="11-character IFSC code"
-                        />
-                      </div>
-                    </FormSection>
+                    {!isHubLogin && (
+                      <FormSection
+                        title="Bank Account Details"
+                        description="Update your bank information"
+                        icon={<HiCreditCard className="w-5 h-5" />}
+                        className="lg:col-span-2"
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <FormInput
+                            name="bankName"
+                            label="Bank Name"
+                          />
+                          <FormInput
+                            name="accountNumber"
+                            label="Account Number"
+                          />
+                          <FormInput
+                            name="ifscCode"
+                            label="IFSC Code"
+                            helperText="11-character IFSC code"
+                          />
+                        </div>
+                      </FormSection>
+                    )}
                   </div>
 
                   {/* Save Button */}

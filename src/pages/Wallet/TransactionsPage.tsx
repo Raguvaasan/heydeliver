@@ -1,14 +1,12 @@
 import { FC, useState, useEffect } from "react"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
-import { Card, Button, TextInput, Select, Spinner } from "flowbite-react"
-import { HiCalendar } from "react-icons/hi"
+import { Card, Button, TextInput, Select, Spinner, Label } from "flowbite-react"
 import { useWalletStore } from "../../store/walletStore"
 
 const TransactionsPage: FC = () => {
-  const [dateRange, setDateRange] = useState("8 Jan 2026 to 15 Jan 2026")
-  const [searchAwb, setSearchAwb] = useState("")
+  const [fromDate, setFromDate] = useState("")
+  const [toDate, setToDate] = useState("")
   const [transactionType, setTransactionType] = useState("")
-  const [accountName, setAccountName] = useState("")
 
   // Get data from wallet store
   const { balance, transactions, loading, error, fetchBalance, fetchTransactions } = useWalletStore()
@@ -42,6 +40,27 @@ const TransactionsPage: FC = () => {
     if (!method) return "-"
     return method.toUpperCase()
   }
+
+  const filteredTransactions = safeTransactions.filter((transaction) => {
+    const txDate = new Date(transaction.createdAt)
+    if (Number.isNaN(txDate.getTime())) return false
+
+    if (fromDate) {
+      const start = new Date(fromDate)
+      start.setHours(0, 0, 0, 0)
+      if (txDate < start) return false
+    }
+
+    if (toDate) {
+      const end = new Date(toDate)
+      end.setHours(23, 59, 59, 999)
+      if (txDate > end) return false
+    }
+
+    if (transactionType && transaction.type !== transactionType) return false
+
+    return true
+  })
 
   return (
     <NavbarSidebarLayout>
@@ -98,20 +117,34 @@ const TransactionsPage: FC = () => {
         {/* Filters Card */}
         <Card className="mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="lg:col-span-1">
+            {/* <div className="lg:col-span-1">
               <TextInput
                 placeholder="Search by AWB number"
                 value={searchAwb}
                 onChange={(e) => setSearchAwb(e.target.value)}
               />
+            </div> */}
+            <div>
+              <Label htmlFor="fromDate" value="From Date" />
+              <TextInput
+                id="fromDate"
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
             </div>
             <div>
-              <Button color="gray" className="w-full">
-                <HiCalendar className="mr-2 h-4 w-4" />
-                {dateRange}
-              </Button>
+              <Label htmlFor="toDate" value="To Date" />
+              <TextInput
+                id="toDate"
+                type="date"
+                value={toDate}
+                min={fromDate || undefined}
+                onChange={(e) => setToDate(e.target.value)}
+              />
             </div>
             <div>
+               <Label htmlFor="Transaction Type" value="Transaction Type" />
               <Select
                 value={transactionType}
                 onChange={(e) => setTransactionType(e.target.value)}
@@ -121,14 +154,14 @@ const TransactionsPage: FC = () => {
                 <option value="debit">Debit</option>
               </Select>
             </div>
-            <div>
+            {/* <div>
               <Select
                 value={accountName}
                 onChange={(e) => setAccountName(e.target.value)}
               >
                 <option value="">Account Name</option>
               </Select>
-            </div>
+            </div> */}
           </div>
         </Card>
 
@@ -148,7 +181,7 @@ const TransactionsPage: FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {safeTransactions.length === 0 ? (
+                {filteredTransactions.length === 0 ? (
                   <tr>
                     <td
                       colSpan={7}
@@ -173,7 +206,7 @@ const TransactionsPage: FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  safeTransactions.map((transaction, index) => (
+                  filteredTransactions.map((transaction, index) => (
                     <tr
                       key={transaction.id || index}
                       className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
@@ -209,7 +242,7 @@ const TransactionsPage: FC = () => {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Showing 1 - {safeTransactions.length} of {safeTransactions.length}
+              Showing 1 - {filteredTransactions.length} of {filteredTransactions.length}
             </p>
             <div className="flex gap-2">
               <Button size="sm" color="gray" disabled>

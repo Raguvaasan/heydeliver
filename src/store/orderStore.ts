@@ -150,6 +150,7 @@ interface OrderState {
     pickupLocation: string,
     freightrekExtras?: Omit<FreightrekShipmentRequest, "pickupLocation" | "name" | "add" | "pin" | "city" | "state" | "country" | "phone" | "order" | "paymentMode">
   ) => Promise<DelhiveryResponse>
+  createHubOrder: (payload: Record<string, any>) => Promise<any>
   updateOrder: (id: string, data: Partial<Order>) => Promise<void>
   deleteOrder: (id: string) => Promise<void>
   clearSelectedOrder: () => void
@@ -340,7 +341,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-   createDelhiveryShipment: async (
+  createDelhiveryShipment: async (
     shipmentData: DelhiveryShipment,
     pickupLocation: string,
     freightrekExtras?
@@ -349,20 +350,22 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     try {
       // ── 1. Wallet balance check ────────────────────────────────────────────
       const loginType = sessionStorage.getItem("loginType") || "admin"
-      let walletAmount = 0
+      if (loginType !== "hub") {
+        let walletAmount = 0
 
-      if (loginType === "admin") {
-        const dashboardResponse = await http.get("/admin/dashboard", { params: { period: "week" } })
-        const dashboardData = dashboardResponse.data?.data || dashboardResponse.data
-        walletAmount = Number(dashboardData?.overview?.wallet?.amount ?? 0)
-      } else {
-        const walletBalanceResponse = await http.get("/wallet/balance")
-        const walletBalanceData = walletBalanceResponse.data?.data || walletBalanceResponse.data
-        walletAmount = Number(walletBalanceData?.balance ?? 0)
-      }
+        if (loginType === "admin") {
+          const dashboardResponse = await http.get("/admin/dashboard", { params: { period: "week" } })
+          const dashboardData = dashboardResponse.data?.data || dashboardResponse.data
+          walletAmount = Number(dashboardData?.overview?.wallet?.amount ?? 0)
+        } else {
+          const walletBalanceResponse = await http.get("/wallet/balance")
+          const walletBalanceData = walletBalanceResponse.data?.data || walletBalanceResponse.data
+          walletAmount = Number(walletBalanceData?.balance ?? 0)
+        }
 
-      if (walletAmount <= 50) {
-        throw new Error("Insufficient balance")
+        if (walletAmount <= 50) {
+          throw new Error("Insufficient balance")
+        }
       }
 
       // ── 2. Build Delhivery B2C payload ─────────────────────────────────────
@@ -485,6 +488,33 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         err?.response?.data?.message ||
         err?.message ||
         "Failed to create shipment"
+      set({ loading: false, error: errorMessage })
+      toast.error(errorMessage)
+      throw err
+    }
+  },
+
+  createHubOrder: async (payload) => {
+    set({ loading: true, error: null })
+    try {
+      const authToken = sessionStorage.getItem("authToken")
+      const response = await axios.post("/api/hub/orders/create", payload, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        timeout: 10000,
+      })
+
+      set({ loading: false })
+      toast.success("Order created successfully!")
+      return response.data
+    } catch (err: any) {
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to create hub order"
       set({ loading: false, error: errorMessage })
       toast.error(errorMessage)
       throw err

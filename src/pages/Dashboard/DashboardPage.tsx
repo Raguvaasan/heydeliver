@@ -180,7 +180,7 @@ const DashboardPage: FC = () => {
       const walletAmount = overview.wallet?.amount || 0
       const walletLabel = overview.wallet?.label || ""
 
-      return [
+      const cards = [
         {
           icon: <HiTruck className="h-5 w-5" />,
           title: "Active Shipments",
@@ -209,6 +209,10 @@ const DashboardPage: FC = () => {
           onClick: () => navigate("/wallet")
         },
       ]
+
+      return loginType === "hub"
+        ? cards.filter((card) => card.title !== "Wallet Balance")
+        : cards
     } else {
       // Admin view - 5 cards with specific metrics
       const overview = dashboardData.overview || {}
@@ -287,6 +291,7 @@ const DashboardPage: FC = () => {
 
   // Handle shipment type data - both franchise and admin use shipmentTypeDistribution array
   const isFranchise = loginType === "franchise" || loginType === "staff" || loginType === "hub"
+  const isHubLogin = loginType === "hub"
   let shipmentTypeDistribution: any[] = []
   let totalShipmentTypes = 0
 
@@ -445,7 +450,7 @@ const DashboardPage: FC = () => {
                             </div>
                           </div>
                         </div>
-                        {revenueData.todaysRevenue?.label && (
+                        {!isHubLogin && revenueData.todaysRevenue?.label && (
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             {revenueData.todaysRevenue.label}
                           </p>

@@ -191,7 +191,7 @@ const Spinner = () => (
 // ─── Component ────────────────────────────────────────────────────────────────
 const NewOrderPage: FC = () => {
   const navigate = useNavigate()
-  const { createDelhiveryShipment, loading } = useOrderStore()
+  const { createDelhiveryShipment, createHubOrder, loading } = useOrderStore()
 
   const loginType = sessionStorage.getItem("loginType")
   const profileDataStr = sessionStorage.getItem("profileData")
@@ -232,7 +232,10 @@ const NewOrderPage: FC = () => {
     shippingMode: "Surface",
     addressType: "",
     pickupLocation: "",
+    weight: "",
   })
+
+  console.log("formData",formData)
 
   const [boxes, setBoxes] = useState<BoxDetails[]>([
     { id: 1, packageType: "Box", length: "", breadth: "", height: "", weight: "" },
@@ -256,9 +259,11 @@ const NewOrderPage: FC = () => {
   useEffect(() => { loadMarkupConfig() }, [])
 
   useEffect(() => {
-    if (loginType !== "franchise" || !profileDataStr) return
+    if (!profileDataStr) return
     const p = JSON.parse(profileDataStr)
-    const name = p?.agencyName || p?.name || ""
+    const name = loginType === "hub"
+      ? (p?.hubId?.hubName || p?.data?.hubId?.hubName || "")
+      : (p?.agencyName || p?.name || "")
     if (name) setFormData((prev) => ({ ...prev, pickupLocation: name }))
   }, [loginType, profileDataStr])
 
@@ -337,7 +342,15 @@ const NewOrderPage: FC = () => {
 
   useEffect(() => {
     const cgm = totalChargeableGrams(boxes)
-    const oPin = formData.fromPin.length === 6 ? formData.fromPin : (profileData?.pincode || "")
+    const oPin = formData.fromPin.length === 6
+      ? formData.fromPin
+      : (
+        profileData?.pincode ||
+        profileData?.data?.pincode ||
+        profileData?.hubId?.pincode ||
+        profileData?.data?.hubId?.pincode ||
+        ""
+      )
     const dPin = formData.deliveryPincode
 
     setExpressRate(null)
@@ -376,6 +389,19 @@ const NewOrderPage: FC = () => {
   const displayExpressRate = expressRate?.total ?? null
   const selectedRate =
     formData.shippingMode === "Express" ? displayExpressRate : displaySurfaceRate
+
+  useEffect(() => {
+    if (!isHubLogin || selectedRate === null) return
+    const amount = selectedRate.toString()
+    setFormData((prev) => {
+      if (prev.totalAmount === amount && prev.codAmount === amount) return prev
+      return {
+        ...prev,
+        totalAmount: amount,
+        codAmount: amount,
+      }
+    })
+  }, [isHubLogin, selectedRate])
 
   // ── Form handlers ────────────────────────────────────────────────────────────
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -442,7 +468,7 @@ const NewOrderPage: FC = () => {
     if (!boxes[0]?.weight) {
       toast.error("Please add at least one box with weight"); return
     }
-    if (!formData.pickupLocation) {
+    if (!isHubLogin && !formData.pickupLocation) {
       toast.error("Please enter pickup location/warehouse name"); return
     }
 
@@ -450,6 +476,7 @@ const NewOrderPage: FC = () => {
       const totalWeight = boxes.reduce((s, b) => s + (parseFloat(b.weight) || 0), 0)
 
       const firstBox = boxes[0]
+      const payableAmount = selectedRate?.toString() || formData.totalAmount || formData.codAmount
 
       const shipmentData = {
         name: formData.customerName,
@@ -471,7 +498,7 @@ const NewOrderPage: FC = () => {
         hsn_code: formData.hsnCode || "",
         cod_amount: formData.paymentMode === "COD" ? formData.codAmount : "",
         order_date: new Date().toISOString(),
-        total_amount: selectedRate?.toString() || formData.totalAmount || formData.codAmount,
+        total_amount: payableAmount,
         seller_add: profileData?.address || "",
         seller_name: profileData?.agencyOwner || "",
         seller_inv: formData.sellerInvoice || "",
@@ -485,15 +512,45 @@ const NewOrderPage: FC = () => {
         address_type: formData.addressType || "",
       }
 
-      await createDelhiveryShipment(shipmentData, formData.pickupLocation, {
-        fromName: formData.fromName,
-        fromAdd: formData.fromAdd,
-        fromPin: formData.fromPin,
-        fromCity: formData.fromCity,
-        fromState: formData.fromState,
-        fromCountry: formData.fromCountry,
-        fromPhone: formData.fromPhone,
-      })
+      if (isHubLogin) {
+        const hubPayload = {
+          orderType: "hub",
+          name: formData.customerName,
+          add: formData.deliveryAddress,
+          pin: formData.deliveryPincode,
+          city: formData.deliveryCity,
+          state: formData.deliveryState,
+          phone: formData.customerPhone,
+          order: formData.orderId,
+          paymentMode: formData.paymentMode === "COD" ? "COD" : "Prepaid",
+          codAmount: payableAmount,
+          totalAmount: payableAmount,
+          weight: formData.weight || cgmDisplay.toString() || totalWeight.toString(),
+          productsDesc: formData.productsDesc || "",
+          quantity: formData.quantity || "",
+          pickupLocation: {
+            name: formData.channelName || channelDisplayName || "Offline",
+          },
+          fromName: formData.fromName || profileData?.agencyOwner || profileData?.data?.agencyOwner || "",
+          fromAdd: formData.fromAdd || profileData?.address || profileData?.data?.address || "",
+          fromPin: formData.fromPin || profileData?.pincode || profileData?.data?.pincode || "",
+          fromCity: formData.fromCity || profileData?.city || profileData?.data?.city || "",
+          fromState: formData.fromState || profileData?.state || profileData?.data?.state || "",
+          fromPhone: formData.fromPhone || profileData?.phone || profileData?.data?.phone || "",
+        }
+
+        await createHubOrder(hubPayload)
+      } else {
+        await createDelhiveryShipment(shipmentData, formData.pickupLocation, {
+          fromName: formData.fromName,
+          fromAdd: formData.fromAdd,
+          fromPin: formData.fromPin,
+          fromCity: formData.fromCity,
+          fromState: formData.fromState,
+          fromCountry: formData.fromCountry,
+          fromPhone: formData.fromPhone,
+        })
+      }
 
       setTimeout(() => navigate("/orders"), 1500)
     } catch {
@@ -502,6 +559,15 @@ const NewOrderPage: FC = () => {
   }
 
   const cgmDisplay = totalChargeableGrams(boxes)
+
+  useEffect(() => {
+    if (!isHubLogin) return
+    const chargeableWeight = cgmDisplay ? cgmDisplay.toString() : ""
+    setFormData((prev) => {
+      if (prev.weight === chargeableWeight) return prev
+      return { ...prev, weight: chargeableWeight }
+    })
+  }, [isHubLogin, cgmDisplay])
 
   // ── Autofilled field component ────────────────────────────────────────────────
   // Green tint + "✓ auto-filled" badge when value came from pincode lookup
@@ -562,7 +628,7 @@ const NewOrderPage: FC = () => {
                   <Select id="channelName" name="channelName" value={formData.channelName}
                     onChange={handleChannelChange} required>
                     <option value="">Select Channel Name</option>
-                    <option value="Offline">{channelDisplayName}</option>
+                    <option value={channelDisplayName}>{channelDisplayName}</option>
                   </Select>
                   <p className="text-xs text-gray-500 mt-1">
                     Channels are online (Shopify) or custom channel for offline (physical store) orders.
@@ -620,30 +686,30 @@ const NewOrderPage: FC = () => {
               </h3>
               <div className="space-y-4">
 
-                {/* Seller */}
-                <Button type="button" color="gray" size="sm"
-                  className="w-full border-orange-500 text-orange-500"
-                  onClick={() => setShowSellerDetails(!showSellerDetails)}>
-                  📝 {showSellerDetails ? "Hide" : "Add"} Seller Details
-                </Button>
-                {showSellerDetails && (
-                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      { id: "sellerName",    label: "Seller Name",       ph: "Enter seller name" },
-                      { id: "sellerAddress", label: "Seller Address",    ph: "Enter seller address" },
-                      { id: "sellerInvoice", label: "Seller GST Number", ph: "Enter GST number" },
-                    ].map(({ id, label, ph }) => (
-                      <div key={id}>
-                        <Label htmlFor={id}>{label}</Label>
-                        <TextInput id={id} name={id}
-                          value={(formData as any)[id]} onChange={handleChange} placeholder={ph} />
-
-
-
-
+                {/* Seller (hidden for hub login) */}
+                {!isHubLogin && (
+                  <>
+                    <Button type="button" color="gray" size="sm"
+                      className="w-full border-orange-500 text-orange-500"
+                      onClick={() => setShowSellerDetails(!showSellerDetails)}>
+                      📝 {showSellerDetails ? "Hide" : "Add"} Seller Details
+                    </Button>
+                    {showSellerDetails && (
+                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {[
+                          { id: "sellerName",    label: "Seller Name",       ph: "Enter seller name" },
+                          { id: "sellerAddress", label: "Seller Address",    ph: "Enter seller address" },
+                          { id: "sellerInvoice", label: "Seller GST Number", ph: "Enter GST number" },
+                        ].map(({ id, label, ph }) => (
+                          <div key={id}>
+                            <Label htmlFor={id}>{label}</Label>
+                            <TextInput id={id} name={id}
+                              value={(formData as any)[id]} onChange={handleChange} placeholder={ph} />
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
 
                 {/* ── Customer Details ──────────────────────────────────────── */}
@@ -661,7 +727,6 @@ const NewOrderPage: FC = () => {
                     {[
                       { id: "customerName",    label: "Customer Name *",        ph: "Enter customer name",             type: "text" },
                       { id: "customerPhone",   label: "Customer Phone *",        ph: "10 digit mobile number",          type: "tel",  max: 10 },
-                      { id: "customerEmail",   label: "Customer Email",          ph: "Enter email address",             type: "email" },
                       { id: "deliveryAddress", label: "Delivery Address *",      ph: "Enter complete delivery address", type: "text" },
                     ].map(({ id, label, ph, type, max }) => (
                       <div key={id}>
@@ -690,7 +755,6 @@ const NewOrderPage: FC = () => {
                     {/* Autofilled fields */}
                     <AutofilledInput id="deliveryCity"    label="City"    isLoading={deliveryPinLoading} value={formData.deliveryCity}    onChange={handleChange} />
                     <AutofilledInput id="deliveryState"   label="State"   isLoading={deliveryPinLoading} value={formData.deliveryState}   onChange={handleChange} />
-                    <AutofilledInput id="deliveryCountry" label="Country" isLoading={deliveryPinLoading} value={formData.deliveryCountry} onChange={handleChange} />
 
                   </div>
                 )}
@@ -776,7 +840,6 @@ const NewOrderPage: FC = () => {
                     {/* Autofilled fields */}
                     <AutofilledInput id="fromCity"    label="From City"    isLoading={fromPinLoading} value={formData.fromCity}    onChange={handleChange} />
                     <AutofilledInput id="fromState"   label="From State"   isLoading={fromPinLoading} value={formData.fromState}   onChange={handleChange} />
-                    <AutofilledInput id="fromCountry" label="From Country" isLoading={fromPinLoading} value={formData.fromCountry} onChange={handleChange} />
 
                   </div>
                 )}

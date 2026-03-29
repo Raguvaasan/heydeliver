@@ -103,7 +103,7 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/payments",
       submenu: [
         { title: "Wallet Transactions", path: "/wallet/transactions" },
-        { title: "Invoices", path: "/invoice" },
+        // { title: "Invoices", path: "/invoice" },
       ],
     },
     {
@@ -222,7 +222,7 @@ const Sidebar: FC<SidebarProps> = ({
 
   // Hub menu items (franchise items without Wallet)
   const hubMenuItems: MenuItem[] = franchiseMenuItems
-    .filter(item => item.title !== "Wallet")
+    .filter(item => item.title !== "Wallet" && item.title !== "Reports")
 
   // Select menu items based on login type
   const menuItems = loginType === "franchise" || loginType === "staff" 
