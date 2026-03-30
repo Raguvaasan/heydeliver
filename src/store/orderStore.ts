@@ -154,6 +154,7 @@ interface OrderState {
   updateOrder: (id: string, data: Partial<Order>) => Promise<void>
   deleteOrder: (id: string) => Promise<void>
   clearSelectedOrder: () => void
+  editHubOrder: (orderId: string, data: Record<string, any>) => Promise<any>
   updateShipment: (waybill: string, data: any) => Promise<any>
   cancelShipment: (waybill: string) => Promise<any>
   updateEwaybill: (waybill: string, dcn: string, ewbn: string) => Promise<any>
@@ -572,6 +573,39 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
   clearSelectedOrder: () => {
     set({ selectedOrder: null })
+  },
+
+  // Edit Hub Order
+  editHubOrder: async (orderId: string, data: Record<string, any>) => {
+    set({ loading: true, error: null })
+    try {
+      const authToken = sessionStorage.getItem("authToken")
+      const response = await axios.put(
+        `/api/hub/staff/booking/${encodeURIComponent(orderId)}/edit`,
+        data,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          timeout: 10000,
+        }
+      )
+
+      set({ loading: false })
+      toast.success("Order updated successfully!")
+      await get().fetchOrders()
+      return response.data
+    } catch (err: any) {
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to update order"
+      set({ loading: false, error: errorMessage })
+      toast.error(errorMessage)
+      throw err
+    }
   },
 
   // Update Shipment (Edit API)

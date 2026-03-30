@@ -4,10 +4,12 @@ import { HiDocumentDownload, HiEye, HiPencil, HiTrash, HiViewGrid, HiCheckCircle
 import { useNavigate, useLocation } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useOrderStore } from "../../store/orderStore"
+import http from "../../common/httpRequest"
 import toast from "react-hot-toast"
 import { handleInvoice as generateInvoice } from "./handleInvoice"
 import { handleLabel as generateLabel } from "./handleLabel"
 import { handleDelhiveryLabel as generateDelhiveryLabel } from "./handleDelhiveryLabel"
+import EditOrderModal from "./EditOrderModal"
 
 const OrdersPage: FC = () => {
   const navigate = useNavigate()
@@ -16,6 +18,36 @@ const OrdersPage: FC = () => {
   const [activeTab, setActiveTab] = useState<"recent" | "active">("recent")
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
   const [franchiseSearch, setFranchiseSearch] = useState("")
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<any>(null)
+  const [staffMap, setStaffMap] = useState<Record<string, string>>({})
+
+  const getStaffName = useCallback((order: any) => {
+    // If backend populated the staff object
+    if (order.assignedStaff?.name) return order.assignedStaff.name
+    if (order.assignedStaffName) return order.assignedStaffName
+
+    // Try resolving from staffMap using various possible ID fields
+    const staffId =
+      order.assignedStaffId ||
+      (typeof order.assignedStaff === "string" ? order.assignedStaff : null) ||
+      order.staffId ||
+      order.staff ||
+      order.assignedTo
+    if (staffId && staffMap[staffId]) return staffMap[staffId]
+
+    // Debug: log order keys to find the right field
+    if (Object.keys(staffMap).length > 0) {
+      const staffKeys = Object.keys(order).filter(k =>
+        k.toLowerCase().includes("staff") || k.toLowerCase().includes("assign")
+      )
+      if (staffKeys.length > 0) {
+        console.log("[OrdersPage] Staff-related fields in order:", staffKeys.map(k => `${k}=${JSON.stringify(order[k])}`))
+      }
+    }
+
+    return "-"
+  }, [staffMap])
   
   // Get initial status from location state if available
   const initialStatus = (location.state as any)?.status || "all"
@@ -24,6 +56,27 @@ const OrdersPage: FC = () => {
   useEffect(() => {
     fetchOrders()
     fetchActiveOrders()
+
+    // Fetch staff list to resolve assignedStaffId -> name
+    const fetchStaffMap = async () => {
+      try {
+        const response = await http.get("/admin/staff")
+        const responseData = response.data?.data
+        const allStaffs = Array.isArray(responseData)
+          ? responseData
+          : Array.isArray(responseData?.staff)
+          ? responseData.staff
+          : []
+        const map: Record<string, string> = {}
+        allStaffs.forEach((s: any) => {
+          if (s._id) map[s._id] = s.name || s.username || "Staff"
+        })
+        setStaffMap(map)
+      } catch {
+        // silent
+      }
+    }
+    fetchStaffMap()
     
     // If status filter was passed in location state, ensure it's set
     if ((location.state as any)?.status) {
@@ -53,9 +106,10 @@ const OrdersPage: FC = () => {
     navigate(`/orders/${orderId}`)
   }, [navigate])
 
-  const handleEdit = useCallback((orderId: string) => {
-    navigate(`/orders/edit/${orderId}`)
-  }, [navigate])
+  const handleEdit = useCallback((order: any) => {
+    setEditingOrder(order)
+    setEditModalOpen(true)
+  }, [])
 
   const handleDelete = useCallback(async (orderId: string) => {
     if (window.confirm("Are you sure you want to delete this order?")) {
@@ -136,7 +190,7 @@ const OrdersPage: FC = () => {
               <th className="px-4 py-3 whitespace-nowrap">BOOKING DATE & TIME</th>
               <th className="px-4 py-3 whitespace-nowrap">CUSTOMER</th>
               <th className="px-4 py-3 whitespace-nowrap">CUSTOMER NUMBER</th>
-              <th className="px-4 py-3 whitespace-nowrap">FRANCHISE NAME</th>
+              <th className="px-4 py-3 whitespace-nowrap">STAFF NAME</th>
               <th className="px-4 py-3 whitespace-nowrap">AMOUNT</th>
               <th className="px-4 py-3 whitespace-nowrap">STATUS</th>
               <th className="px-4 py-3 text-center">ACTION</th>
@@ -184,7 +238,7 @@ const OrdersPage: FC = () => {
                     {order.consignee.phone || "-"}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
-                    {order.franchiseName || "-"}
+                    {getStaffName(order)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                     ₹{order.amount || 0}
@@ -228,7 +282,7 @@ const OrdersPage: FC = () => {
                         <HiEye className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => handleEdit(order._id || order.orderId || order.bookingId)}
+                        onClick={() => handleEdit(order)}
                         className="p-1.5 text-green-600 hover:text-green-700 dark:text-green-400"
                         title="Edit"
                       >
@@ -250,7 +304,12 @@ const OrdersPage: FC = () => {
         </table>
       </div>
     )
-  }, [loading, selectedOrders, handleSelectAll, handleView, handleEdit, handleDelete, getStatusColor, handleInvoice, handleLabel, handleDelhiveryLabel])
+  }, [loading, selectedOrders, handleSelectAll, handleView, handleEdit, handleDelete, getStatusColor, handleInvoice, handleLabel, handleDelhiveryLabel, handleSelectOrder, getStaffName])
+
+  const handleEditModalClose = useCallback(() => {
+    setEditModalOpen(false)
+    setEditingOrder(null)
+  }, [])
 
   return (
     <NavbarSidebarLayout isFooter={false}>
@@ -393,6 +452,13 @@ const OrdersPage: FC = () => {
           {renderOrdersTable(currentOrdersList)}
         </Card>
       </div>
+
+      {/* Edit Order Modal */}
+      <EditOrderModal
+        isOpen={editModalOpen}
+        onClose={handleEditModalClose}
+        order={editingOrder}
+      />
     </NavbarSidebarLayout>
   )
 }
