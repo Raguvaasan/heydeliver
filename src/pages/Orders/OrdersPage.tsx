@@ -60,7 +60,7 @@ const OrdersPage: FC = () => {
     // Fetch staff list to resolve assignedStaffId -> name
     const fetchStaffMap = async () => {
       try {
-        const response = await http.get("/admin/staff")
+        const response = await http.get("/admin/staff", { params: { limit: 100 } })
         const responseData = response.data?.data
         const allStaffs = Array.isArray(responseData)
           ? responseData

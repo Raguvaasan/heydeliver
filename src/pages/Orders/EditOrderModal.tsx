@@ -41,9 +41,18 @@ const EditOrderModal: FC<EditOrderModalProps> = ({ isOpen, onClose, order }) => 
     try {
       const profileDataStr = sessionStorage.getItem("profileData")
       const profileData = profileDataStr ? JSON.parse(profileDataStr) : null
-      const myHubId = profileData?.hubId?._id || profileData?.hubId || ""
+      const loginType = sessionStorage.getItem("loginType") || ""
 
-      const response = await http.get("/admin/staff")
+      // Hub admin login → profileData._id IS the hub's ID
+      // Hub staff login → profileData.hubId._id is the hub's ID
+      const myHubId =
+        (loginType === "hub" ? profileData?._id : null) ||
+        profileData?.hubId?._id ||
+        (typeof profileData?.hubId === "string" ? profileData.hubId : null) ||
+        ""
+
+      // Fetch with large limit to avoid pagination missing staff
+      const response = await http.get("/admin/staff", { params: { limit: 100 } })
       const responseData = response.data?.data
 
       // Handle both { staff: [...] } and direct array format
