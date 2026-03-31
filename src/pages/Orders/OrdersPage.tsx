@@ -1,5 +1,5 @@
 import { FC, useEffect, useState, useCallback, useMemo } from "react"
-import { Badge, Button, Card, Spinner, Tabs } from "flowbite-react"
+import { Badge, Button, Card, Spinner } from "flowbite-react"
 import { HiDocumentDownload, HiEye, HiPencil, HiTrash, HiViewGrid, HiCheckCircle, HiClock, HiTruck, HiXCircle, HiOutlinePrinter } from "react-icons/hi"
 import { useNavigate, useLocation } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
@@ -14,6 +14,7 @@ import EditOrderModal from "./EditOrderModal"
 const OrdersPage: FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const isHubLogin = (sessionStorage.getItem("loginType") || "").toLowerCase() === "hub"
   const { orders, activeOrders, fetchOrders, fetchActiveOrders, deleteOrder, loading } = useOrderStore()
   const [activeTab, setActiveTab] = useState<"recent" | "active">("recent")
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
@@ -133,6 +134,7 @@ const OrdersPage: FC = () => {
   const handleDelhiveryLabel = useCallback(async (waybill: string) => {
     await generateDelhiveryLabel(waybill)
   }, [])
+
   const getStatusColor = useCallback((status: string) => {
     const statusLower = status?.toLowerCase()
     if (statusLower === "delivered") return "success"
@@ -204,7 +206,13 @@ const OrdersPage: FC = () => {
                 </td>
               </tr>
             ) : (
-              ordersList.map((order) => (
+              ordersList.map((order) => {
+                const normalizedStatus = String(order.status || "").toLowerCase().replace(/[\s_-]/g, "")
+                const isPending = normalizedStatus === "pending"
+                const canShowAllIcons = true
+                const isNonViewActionEnabled = !isHubLogin || !isPending
+
+                return (
                 <tr
                   key={order._id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
@@ -250,30 +258,34 @@ const OrdersPage: FC = () => {
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() =>
-                          handleInvoice(order.orderId)}
-                        className="p-1.5 text-gray-700 hover:text-gray-900 dark:text-gray-300"
-                        title="View Invoice"
-                      >
-                        <HiDocumentDownload className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleLabel(order.orderId)}
-                        className="p-1.5 text-gray-700 hover:text-gray-900 dark:text-gray-300"
-                        title="Print Label"
-                      >
-                        <HiOutlinePrinter className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleDelhiveryLabel(order.waybill)}
-                        className="p-1.5 text-orange-600 hover:text-orange-700 dark:text-orange-400"
-                        title="Delhivery Label"
-                      >
-                        <HiDocumentDownload className="h-5 w-5" />
-                      </button>
+                      {canShowAllIcons && (
+                        <>
+                          <button
+                            onClick={() => isNonViewActionEnabled && handleInvoice(order.orderId)}
+                            disabled={!isNonViewActionEnabled}
+                            className={`p-1.5 dark:text-gray-300 ${isNonViewActionEnabled ? "text-gray-700 hover:text-gray-900" : "text-gray-400 cursor-not-allowed opacity-60"}`}
+                            title="View Invoice"
+                          >
+                            <HiDocumentDownload className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => isNonViewActionEnabled && handleLabel(order.orderId)}
+                            disabled={!isNonViewActionEnabled}
+                            className={`p-1.5 dark:text-gray-300 ${isNonViewActionEnabled ? "text-gray-700 hover:text-gray-900" : "text-gray-400 cursor-not-allowed opacity-60"}`}
+                            title="Print Label"
+                          >
+                            <HiOutlinePrinter className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => isNonViewActionEnabled && handleDelhiveryLabel(order.waybill)}
+                            disabled={!isNonViewActionEnabled}
+                            className={`${isNonViewActionEnabled ? "text-orange-600 hover:text-orange-700 dark:text-orange-400" : "text-gray-400 cursor-not-allowed opacity-60"} p-1.5`}
+                            title="Delhivery Label"
+                          >
+                            <HiDocumentDownload className="h-5 w-5" />
+                          </button>
+                        </>
+                      )}
                       <button
                         onClick={() => handleView(order._id || order.orderId || order.bookingId)}
                         className="p-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400"
@@ -281,30 +293,36 @@ const OrdersPage: FC = () => {
                       >
                         <HiEye className="h-5 w-5" />
                       </button>
-                      <button
-                        onClick={() => handleEdit(order)}
-                        className="p-1.5 text-green-600 hover:text-green-700 dark:text-green-400"
-                        title="Edit"
-                      >
-                        <HiPencil className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(order._id)}
-                        className="p-1.5 text-red-600 hover:text-red-700 dark:text-red-400"
-                        title="Delete"
-                      >
-                        <HiTrash className="h-5 w-5" />
-                      </button>
+                      {canShowAllIcons && (
+                        <>
+                          <button
+                            onClick={() => isNonViewActionEnabled && handleEdit(order)}
+                            disabled={!isNonViewActionEnabled}
+                            className={`${isNonViewActionEnabled ? "text-green-600 hover:text-green-700 dark:text-green-400" : "text-gray-400 cursor-not-allowed opacity-60"} p-1.5`}
+                            title="Edit"
+                          >
+                            <HiPencil className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => isNonViewActionEnabled && handleDelete(order._id)}
+                            disabled={!isNonViewActionEnabled}
+                            className={`${isNonViewActionEnabled ? "text-red-600 hover:text-red-700 dark:text-red-400" : "text-gray-400 cursor-not-allowed opacity-60"} p-1.5`}
+                            title="Delete"
+                          >
+                            <HiTrash className="h-5 w-5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
-              ))
+              )})
             )}
           </tbody>
         </table>
       </div>
     )
-  }, [loading, selectedOrders, handleSelectAll, handleView, handleEdit, handleDelete, getStatusColor, handleInvoice, handleLabel, handleDelhiveryLabel, handleSelectOrder, getStaffName])
+  }, [loading, selectedOrders, handleSelectAll, handleView, getStatusColor, handleSelectOrder, getStaffName, handleInvoice, handleLabel, handleDelhiveryLabel, handleEdit, handleDelete, isHubLogin])
 
   const handleEditModalClose = useCallback(() => {
     setEditModalOpen(false)
@@ -459,6 +477,7 @@ const OrdersPage: FC = () => {
         onClose={handleEditModalClose}
         order={editingOrder}
       />
+
     </NavbarSidebarLayout>
   )
 }
