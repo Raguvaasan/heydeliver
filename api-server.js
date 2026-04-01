@@ -7,8 +7,28 @@ const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
-// NOTE: urlencoded middleware is applied per-route below, NOT globally,
-// so that the delhivery proxy can forward raw form bodies untouched.
+app.use(express.urlencoded({ extended: true }));
+
+function buildDelhiveryFormBody(body) {
+  const params = new URLSearchParams();
+  params.set("format", "json");
+
+  if (body && typeof body === "object") {
+    if (body.data !== undefined) {
+      const dataStr = typeof body.data === "string" ? body.data : JSON.stringify(body.data);
+      params.set("data", dataStr);
+    } else if (body.shipments) {
+      params.set("data", JSON.stringify(body));
+    }
+  } else if (typeof body === "string") {
+    if (body.includes("format=") && body.includes("data=")) {
+      return body;
+    }
+    params.set("data", body);
+  }
+
+  return params.toString();
+}
 
 /*
 ---------------------------------------------------
@@ -26,7 +46,7 @@ Handles:
 https://truecargos.com/delhivery-api/*
 ---------------------------------------------------
 */
-app.use("/delhivery-api", express.raw({ type: 'application/x-www-form-urlencoded' }), async (req, res) => {
+app.use("/delhivery-api", async (req, res) => {
   try {
     const apiPath = req.path;
     const query = req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : "";
@@ -44,16 +64,10 @@ app.use("/delhivery-api", express.raw({ type: 'application/x-www-form-urlencoded
     if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
       if (apiPath.includes("create.json")) {
         // Delhivery create.json expects application/x-www-form-urlencoded
-        // Forward the raw body as-is to preserve format=json&data=...
+        // Construct form body from whatever the frontend sent (JSON or form)
         fetchOptions.headers["Content-Type"] = "application/x-www-form-urlencoded";
-        let rawBody = Buffer.isBuffer(req.body) ? req.body.toString("utf-8") : String(req.body || "");
-        
-        // Safety: ensure format= is present
-        if (!rawBody.includes("format=")) {
-          rawBody = `format=json&${rawBody}`;
-        }
-        fetchOptions.body = rawBody;
-        console.log("[delhivery proxy] outgoing body:", rawBody.substring(0, 200));
+        fetchOptions.body = buildDelhiveryFormBody(req.body);
+        console.log("[delhivery proxy] outgoing body:", fetchOptions.body.substring(0, 200));
       } else {
         fetchOptions.headers["Content-Type"] = "application/json";
         fetchOptions.body = JSON.stringify(req.body);

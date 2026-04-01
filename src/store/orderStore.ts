@@ -370,26 +370,21 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       }
 
       // ── 2. Build Delhivery B2C payload ─────────────────────────────────────
-      // Delhivery expects:  Content-Type: application/x-www-form-urlencoded
-      // Body:               format=json&data=<url-encoded JSON string>
+      // Send JSON to our proxy; the proxy constructs the form-urlencoded body
+      // that Delhivery expects (format=json&data=<JSON>).
       const payload = {
         shipments: [shipmentData],
         pickup_location: { name: pickupLocation },
       }
 
-      // URLSearchParams correctly encodes both fields as form data
-      const formBody = new URLSearchParams()
-      formBody.append("format", "json")
-      formBody.append("data", JSON.stringify(payload))
-
       const authToken = sessionStorage.getItem("authToken")
 
       const delhiveryResponse = await axios.post<DelhiveryResponse>(
         '/delhivery-api/api/cmu/create.json',
-        formBody.toString(),            // serialised as  format=json&data=%7B...%7D
+        payload,
         {
           headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Type": "application/json",
             "Accept": "application/json",
             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
