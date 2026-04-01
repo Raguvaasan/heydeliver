@@ -567,6 +567,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         "/api/hub/orders/create",
         {
           ...payload,
+          format: "json",
+          data: JSON.stringify(cmuPayload),
           ...(waybill ? { waybill } : {}),
         },
         {
