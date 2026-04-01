@@ -9,27 +9,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-function buildDelhiveryFormBody(body) {
-  const params = new URLSearchParams();
-  params.set("format", "json");
-
-  if (body && typeof body === "object") {
-    if (body.data !== undefined) {
-      const dataStr = typeof body.data === "string" ? body.data : JSON.stringify(body.data);
-      params.set("data", dataStr);
-    } else if (body.shipments) {
-      params.set("data", JSON.stringify(body));
-    }
-  } else if (typeof body === "string") {
-    if (body.includes("format=") && body.includes("data=")) {
-      return body;
-    }
-    params.set("data", body);
-  }
-
-  return params.toString();
-}
-
 /*
 ---------------------------------------------------
 Health Check
@@ -37,20 +16,6 @@ Health Check
 */
 app.get("/api", (req, res) => {
   res.json({ status: "API running" });
-});
-
-// Debug endpoint to verify body parsing
-app.post("/debug-delhivery", (req, res) => {
-  const bodyType = typeof req.body;
-  const bodyKeys = req.body && typeof req.body === "object" ? Object.keys(req.body) : [];
-  const formResult = buildDelhiveryFormBody(req.body);
-  res.json({
-    bodyType,
-    bodyKeys,
-    bodyRaw: JSON.stringify(req.body),
-    formResult: formResult.substring(0, 500),
-    contentType: req.headers["content-type"],
-  });
 });
 
 /*
@@ -78,10 +43,12 @@ app.use("/delhivery-api", async (req, res) => {
     if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
       if (apiPath.includes("create.json")) {
         // Delhivery create.json expects application/x-www-form-urlencoded
-        // Construct form body from whatever the frontend sent (JSON or form)
         fetchOptions.headers["Content-Type"] = "application/x-www-form-urlencoded";
-        fetchOptions.body = buildDelhiveryFormBody(req.body);
-        console.log("[delhivery proxy] outgoing body:", fetchOptions.body.substring(0, 200));
+        const params = new URLSearchParams();
+        for (const [key, value] of Object.entries(req.body)) {
+          params.append(key, typeof value === "object" ? JSON.stringify(value) : String(value));
+        }
+        fetchOptions.body = params.toString();
       } else {
         fetchOptions.headers["Content-Type"] = "application/json";
         fetchOptions.body = JSON.stringify(req.body);

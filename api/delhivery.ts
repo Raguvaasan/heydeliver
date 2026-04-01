@@ -1,44 +1,25 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { IncomingMessage } from 'http';
 
-// Let Vercel parse the body normally (JSON or form-urlencoded).
-// We reconstruct the exact form body Delhivery expects in the handler.
+// Keep raw body available so form-urlencoded payloads (format=json&data=...)
+// are forwarded exactly as Delhivery expects.
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 const DELHIVERY_TOKEN = process.env['DELHIVERY_API_TOKEN'] || "91aeec33f78a2d21a6348658708de71f31489038";
 
-/**
- * Build the form-urlencoded body that Delhivery expects:
- *   format=json&data=<url-encoded JSON string>
- *
- * Accepts either:
- *   - A parsed JSON object with { shipments, pickup_location } (from frontend JSON POST)
- *   - A parsed form object with { format, data } (from frontend form POST)
- */
-function buildDelhiveryFormBody(body: any): string {
-  const params = new URLSearchParams();
-  params.set('format', 'json');
-
-  if (body && typeof body === 'object') {
-    if (body.data !== undefined) {
-      // Frontend sent { format: "json", data: "..." } — use data value directly
-      const dataStr = typeof body.data === 'string' ? body.data : JSON.stringify(body.data);
-      params.set('data', dataStr);
-    } else if (body.shipments) {
-      // Frontend sent the payload directly as JSON { shipments: [...], pickup_location: {...} }
-      params.set('data', JSON.stringify(body));
-    }
-  } else if (typeof body === 'string') {
-    // Already a string — check if it's form-encoded or raw JSON
-    if (body.includes('format=') && body.includes('data=')) {
-      return body; // Already correctly formatted
-    }
-    if (body.includes('data=') && !body.includes('format=')) {
-      return `format=json&${body}`;
-    }
-    // Assume it's a JSON string
-    params.set('data', body);
-  }
-
-  return params.toString();
+function getRawBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.on('data', (chunk) => {
+      data += chunk;
+    });
+    req.on('end', () => resolve(data));
+    req.on('error', reject);
+  });
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -72,19 +53,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // For POST/PUT requests
       delhiveryUrl = `https://track.delhivery.com/${delhiveryPath}`;
 
+      const rawBody = await getRawBody(req);
       const isCreateEndpoint = delhiveryPath.includes('create.json');
 
       if (isCreateEndpoint) {
-        // Delhivery create.json expects: Content-Type: application/x-www-form-urlencoded
-        // Body: format=json&data=<url-encoded JSON>
         headers['Content-Type'] = 'application/x-www-form-urlencoded';
-        const formBody = buildDelhiveryFormBody(req.body);
-        fetchOptions.body = formBody;
-        console.log('[delhivery proxy] create.json outgoing body:', formBody.substring(0, 300));
+        if (rawBody.includes('format=')) {
+          fetchOptions.body = rawBody;
+        } else if (rawBody.includes('data=')) {
+          // Some upstream parsers drop the first field; enforce Delhivery format key.
+          fetchOptions.body = `format=json&${rawBody}`;
+        } else {
+          // Fallback if upstream sent JSON instead of pre-encoded form body.
+          try {
+            const parsed = rawBody ? JSON.parse(rawBody) : {};
+            const formData = new URLSearchParams();
+            formData.set('format', String((parsed as any)?.format || 'json'));
+            if ((parsed as any)?.data !== undefined) {
+              formData.set(
+                'data',
+                typeof (parsed as any).data === 'string'
+                  ? (parsed as any).data
+                  : JSON.stringify((parsed as any).data)
+              );
+            }
+            fetchOptions.body = formData.toString();
+          } catch {
+            fetchOptions.body = 'format=json';
+          }
+        }
       } else {
         // Non-create endpoints continue as JSON by default.
         headers['Content-Type'] = 'application/json';
-        fetchOptions.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body || {});
+        fetchOptions.body = rawBody || '{}';
       }
     } else {
       // For GET requests (pincode check, tracking, etc)

@@ -1,31 +1,28 @@
-// Let Vercel parse the body normally — we reconstruct form body in the handler.
+// Disable body parsing for this API route
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { IncomingMessage } from 'http';
 
 const DELHIVERY_TOKEN = process.env['DELHIVERY_API_TOKEN'] || "91aeec33f78a2d21a6348658708de71f31489038";
 
-function buildDelhiveryFormBody(body: any): string {
-  const params = new URLSearchParams();
-  params.set('format', 'json');
-
-  if (body && typeof body === 'object') {
-    if (body.data !== undefined) {
-      const dataStr = typeof body.data === 'string' ? body.data : JSON.stringify(body.data);
-      params.set('data', dataStr);
-    } else if (body.shipments) {
-      params.set('data', JSON.stringify(body));
-    }
-  } else if (typeof body === 'string') {
-    if (body.includes('format=') && body.includes('data=')) {
-      return body;
-    }
-    if (body.includes('data=') && !body.includes('format=')) {
-      return `format=json&${body}`;
-    }
-    params.set('data', body);
-  }
-
-  return params.toString();
+function getRawBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.on('data', chunk => {
+      data += chunk;
+    });
+    req.on('end', () => {
+      resolve(data);
+    });
+    req.on('error', err => {
+      reject(err);
+    });
+  });
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -71,16 +68,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       },
     };
 
-    // If POST to create.json, construct form body for Delhivery
+    // If POST to create.json, forward as x-www-form-urlencoded and use raw body
     if (req.method === 'POST' && apiPath.endsWith('create.json')) {
+      // Forward as form-urlencoded for Delhivery create.json
       fetchOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-      const formBody = buildDelhiveryFormBody(req.body);
-      fetchOptions.body = formBody;
-      console.log('Delhivery Proxy Outgoing body:', formBody.substring(0, 300));
+      let rawBody = await getRawBody(req);
+      // Log the incoming body from the frontend
+      console.log('Delhivery Proxy INCOMING rawBody:', rawBody);
+
+      // If body is not a string, convert to string
+      if (typeof rawBody !== 'string') {
+        rawBody = String(rawBody);
+      }
+
+      // If body is an object, convert to correct format
+      if (!rawBody.includes('format=json')) {
+        try {
+          const parsed = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
+          if (parsed.format && parsed.data) {
+            rawBody = `format=${parsed.format}&data=${typeof parsed.data === 'string' ? parsed.data : JSON.stringify(parsed.data)}`;
+          }
+        } catch {
+          // leave as is
+        }
+      }
+
+      fetchOptions.body = rawBody;
+      // Log for debug
+      console.log('Delhivery Proxy Outgoing body:', rawBody);
     } else if (req.method === 'POST') {
       // For other POSTs, default to JSON
       fetchOptions.headers['Content-Type'] = 'application/json';
-      fetchOptions.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+      fetchOptions.body = req.body && typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
     }
 
     const response = await fetch(fullUrl, fetchOptions);

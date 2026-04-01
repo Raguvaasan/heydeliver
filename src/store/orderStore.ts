@@ -550,12 +550,16 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         },
       }
 
+      const formBody = new URLSearchParams()
+      formBody.append("format", "json")
+      formBody.append("data", JSON.stringify(cmuPayload))
+
       const delhiveryResponse = await axios.post<DelhiveryResponse>(
         "/delhivery-api/api/cmu/create.json",
-        cmuPayload,
+        formBody.toString(),
         {
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
             Accept: "application/json",
             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
