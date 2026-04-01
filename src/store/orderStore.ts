@@ -533,6 +533,21 @@ export const useOrderStore = create<OrderState>((set, get) => ({
             weight: payload?.weight ? String(payload.weight) : "",
             shipping_mode: payload?.shippingMode || "Surface",
             address_type: payload?.addressType || "",
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
           },
         ],
         pickup_location: {
@@ -544,43 +559,46 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       formBody.append("format", "json")
       formBody.append("data", JSON.stringify(cmuPayload))
 
-      const backendPayload = {
-        ...payload,
-        format: "json",
-        data: JSON.stringify(cmuPayload),
-        cmuPayload,
-      }
-
-      const response = await axios.post("/api/hub/orders/create", backendPayload, {
-        headers: {
-          "Content-Type": "application/json",
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        },
-        timeout: 10000,
-      })
-
-      // Keep explicit CMU create best-effort as fallback consistency with franchise format.
-      try {
-        await axios.post("/delhivery-api/api/cmu/create.json", formBody.toString(), {
+      const delhiveryResponse = await axios.post<DelhiveryResponse>(
+        "/delhivery-api/api/cmu/create.json",
+        formBody.toString(),
+        {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
             Accept: "application/json",
             ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
           timeout: 15000,
-        })
-      } catch (delhiveryErr: any) {
-        console.warn(
-          "[orderStore] Hub order created but Delhivery CMU create failed:",
-          delhiveryErr?.response?.data || delhiveryErr?.message
-        )
+        }
+      )
+
+      const delhiveryData = delhiveryResponse.data
+      if (!delhiveryData?.success) {
+        throw new Error(delhiveryData?.rmk || "Delhivery shipment creation failed")
       }
+
+      const waybill = delhiveryData?.packages?.[0]?.waybill ?? ""
+      const response = await axios.post(
+        "/api/hub/orders/create",
+        {
+          ...payload,
+          ...(waybill ? { waybill } : {}),
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          timeout: 10000,
+        }
+      )
 
       set({ loading: false })
       toast.success("Order created successfully!")
       return response.data
     } catch (err: any) {
       const errorMessage =
+        err?.response?.data?.rmk ||
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
