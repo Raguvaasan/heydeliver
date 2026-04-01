@@ -15,7 +15,7 @@ const OrdersPage: FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const isHubLogin = (sessionStorage.getItem("loginType") || "").toLowerCase() === "hub"
-  const { orders, activeOrders, fetchOrders, fetchActiveOrders, deleteOrder, loading, pagination } = useOrderStore()
+  const { orders, activeOrders, fetchOrders, fetchActiveOrders, deleteOrder, loading } = useOrderStore()
   const [activeTab, setActiveTab] = useState<"recent" | "active">("recent")
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
   const [franchiseSearch, setFranchiseSearch] = useState("")
@@ -23,7 +23,7 @@ const OrdersPage: FC = () => {
   const [editingOrder, setEditingOrder] = useState<any>(null)
   const [staffMap, setStaffMap] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
-  const LIMIT = 20
+  const PAGE_SIZE = 10
 
   const getStaffName = useCallback((order: any) => {
     // If backend populated the staff object
@@ -57,8 +57,8 @@ const OrdersPage: FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>(initialStatus)
 
   useEffect(() => {
-    fetchOrders(page, LIMIT)
-    fetchActiveOrders(page, LIMIT)
+    fetchOrders(1, 500)
+    fetchActiveOrders(1, 500)
 
     // Fetch staff list to resolve assignedStaffId -> name
     const fetchStaffMap = async () => {
@@ -86,7 +86,7 @@ const OrdersPage: FC = () => {
       setStatusFilter((location.state as any).status)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, location.state]) // Re-run when page changes or location state changes
+  }, [location.state])
 
   // Memoized callbacks to prevent unnecessary re-renders
   const handleSelectOrder = useCallback((orderId: string) => {
@@ -146,8 +146,8 @@ const OrdersPage: FC = () => {
     return "gray"
   }, [])
 
-  // Memoize the current orders list based on active tab and status filter
-  const currentOrdersList = useMemo(() => {
+  // Memoize filtered orders (before pagination)
+  const filteredOrders = useMemo(() => {
     const baseOrders = activeTab === "recent" ? orders : activeOrders
 
     // Apply status filter
@@ -162,9 +162,21 @@ const OrdersPage: FC = () => {
     if (!search) return statusFilteredOrders
 
     return statusFilteredOrders.filter((order) =>
-      String(order.franchiseName || "").toLowerCase().includes(search)
+      String(order["franchiseName"] || "").toLowerCase().includes(search)
     )
   }, [activeTab, orders, activeOrders, statusFilter, franchiseSearch])
+
+  // Client-side pagination
+  const totalPages = Math.ceil(filteredOrders.length / PAGE_SIZE)
+  const currentOrdersList = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return filteredOrders.slice(start, start + PAGE_SIZE)
+  }, [filteredOrders, page])
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1)
+  }, [statusFilter, franchiseSearch, activeTab])
 
   const renderOrdersTable = useCallback((ordersList: any[]) => {
     if (loading) {
@@ -472,27 +484,30 @@ const OrdersPage: FC = () => {
           {renderOrdersTable(currentOrdersList)}
 
           {/* Pagination */}
-          {pagination && pagination.totalPages > 1 && (
+          {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Page {pagination.page} of {pagination.totalPages} &middot; {pagination.total} total orders
+                Page {page} of {totalPages} &middot; {filteredOrders.length} total orders
               </p>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <Button
                   size="sm"
                   color="gray"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                 >
-                  <HiChevronLeft className="h-4 w-4" />
+                  <HiChevronLeft className="h-4 w-4 mr-1" /> Previous
                 </Button>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 px-2">
+                  {page}
+                </span>
                 <Button
                   size="sm"
                   color="gray"
-                  disabled={page >= pagination.totalPages}
+                  disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
-                  <HiChevronRight className="h-4 w-4" />
+                  Next <HiChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
             </div>
