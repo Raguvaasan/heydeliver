@@ -1,6 +1,6 @@
 import { FC, useEffect, useState, useCallback, useMemo } from "react"
 import { Badge, Button, Card, Spinner } from "flowbite-react"
-import { HiDocumentDownload, HiEye, HiPencil, HiTrash, HiViewGrid, HiCheckCircle, HiClock, HiTruck, HiXCircle, HiOutlinePrinter } from "react-icons/hi"
+import { HiDocumentDownload, HiEye, HiPencil, HiTrash, HiViewGrid, HiCheckCircle, HiClock, HiTruck, HiXCircle, HiOutlinePrinter, HiChevronLeft, HiChevronRight } from "react-icons/hi"
 import { useNavigate, useLocation } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useOrderStore } from "../../store/orderStore"
@@ -15,13 +15,15 @@ const OrdersPage: FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const isHubLogin = (sessionStorage.getItem("loginType") || "").toLowerCase() === "hub"
-  const { orders, activeOrders, fetchOrders, fetchActiveOrders, deleteOrder, loading } = useOrderStore()
+  const { orders, activeOrders, fetchOrders, fetchActiveOrders, deleteOrder, loading, pagination } = useOrderStore()
   const [activeTab, setActiveTab] = useState<"recent" | "active">("recent")
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
   const [franchiseSearch, setFranchiseSearch] = useState("")
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingOrder, setEditingOrder] = useState<any>(null)
   const [staffMap, setStaffMap] = useState<Record<string, string>>({})
+  const [page, setPage] = useState(1)
+  const LIMIT = 20
 
   const getStaffName = useCallback((order: any) => {
     // If backend populated the staff object
@@ -55,8 +57,8 @@ const OrdersPage: FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>(initialStatus)
 
   useEffect(() => {
-    fetchOrders()
-    fetchActiveOrders()
+    fetchOrders(page, LIMIT)
+    fetchActiveOrders(page, LIMIT)
 
     // Fetch staff list to resolve assignedStaffId -> name
     const fetchStaffMap = async () => {
@@ -84,7 +86,7 @@ const OrdersPage: FC = () => {
       setStatusFilter((location.state as any).status)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state]) // Re-run if location state changes (e.g. navigating back from dashboard with same route but different state)
+  }, [page, location.state]) // Re-run when page changes or location state changes
 
   // Memoized callbacks to prevent unnecessary re-renders
   const handleSelectOrder = useCallback((orderId: string) => {
@@ -468,6 +470,33 @@ const OrdersPage: FC = () => {
 
           {/* Table */}
           {renderOrdersTable(currentOrdersList)}
+
+          {/* Pagination */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Page {pagination.page} of {pagination.totalPages} &middot; {pagination.total} total orders
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  color="gray"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  <HiChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  color="gray"
+                  disabled={page >= pagination.totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  <HiChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
 
