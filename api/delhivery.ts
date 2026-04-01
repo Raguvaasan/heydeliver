@@ -38,13 +38,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const delhiveryPath = url.searchParams.get('path') || 'c/api/pin-codes/json';
 
     let delhiveryUrl = '';
+    const headers: Record<string, string> = {
+      'Authorization': `Token ${DELHIVERY_TOKEN}`,
+      'Content-Type': 'application/json',
+      'Accept': '*/*',
+    };
+
     let fetchOptions: RequestInit = {
       method: req.method || 'GET',
-      headers: {
-        'Authorization': `Token ${DELHIVERY_TOKEN}`,
-        'Content-Type': 'application/json',
-        'Accept': '*/*',
-      },
+      headers,
     };
 
     if (req.method === 'POST' || req.method === 'PUT') {
@@ -55,9 +57,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const isCreateEndpoint = delhiveryPath.includes('create.json');
 
       if (isCreateEndpoint) {
-        fetchOptions.headers!['Content-Type'] = 'application/x-www-form-urlencoded';
+        headers['Content-Type'] = 'application/x-www-form-urlencoded';
         if (rawBody.includes('format=')) {
           fetchOptions.body = rawBody;
+        } else if (rawBody.includes('data=')) {
+          // Some upstream parsers drop the first field; enforce Delhivery format key.
+          fetchOptions.body = `format=json&${rawBody}`;
         } else {
           // Fallback if upstream sent JSON instead of pre-encoded form body.
           try {
@@ -79,7 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       } else {
         // Non-create endpoints continue as JSON by default.
-        fetchOptions.headers!['Content-Type'] = 'application/json';
+        headers['Content-Type'] = 'application/json';
         fetchOptions.body = rawBody || '{}';
       }
     } else {

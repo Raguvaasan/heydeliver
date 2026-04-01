@@ -537,6 +537,11 @@ const NewOrderPage: FC = () => {
           fromCity: formData.fromCity || profileData?.city || profileData?.data?.city || "",
           fromState: formData.fromState || profileData?.state || profileData?.data?.state || "",
           fromPhone: formData.fromPhone || profileData?.phone || profileData?.data?.phone || "",
+          shipmentWidth: firstBox?.breadth || "100",
+          shipmentHeight: firstBox?.height || "100",
+          shipmentLength: firstBox?.length || "100",
+          shippingMode: formData.shippingMode,
+          addressType: formData.addressType || "",
         }
 
         await createHubOrder(hubPayload)

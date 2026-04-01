@@ -499,7 +499,59 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const authToken = sessionStorage.getItem("authToken")
-      const response = await axios.post("/api/hub/orders/create", payload, {
+      const cmuPayload = {
+        shipments: [
+          {
+            name: payload?.name || "",
+            add: payload?.add || "",
+            pin: payload?.pin || "",
+            city: payload?.city || "",
+            state: payload?.state || "",
+            country: payload?.country || "India",
+            phone: payload?.phone || "",
+            order: payload?.order || "",
+            payment_mode: payload?.paymentMode === "COD" ? "COD" : "Prepaid",
+            return_pin: payload?.returnPin || "",
+            return_city: payload?.returnCity || "",
+            return_phone: payload?.returnPhone || "",
+            return_add: payload?.returnAdd || "",
+            return_state: payload?.returnState || "",
+            return_country: payload?.returnCountry || "",
+            products_desc: payload?.productsDesc || "",
+            hsn_code: payload?.hsnCode || "",
+            cod_amount: payload?.codAmount ? String(payload.codAmount) : "",
+            order_date: payload?.orderDate || null,
+            total_amount: payload?.totalAmount ? String(payload.totalAmount) : "",
+            seller_add: payload?.sellerAdd || payload?.fromAdd || "",
+            seller_name: payload?.sellerName || payload?.fromName || "",
+            seller_inv: payload?.sellerInv || "",
+            quantity: payload?.quantity ? String(payload.quantity) : "",
+            waybill: payload?.waybill || "",
+            shipment_width: payload?.shipmentWidth ? String(payload.shipmentWidth) : "100",
+            shipment_height: payload?.shipmentHeight ? String(payload.shipmentHeight) : "100",
+            shipment_length: payload?.shipmentLength ? String(payload.shipmentLength) : "100",
+            weight: payload?.weight ? String(payload.weight) : "",
+            shipping_mode: payload?.shippingMode || "Surface",
+            address_type: payload?.addressType || "",
+          },
+        ],
+        pickup_location: {
+          name: payload?.pickupLocation?.name || "warehouse_name",
+        },
+      }
+
+      const formBody = new URLSearchParams()
+      formBody.append("format", "json")
+      formBody.append("data", JSON.stringify(cmuPayload))
+
+      const backendPayload = {
+        ...payload,
+        format: "json",
+        data: JSON.stringify(cmuPayload),
+        cmuPayload,
+      }
+
+      const response = await axios.post("/api/hub/orders/create", backendPayload, {
         headers: {
           "Content-Type": "application/json",
           ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
@@ -507,54 +559,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         timeout: 10000,
       })
 
-      // Hub order flow also pushes shipment to Delhivery CMU create API.
-      // Keep this best-effort to avoid blocking already-created hub orders.
+      // Keep explicit CMU create best-effort as fallback consistency with franchise format.
       try {
-        const cmuPayload = {
-          shipments: [
-            {
-              name: payload?.name || "",
-              add: payload?.add || "",
-              pin: payload?.pin || "",
-              city: payload?.city || "",
-              state: payload?.state || "",
-              country: payload?.country || "India",
-              phone: payload?.phone || "",
-              order: payload?.order || "",
-              payment_mode: payload?.paymentMode === "COD" ? "COD" : "Prepaid",
-              return_pin: payload?.returnPin || "",
-              return_city: payload?.returnCity || "",
-              return_phone: payload?.returnPhone || "",
-              return_add: payload?.returnAdd || "",
-              return_state: payload?.returnState || "",
-              return_country: payload?.returnCountry || "",
-              products_desc: payload?.productsDesc || "",
-              hsn_code: payload?.hsnCode || "",
-              cod_amount: payload?.codAmount ? String(payload.codAmount) : "",
-              order_date: payload?.orderDate || null,
-              total_amount: payload?.totalAmount ? String(payload.totalAmount) : "",
-              seller_add: payload?.sellerAdd || payload?.fromAdd || "",
-              seller_name: payload?.sellerName || payload?.fromName || "",
-              seller_inv: payload?.sellerInv || "",
-              quantity: payload?.quantity ? String(payload.quantity) : "",
-              waybill: payload?.waybill || "",
-              shipment_width: payload?.shipmentWidth ? String(payload.shipmentWidth) : "100",
-              shipment_height: payload?.shipmentHeight ? String(payload.shipmentHeight) : "100",
-              shipment_length: payload?.shipmentLength ? String(payload.shipmentLength) : "100",
-              weight: payload?.weight ? String(payload.weight) : "",
-              shipping_mode: payload?.shippingMode || "Surface",
-              address_type: payload?.addressType || "",
-            },
-          ],
-          pickup_location: {
-            name: payload?.pickupLocation?.name || "warehouse_name",
-          },
-        }
-
-        const formBody = new URLSearchParams()
-        formBody.append("format", "json")
-        formBody.append("data", JSON.stringify(cmuPayload))
-
         await axios.post("/delhivery-api/api/cmu/create.json", formBody.toString(), {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
