@@ -11,7 +11,7 @@ export const config = {
 
 const DELHIVERY_TOKEN = process.env['DELHIVERY_API_TOKEN'] || "91aeec33f78a2d21a6348658708de71f31489038";
 
-function getRawBody(req: IncomingMessage): Promise<string> {
+function getRawBodyFromStream(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = '';
     req.on('data', (chunk) => {
@@ -19,7 +19,37 @@ function getRawBody(req: IncomingMessage): Promise<string> {
     });
     req.on('end', () => resolve(data));
     req.on('error', reject);
+    // Safety timeout: if the stream never fires events (already consumed), resolve empty
+    setTimeout(() => resolve(data), 3000);
   });
+}
+
+/**
+ * Robustly read the raw body from a Vercel request.
+ * Vercel may pre-buffer the body as a Buffer, string, or parsed object
+ * even when bodyParser is false. Fall back to stream reading only if needed.
+ */
+async function getRawBody(req: VercelRequest): Promise<string> {
+  // 1. Check if Vercel already made the body available
+  if (req.body !== undefined && req.body !== null) {
+    if (Buffer.isBuffer(req.body)) {
+      return req.body.toString('utf-8');
+    }
+    if (typeof req.body === 'string') {
+      return req.body;
+    }
+    if (typeof req.body === 'object') {
+      // Body was parsed into an object — reconstruct form-urlencoded
+      const params = new URLSearchParams();
+      for (const [key, val] of Object.entries(req.body as Record<string, any>)) {
+        params.set(key, typeof val === 'object' ? JSON.stringify(val) : String(val));
+      }
+      return params.toString();
+    }
+  }
+
+  // 2. Fall back to reading from the stream
+  return getRawBodyFromStream(req as unknown as IncomingMessage);
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -56,6 +86,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const rawBody = await getRawBody(req);
       const isCreateEndpoint = delhiveryPath.includes('create.json');
 
+      console.log('[delhivery proxy] isCreate:', isCreateEndpoint, 'rawBody length:', rawBody.length, 'rawBody preview:', rawBody.substring(0, 200));
+
       if (isCreateEndpoint) {
         headers['Content-Type'] = 'application/x-www-form-urlencoded';
         if (rawBody.includes('format=')) {
@@ -79,9 +111,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
             fetchOptions.body = formData.toString();
           } catch {
-            fetchOptions.body = 'format=json';
+            // Last resort: construct minimal valid body
+            fetchOptions.body = rawBody ? `format=json&data=${encodeURIComponent(rawBody)}` : 'format=json';
           }
         }
+
+        // Final safety check: ensure format= is always present
+        const bodyStr = String(fetchOptions.body);
+        if (!bodyStr.includes('format=')) {
+          fetchOptions.body = `format=json&${bodyStr}`;
+        }
+
+        console.log('[delhivery proxy] outgoing body preview:', String(fetchOptions.body).substring(0, 200));
       } else {
         // Non-create endpoints continue as JSON by default.
         headers['Content-Type'] = 'application/json';

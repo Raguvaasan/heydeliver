@@ -10,7 +10,7 @@ import { IncomingMessage } from 'http';
 
 const DELHIVERY_TOKEN = process.env['DELHIVERY_API_TOKEN'] || "91aeec33f78a2d21a6348658708de71f31489038";
 
-function getRawBody(req: IncomingMessage): Promise<string> {
+function getRawBodyFromStream(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = '';
     req.on('data', chunk => {
@@ -22,7 +22,28 @@ function getRawBody(req: IncomingMessage): Promise<string> {
     req.on('error', err => {
       reject(err);
     });
+    // Safety: if stream events never fire (body pre-consumed), resolve after timeout
+    setTimeout(() => resolve(data), 3000);
   });
+}
+
+/**
+ * Robustly read the raw body from a Vercel request.
+ * Vercel may pre-buffer the body even when bodyParser is false.
+ */
+async function getRawBody(req: VercelRequest): Promise<string> {
+  if (req.body !== undefined && req.body !== null) {
+    if (Buffer.isBuffer(req.body)) return req.body.toString('utf-8');
+    if (typeof req.body === 'string') return req.body;
+    if (typeof req.body === 'object') {
+      const params = new URLSearchParams();
+      for (const [key, val] of Object.entries(req.body as Record<string, any>)) {
+        params.set(key, typeof val === 'object' ? JSON.stringify(val) : String(val));
+      }
+      return params.toString();
+    }
+  }
+  return getRawBodyFromStream(req as unknown as IncomingMessage);
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -94,8 +115,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       }
 
       fetchOptions.body = rawBody;
+
+      // Final safety: ensure format= is always present
+      if (typeof fetchOptions.body === 'string' && !fetchOptions.body.includes('format=')) {
+        fetchOptions.body = `format=json&${fetchOptions.body}`;
+      }
       // Log for debug
-      console.log('Delhivery Proxy Outgoing body:', rawBody);
+      console.log('Delhivery Proxy Outgoing body:', String(fetchOptions.body).substring(0, 200));
     } else if (req.method === 'POST') {
       // For other POSTs, default to JSON
       fetchOptions.headers['Content-Type'] = 'application/json';
