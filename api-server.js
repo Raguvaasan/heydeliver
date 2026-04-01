@@ -6,8 +6,17 @@ const app = express();
 const PORT = 3000;
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Parse JSON bodies for all non-delhivery routes
+app.use((req, res, next) => {
+  // Skip body parsing for delhivery-api POST routes — we forward the raw body
+  if (req.path.startsWith("/delhivery-api") && req.method === "POST") {
+    return next();
+  }
+  express.json()(req, res, () => {
+    express.urlencoded({ extended: true })(req, res, next);
+  });
+});
 
 /*
 ---------------------------------------------------
@@ -43,15 +52,37 @@ app.use("/delhivery-api", async (req, res) => {
     if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
       if (apiPath.includes("create.json")) {
         // Delhivery create.json expects application/x-www-form-urlencoded
+        // Read raw body directly and forward as-is
         fetchOptions.headers["Content-Type"] = "application/x-www-form-urlencoded";
-        const params = new URLSearchParams();
-        for (const [key, value] of Object.entries(req.body)) {
-          params.append(key, typeof value === "object" ? JSON.stringify(value) : String(value));
+
+        const rawBody = await new Promise((resolve) => {
+          let data = "";
+          req.on("data", (chunk) => { data += chunk; });
+          req.on("end", () => resolve(data));
+          setTimeout(() => resolve(data), 5000);
+        });
+
+        let body = rawBody || "";
+
+        // If raw body is empty (shouldn't happen), try req.body
+        if (!body && req.body) {
+          if (typeof req.body === "object" && req.body.format && req.body.data) {
+            body = `format=${req.body.format}&data=${req.body.data}`;
+          } else if (typeof req.body === "string") {
+            body = req.body;
+          }
         }
-        fetchOptions.body = params.toString();
+
+        // Safety: ensure format= is present
+        if (!body.includes("format=")) {
+          body = `format=json&${body}`;
+        }
+
+        fetchOptions.body = body;
+        console.log("[delhivery proxy] outgoing body:", body.substring(0, 300));
       } else {
         fetchOptions.headers["Content-Type"] = "application/json";
-        fetchOptions.body = JSON.stringify(req.body);
+        fetchOptions.body = typeof req.body === "string" ? req.body : JSON.stringify(req.body || {});
       }
     }
 
