@@ -39,6 +39,20 @@ app.get("/api", (req, res) => {
   res.json({ status: "API running" });
 });
 
+// Debug endpoint to verify body parsing
+app.post("/debug-delhivery", (req, res) => {
+  const bodyType = typeof req.body;
+  const bodyKeys = req.body && typeof req.body === "object" ? Object.keys(req.body) : [];
+  const formResult = buildDelhiveryFormBody(req.body);
+  res.json({
+    bodyType,
+    bodyKeys,
+    bodyRaw: JSON.stringify(req.body),
+    formResult: formResult.substring(0, 500),
+    contentType: req.headers["content-type"],
+  });
+});
+
 /*
 ---------------------------------------------------
 Delhivery API Proxy
