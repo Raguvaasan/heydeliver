@@ -689,7 +689,7 @@ const DashboardPage: FC = () => {
                         <input type="checkbox" className="rounded" />
                       </th>
                       <th className="px-4 py-3">Order ID</th>
-                      {loginType === "admin" && <th className="px-4 py-3">Franchise</th>}
+                      {/* {loginType === "admin" && <th className="px-4 py-3">Franchise</th>} */}
                       <th className="px-4 py-3">Amount</th>
                       <th className="px-4 py-3">Date</th>
                       <th className="px-4 py-3">Status</th>
@@ -710,11 +710,11 @@ const DashboardPage: FC = () => {
                           <td className="px-4 py-3 font-medium text-orange-600 text-xs">
                             {booking.orderId || booking.bookingId || booking._id || "-"}
                           </td>
-                          {loginType === "admin" && (
+                          {/* {loginType === "admin" && (
                             <td className="px-4 py-3 text-gray-900 dark:text-white">
                               {booking.franchise || booking.franchiseName || '-'}
                             </td>
-                          )}
+                          )} */}
                           <td className="px-4 py-3 text-gray-900 dark:text-white">
                             {booking.amount ? `₹${Number(booking.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}
                           </td>
