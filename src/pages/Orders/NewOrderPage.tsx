@@ -198,7 +198,7 @@ const NewOrderPage: FC = () => {
   const profileData = profileDataStr ? JSON.parse(profileDataStr) : null
   const isHubLogin = loginType === "hub"
   const channelDisplayName = isHubLogin
-    ? (profileData?.hubId?.hubName || "Offline")
+    ? (profileData?.hubId?.hubName || profileData.hubName || "offline")
     : (profileData?.agencyName || "Offline")
   // ── Form state ──────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({

@@ -1,6 +1,26 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { IncomingMessage } from 'http';
+
+// Keep raw body available so form-urlencoded payloads (format=json&data=...)
+// are forwarded exactly as Delhivery expects.
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 const DELHIVERY_TOKEN = process.env['DELHIVERY_API_TOKEN'] || "91aeec33f78a2d21a6348658708de71f31489038";
+
+function getRawBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.on('data', (chunk) => {
+      data += chunk;
+    });
+    req.on('end', () => resolve(data));
+    req.on('error', reject);
+  });
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Enable CORS
@@ -31,26 +51,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // For POST/PUT requests
       delhiveryUrl = `https://track.delhivery.com/${delhiveryPath}`;
 
-      // Pass through the body
-      if (req.body) {
-        // If body is form-urlencoded string
-        if (typeof req.body === 'string') {
-          fetchOptions.headers!['Content-Type'] = 'application/x-www-form-urlencoded';
-          fetchOptions.body = req.body;
+      const rawBody = await getRawBody(req);
+      const isCreateEndpoint = delhiveryPath.includes('create.json');
+
+      if (isCreateEndpoint) {
+        fetchOptions.headers!['Content-Type'] = 'application/x-www-form-urlencoded';
+        if (rawBody.includes('format=')) {
+          fetchOptions.body = rawBody;
         } else {
-          // For shipment creation endpoint, use form-urlencoded
-          if (delhiveryPath.includes('create.json')) {
-            fetchOptions.headers!['Content-Type'] = 'application/x-www-form-urlencoded';
+          // Fallback if upstream sent JSON instead of pre-encoded form body.
+          try {
+            const parsed = rawBody ? JSON.parse(rawBody) : {};
             const formData = new URLSearchParams();
-            Object.entries(req.body).forEach(([key, value]) => {
-              formData.append(key, String(value));
-            });
+            formData.set('format', String((parsed as any)?.format || 'json'));
+            if ((parsed as any)?.data !== undefined) {
+              formData.set(
+                'data',
+                typeof (parsed as any).data === 'string'
+                  ? (parsed as any).data
+                  : JSON.stringify((parsed as any).data)
+              );
+            }
             fetchOptions.body = formData.toString();
-          } else {
-            // For other endpoints (edit, ewaybill), use JSON
-            fetchOptions.body = JSON.stringify(req.body);
+          } catch {
+            fetchOptions.body = 'format=json';
           }
         }
+      } else {
+        // Non-create endpoints continue as JSON by default.
+        fetchOptions.headers!['Content-Type'] = 'application/json';
+        fetchOptions.body = rawBody || '{}';
       }
     } else {
       // For GET requests (pincode check, tracking, etc)
