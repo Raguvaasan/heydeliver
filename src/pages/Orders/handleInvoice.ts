@@ -91,7 +91,7 @@ export const handleInvoice = async (orderId: string): Promise<void> => {
     const dObj = orderDate ? new Date(orderDate) : new Date();
     const dateStr = dObj.toLocaleDateString();
 
-    const awb = String(shipmentDetails?.order || orderId);
+    const awb = order.waybill;
 
     const doc = new jsPDF({
       orientation: "portrait",
@@ -105,7 +105,7 @@ export const handleInvoice = async (orderId: string): Promise<void> => {
 
     // --- Header ---
     try {
-      const logoImg = await loadImage("/images/truecargo.png");
+      const logoImg = await loadImage("/truecargo-invoice-logo.jpeg");
       const logoW = 40;
       const logoH = (logoImg.height / logoImg.width) * logoW;
       doc.addImage(logoImg, "PNG", margin, margin, logoW, logoH);
@@ -135,7 +135,7 @@ export const handleInvoice = async (orderId: string): Promise<void> => {
     currentY += 5;
     
     // Explicitly use from/seller name and address as per label
-    const senderName = from?.name || order?.franchiseName || "TrueCargo Logistics";
+    const senderName = from?.name || order?.franchiseName || "Freightrek Private Limited";
     doc.text(String(senderName), margin, currentY);
     
     currentY += 5;
@@ -224,7 +224,7 @@ export const handleInvoice = async (orderId: string): Promise<void> => {
     doc.line(margin, currentY, pageWidth - margin, currentY);
     currentY += 5;
     doc.setFontSize(9);
-    doc.text(`Weight: ${order.weight || "-"} gm`, margin, currentY);
+    doc.text(`Weight: ${order.shipmentDetails.weight || "-"} gm`, margin, currentY);
     doc.text(`AWB: ${awb}`, pageWidth / 2, currentY, { align: "center" });
     doc.text(`Return PIN: ${senderPin}`, pageWidth - margin, currentY, { align: "right" });
     currentY += 5;
@@ -311,7 +311,7 @@ export const handleInvoice = async (orderId: string): Promise<void> => {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.text("Thank you for your business!", pageWidth / 2, footerY + 10, { align: "center" });
-    doc.text("TrueCargo Logistics | support@truecargo.com | www.truecargo.com", pageWidth / 2, footerY + 15, { align: "center" });
+    doc.text("Freightrek Private Limited | support@truecargo.com | https://truecargos.com", pageWidth / 2, footerY + 15, { align: "center" });
 
     const pdfUrl = doc.output("bloburl")
     window.open(pdfUrl, "_blank", "noopener,noreferrer")
