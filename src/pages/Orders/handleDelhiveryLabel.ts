@@ -8,9 +8,7 @@ export const handleDelhiveryLabel = async (waybill: string): Promise<void> => {
       return
     }
 
-    const endpoint = import.meta.env.DEV
-      ? `/delhivery-api/api/p/packing_slip?wbns=${encodeURIComponent(cleanWaybill)}&pdf=true&pdf_size=4R`
-      : `/api/delhivery-label?waybill=${encodeURIComponent(cleanWaybill)}`
+    const endpoint = `/delhivery-api/api/p/packing_slip?wbns=${encodeURIComponent(cleanWaybill)}&pdf=true&pdf_size=4R`
     const response = await fetch(endpoint, {
       method: "GET",
     })
