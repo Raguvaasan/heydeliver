@@ -75,11 +75,12 @@ const StatCard: FC<StatCardProps> = ({
 const DashboardPage: FC = () => {
   const navigate = useNavigate()
   const loginType = sessionStorage.getItem("loginType") || "admin"
+  const isHubLogin = loginType === "hub"
   const [loading, setLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [topFranchises, setTopFranchises] = useState<any[]>([])
   const [walletStats, setWalletStats] = useState<any>(null)
-  const [selectedPeriod, setSelectedPeriod] = useState<"day" | "week" | "month" | "year">("day")
+  const [selectedPeriod, setSelectedPeriod] = useState<"day" | "week" | "month" | "year" | "thisMonth" | "lastMonth">(isHubLogin ? "week" : "day")
   const [revenueLoading, setRevenueLoading] = useState(false)
   const hasLoadedInitially = useRef(false)
 
@@ -107,7 +108,7 @@ const DashboardPage: FC = () => {
     if (showRevenueLoader) setRevenueLoading(true)
 
     try {
-      const endpoint = loginType === "admin" ? "/admin/dashboard" : "/dashboard"
+      const endpoint = loginType === "admin" ? "/admin/dashboard" : isHubLogin ? "/hub/dashboard" : "/dashboard"
       const params = { period: selectedPeriod }
 
       if (loginType === "admin") {
@@ -148,7 +149,7 @@ const DashboardPage: FC = () => {
     if (showPageLoader) setLoading(true)
     if (showRevenueLoader) setRevenueLoading(true)
     try {
-      const endpoint = loginType === "admin" ? "/admin/dashboard" : "/dashboard"
+      const endpoint = loginType === "admin" ? "/admin/dashboard" : isHubLogin ? "/hub/dashboard" : "/dashboard"
       const params = { period: selectedPeriod }
       const response = await http.get(endpoint, { params })
       const data = response.data?.data || response.data
@@ -171,12 +172,10 @@ const DashboardPage: FC = () => {
     if (isFranchise) {
       // Franchise-specific mapping
       const overview = dashboardData.overview || {}
-      const revenue = dashboardData.revenue || {}
-
-      const activeShipmentsLabel = overview.activeShipments?.label || ""
-      const activeShipmentsCount = overview.activeShipments?.count || 0
-      const totalShipmentsCount = overview.totalShipments?.count || 0
-      const totalShipmentsLabel = overview.totalShipments?.label || ""
+      const activeShipmentsLabel = typeof overview.activeShipments === "object" ? overview.activeShipments?.label || "" : ""
+      const activeShipmentsCount = typeof overview.activeShipments === "object" ? overview.activeShipments?.count || 0 : overview.activeShipments || 0
+      const totalShipmentsCount = typeof overview.totalShipments === "object" ? overview.totalShipments?.count || 0 : overview.totalShipments || 0
+      const totalShipmentsLabel = typeof overview.totalShipments === "object" ? overview.totalShipments?.label || "" : ""
       const walletAmount = overview.wallet?.amount || 0
       const walletLabel = overview.wallet?.label || ""
 
@@ -291,13 +290,17 @@ const DashboardPage: FC = () => {
 
   // Handle shipment type data - both franchise and admin use shipmentTypeDistribution array
   const isFranchise = loginType === "franchise" || loginType === "staff" || loginType === "hub"
-  const isHubLogin = loginType === "hub"
   let shipmentTypeDistribution: any[] = []
   let totalShipmentTypes = 0
 
   // Both admin and franchise now use the same shipmentTypeDistribution array from API
   // Show all types, even with 0 count
-  shipmentTypeDistribution = dashboardData?.shipmentTypeDistribution || []
+  shipmentTypeDistribution = isHubLogin
+    ? (dashboardData?.shipmentType || []).map((item: any) => ({
+        type: item.mode,
+        count: item.count,
+      }))
+    : (dashboardData?.shipmentTypeDistribution || [])
   totalShipmentTypes = shipmentTypeDistribution.reduce(
     (sum: number, item: any) => sum + (item.count || 0),
     0
@@ -305,13 +308,19 @@ const DashboardPage: FC = () => {
 
   // Get revenue data for display (franchise-specific)
   const revenueData = isFranchise ? (dashboardData?.revenue || {}) : {}
-  const codRevenue = revenueData.codRevenue?.amount || 0
-  const todaysRevenue = revenueData.todaysRevenue?.amount || 0
-  const todaysShipments = revenueData.todaysShipments?.count || 0
+  const codRevenue = isHubLogin ? (revenueData.cod || 0) : (revenueData.codRevenue?.amount || 0)
+  const todaysRevenue = isHubLogin ? (revenueData.total || 0) : (revenueData.todaysRevenue?.amount || 0)
+  const todaysShipments = isHubLogin ? (revenueData.shipments || 0) : (revenueData.todaysShipments?.count || 0)
 
   // Generate weekly revenue trend for franchise
   const generateWeeklyRevenueTrend = () => {
     if (!isFranchise) return []
+    if (isHubLogin) {
+      return (revenueData.weekly || []).map((item: any) => ({
+        day: item.day,
+        revenue: Number(item.revenue || 0),
+      }))
+    }
 
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     const today = new Date().getDay() // 0 = Sunday, 1 = Monday, etc.
@@ -473,7 +482,10 @@ const DashboardPage: FC = () => {
                     )}
                   </div>
                   <div className="mb-4 flex gap-2">
-                    {(["day", "week", "month", "year"] as const).map((period) => (
+                    {(isHubLogin
+                      ? (["week", "thisMonth", "lastMonth", "month"] as const)
+                      : (["day", "week", "month", "year"] as const)
+                    ).map((period) => (
                       <button
                         key={period}
                         type="button"
@@ -483,7 +495,7 @@ const DashboardPage: FC = () => {
                             : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                           }`}
                       >
-                        {period}
+                        {period === "thisMonth" ? "This Month" : period === "lastMonth" ? "Last Month" : period}
                       </button>
                     ))}
                   </div>
@@ -673,12 +685,13 @@ const DashboardPage: FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Recent Bookings
               </h3>
-              <a
-                href="/admin/orders"
+              <button
+                type="button"
+                onClick={() => navigate("/orders")}
                 className="text-sm text-orange-600 hover:text-orange-700 font-medium"
               >
                 View All
-              </a>
+              </button>
             </div>
             <div className="overflow-x-auto">
               {recentBookings.length > 0 ? (

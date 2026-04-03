@@ -166,9 +166,9 @@ export const handleInvoice = async (orderId: string): Promise<void> => {
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.text("Invoice #:", pageWidth - 70, infoY);
+    doc.text("Invoice:", pageWidth - 70, infoY);
     doc.setFont("helvetica", "normal");
-    doc.text(String(order.bookingId || order._id), pageWidth - margin, infoY, { align: "right" });
+    doc.text(shipmentDetails?.order?.replace("ORD", "INV") || "-", pageWidth - margin, infoY, { align: "right" });
 
     infoY += 7;
     doc.setFont("helvetica", "bold");
@@ -311,7 +311,7 @@ export const handleInvoice = async (orderId: string): Promise<void> => {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.text("Thank you for your business!", pageWidth / 2, footerY + 10, { align: "center" });
-    doc.text("Freightrek Private Limited | support@truecargo.com | https://truecargos.com", pageWidth / 2, footerY + 15, { align: "center" });
+    doc.text("Freightrek Private Limited | support@truecargos.com | https://truecargos.com", pageWidth / 2, footerY + 15, { align: "center" });
 
     const pdfUrl = doc.output("bloburl")
     window.open(pdfUrl, "_blank", "noopener,noreferrer")

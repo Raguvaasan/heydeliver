@@ -15,6 +15,11 @@ interface Staff {
   phone: string
   role?: any
   roleId?: string | any
+  type?: string
+  franchiseId?: string | { _id?: string; id?: string } | any
+  hubId?: string | { _id?: string; id?: string } | any
+  franchise?: string | { _id?: string; id?: string } | any
+  hub?: string | { _id?: string; id?: string } | any
   status: boolean | string
   username?: string
 }
@@ -269,12 +274,51 @@ const FranchiseStaffListPage: FC = () => {
     return "-"
   }
 
+  const resolveId = (value: any): string => {
+    if (!value) return ""
+    if (typeof value === "string") return value
+    if (typeof value === "object") return value._id || value.id || ""
+    return ""
+  }
+
+  const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
+  const profileDataRaw = sessionStorage.getItem("profileData")
+  let profileData: any = null
+  if (profileDataRaw) {
+    try {
+      profileData = JSON.parse(profileDataRaw)
+    } catch {
+      profileData = null
+    }
+  }
+
+  const currentFranchiseId =
+    resolveId(profileData?.franchiseId) ||
+    resolveId(profileData?.franchise) ||
+    (loginType === "franchise" ? resolveId(profileData?._id) : "")
+
+  const currentHubId =
+    resolveId(profileData?.hubId) ||
+    resolveId(profileData?.hub) ||
+    (loginType === "hub" ? resolveId(profileData?._id) : "")
+
   const filteredStaffs = Array.isArray(staffs) ? staffs.filter((staff) => {
+    const staffFranchiseId = resolveId(staff.franchiseId) || resolveId(staff.franchise)
+    const staffHubId = resolveId(staff.hubId) || resolveId(staff.hub)
+
+    const matchesScope = (() => {
+      if (currentHubId) return staffHubId === currentHubId
+      if (currentFranchiseId) return staffFranchiseId === currentFranchiseId
+      if (loginType === "hub") return staff.type === "hub"
+      if (loginType === "franchise" || loginType === "staff") return staff.type === "franchise"
+      return true
+    })()
+
     const matchesSearch = staff.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.phone?.includes(searchTerm)
 
-    return matchesSearch
+    return matchesScope && matchesSearch
   }) : []
 
   return (
