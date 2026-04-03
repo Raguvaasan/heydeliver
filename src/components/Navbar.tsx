@@ -22,6 +22,7 @@ const Navbar: FC<NavbarProps> = ({
   const [userRole, setUserRole] = useState("Admin")
   const [loginType, setLoginType] = useState("admin")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
   const dropdownRef = useRef<HTMLDivElement>(null)
   
   // Wallet store for franchise users
@@ -92,6 +93,53 @@ const Navbar: FC<NavbarProps> = ({
     navigate("/", { replace: true })
   }
 
+  const searchableRoutes = useMemo(() => {
+    const baseRoutes = [
+      { keywords: ["dashboard", "overview", "home"], path: "/dashboard" },
+      { keywords: ["orders", "order", "bookings", "awb"], path: "/orders" },
+      { keywords: ["new order", "create order", "book order"], path: "/orders/new" },
+      { keywords: ["staff", "manage staff"], path: "/franchise-staff" },
+      { keywords: ["role", "permissions", "role and permission"], path: "/franchise-role" },
+      { keywords: ["reports", "report"], path: "/reports" },
+      { keywords: ["wallet", "balance"], path: "/wallet" },
+      { keywords: ["profile", "account"], path: "/profile" },
+      { keywords: ["hubs", "hub"], path: "/hubs" },
+      { keywords: ["franchise", "agencies"], path: "/agencies" },
+      { keywords: ["customers", "customer"], path: "/customers" },
+      { keywords: ["invoice", "invoices"], path: "/invoice" },
+      { keywords: ["tracking", "track"], path: "/tracking" },
+      { keywords: ["pickup", "pickup requests"], path: "/pickup-requests" },
+      { keywords: ["rate calculator", "rate"], path: "/rate-calculator" },
+      { keywords: ["settings", "rate card", "pincode", "serviceability"], path: "/settings/rate-card" },
+    ]
+
+    // Franchise/staff users don't use agencies page in their nav
+    if (loginType === "franchise" || loginType === "staff") {
+      return baseRoutes.filter((item) => item.path !== "/agencies")
+    }
+
+    // Hub users don't use wallet and agencies in their nav
+    if (loginType === "hub") {
+      return baseRoutes.filter((item) => item.path !== "/wallet" && item.path !== "/agencies")
+    }
+
+    return baseRoutes
+  }, [loginType])
+
+  const handleSearchNavigate = () => {
+    const query = searchTerm.trim().toLowerCase()
+    if (!query) return
+
+    const matched = searchableRoutes.find((item) =>
+      item.keywords.some((keyword) => keyword.includes(query) || query.includes(keyword))
+    )
+
+    if (matched) {
+      navigate(matched.path)
+      setSearchTerm("")
+    }
+  }
+
   return (
     <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-white dark:bg-[#2c2c2c] border-b border-gray-200 dark:border-gray-700">
       <div
@@ -127,6 +175,14 @@ const Navbar: FC<NavbarProps> = ({
             <input
               type="search"
               placeholder="Search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                  handleSearchNavigate()
+                }
+              }}
               className="w-64 pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-purple-500 focus:border-purple-500"
             />
           </div>

@@ -148,7 +148,10 @@ interface OrderState {
   createDelhiveryShipment: (
     shipmentData: DelhiveryShipment,
     pickupLocation: string,
-    freightrekExtras?: Omit<FreightrekShipmentRequest, "pickupLocation" | "name" | "add" | "pin" | "city" | "state" | "country" | "phone" | "order" | "paymentMode">
+    freightrekExtras?: (Omit<FreightrekShipmentRequest, "pickupLocation" | "name" | "add" | "pin" | "city" | "state" | "country" | "phone" | "order" | "paymentMode"> & {
+      freightrekTotalAmount?: string
+      freightrekCodAmount?: string
+    })
   ) => Promise<DelhiveryResponse>
   createHubOrder: (payload: Record<string, any>) => Promise<any>
   updateOrder: (id: string, data: Partial<Order>) => Promise<void>
@@ -277,50 +280,77 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
   getOrderById: async (id: string) => {
     set({ loading: true, error: null })
+    const authToken = sessionStorage.getItem("authToken")
+
     try {
-      const res = await http.get(`/orders/${id}`, { validateStatus: () => true })
-      if (res.status >= 200 && res.status < 300) {
-        const orderData = res.data?.data || res.data
-        set({
-          selectedOrder: orderData || null,
-          loading: false,
-        })
-        return
+      const [ordersRes, shipmentRes] = await Promise.allSettled([
+        http.get(`/orders/${id}`, { validateStatus: () => true }),
+        axios.get(`/api/shipment/order/${encodeURIComponent(id)}`, {
+          headers: {
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          timeout: 5000,
+          validateStatus: () => true,
+        }),
+      ])
+
+      if (ordersRes.status === "fulfilled") {
+        const res = ordersRes.value
+        if (res.status >= 200 && res.status < 300) {
+          const orderData = res.data?.data || res.data
+          if (orderData) {
+            set({
+              selectedOrder: orderData,
+              loading: false,
+              error: null,
+            })
+            return
+          }
+        }
       }
 
-      const authToken = sessionStorage.getItem("authToken")
-      const shipmentRes = await axios.get(`/api/shipment/order/${encodeURIComponent(id)}`, {
-        headers: {
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        },
-        timeout: 5000,
-      })
+      if (shipmentRes.status === "fulfilled") {
+        const res = shipmentRes.value
+        if (res.status >= 200 && res.status < 300) {
+          const shipmentData = res.data?.data || res.data
+          const normalizedShipment = shipmentData
+            ? {
+              ...shipmentData,
+              _id: shipmentData?.orderId,
+              bookingId: shipmentData?.orderId,
+              customer: shipmentData?.consignee?.name ?? "",
+              customerNumber: shipmentData?.consignee?.phone ?? "",
+              amount: shipmentData?.amount ?? shipmentData?.totalAmount ?? 0,
+              paymentMode: shipmentData?.shipmentDetails?.paymentMode ?? "",
+              deliveryAddress: shipmentData?.consignee?.address ?? "",
+              deliveryCity: shipmentData?.consignee?.city ?? "",
+              deliveryState: shipmentData?.consignee?.state ?? "",
+              deliveryPincode: shipmentData?.consignee?.pin ?? "",
+              bookingDate: shipmentData?.createdAt ?? "",
+            }
+            : null
 
-      const shipmentData = shipmentRes.data?.data || shipmentRes.data
-      const normalizedShipment = shipmentData
-        ? {
-          ...shipmentData,
-          _id: shipmentData?.orderId,
-          bookingId: shipmentData?.orderId,
-          customer: shipmentData?.consignee?.name ?? "",
-          customerNumber: shipmentData?.consignee?.phone ?? "",
-          amount: shipmentData?.amount ?? shipmentData?.totalAmount ?? 0,
-          paymentMode: shipmentData?.shipmentDetails?.paymentMode ?? "",
-          deliveryAddress: shipmentData?.consignee?.address ?? "",
-          deliveryCity: shipmentData?.consignee?.city ?? "",
-          deliveryState: shipmentData?.consignee?.state ?? "",
-          deliveryPincode: shipmentData?.consignee?.pin ?? "",
-          bookingDate: shipmentData?.createdAt ?? "",
+          if (normalizedShipment) {
+            set({
+              selectedOrder: normalizedShipment,
+              loading: false,
+              error: null,
+            })
+            return
+          }
         }
-        : null
+      }
 
       set({
-        selectedOrder: normalizedShipment,
         loading: false,
+        selectedOrder: null,
+        error: "Failed to get order",
       })
+      toast.error("Failed to get order details")
     } catch (err: any) {
       set({
         loading: false,
+        selectedOrder: null,
         error: err?.response?.data?.message || err?.message || "Failed to get order"
       })
       toast.error("Failed to get order details")
@@ -435,9 +465,9 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         // Shipment meta
         productsDesc: shipmentData.products_desc,
         hsnCode: shipmentData.hsn_code || "",
-        codAmount: shipmentData.cod_amount || "0",
+        codAmount: freightrekExtras?.freightrekCodAmount || shipmentData.cod_amount || "0",
         orderDate: shipmentData.order_date ? new Date(shipmentData.order_date).toISOString() : new Date().toISOString(),
-        totalAmount: shipmentData.total_amount,
+        totalAmount: freightrekExtras?.freightrekTotalAmount || shipmentData.total_amount,
         sellerName: shipmentData.seller_name,
         sellerAdd: shipmentData.seller_add,
         sellerInv: shipmentData.seller_inv,
@@ -514,9 +544,9 @@ export const useOrderStore = create<OrderState>((set, get) => ({
             return_country: payload?.returnCountry || "",
             products_desc: payload?.productsDesc || "",
             hsn_code: payload?.hsnCode || "",
-            cod_amount: payload?.codAmount ? String(payload.codAmount) : "",
+            cod_amount: payload?.delhiveryCodAmount ? String(payload.delhiveryCodAmount) : (payload?.codAmount ? String(payload.codAmount) : ""),
             order_date: payload?.orderDate || null,
-            total_amount: payload?.totalAmount ? String(payload.totalAmount) : "",
+            total_amount: payload?.delhiveryTotalAmount ? String(payload.delhiveryTotalAmount) : (payload?.totalAmount ? String(payload.totalAmount) : ""),
             seller_add: payload?.sellerAdd || payload?.fromAdd || "",
             seller_name: payload?.sellerName || payload?.fromName || "",
             seller_inv: payload?.sellerInv || "",
@@ -528,21 +558,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
             weight: payload?.weight ? String(payload.weight) : "",
             shipping_mode: payload?.shippingMode || "Surface",
             address_type: payload?.addressType || "",
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
           },
         ],
         pickup_location: {

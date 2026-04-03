@@ -145,6 +145,7 @@ interface BoxDetails {
 
 interface RateResult {
   total: number
+  rawTotal: number
   shipping: number
   gst: number
   dph: number
@@ -334,10 +335,14 @@ const NewOrderPage: FC = () => {
       markupValue: markupCache.markupValue,
       isActive: markupCache.isActive,
     }
-    return calculateRate({
+    const calculated = calculateRate({
       totalAmount,
       dph, zone, chargedWeight: cw, markupConfig,
     })
+    return {
+      ...calculated,
+      rawTotal: totalAmount,
+    }
   }
 
   useEffect(() => {
@@ -477,6 +482,9 @@ const NewOrderPage: FC = () => {
 
       const firstBox = boxes[0]
       const payableAmount = selectedRate?.toString() || formData.totalAmount || formData.codAmount
+      const selectedRateRaw =
+        formData.shippingMode === "Express" ? expressRate?.rawTotal : surfaceRate?.rawTotal
+      const delhiveryAmount = (selectedRateRaw ?? Number(payableAmount || 0)).toString()
 
       const shipmentData = {
         name: formData.customerName,
@@ -496,9 +504,9 @@ const NewOrderPage: FC = () => {
         return_country: formData.returnCountry || "",
         products_desc: formData.productsDesc || "",
         hsn_code: formData.hsnCode || "",
-        cod_amount: formData.paymentMode === "COD" ? formData.codAmount : "",
+        cod_amount: formData.paymentMode === "COD" ? delhiveryAmount : "",
         order_date: new Date().toISOString(),
-        total_amount: payableAmount,
+        total_amount: delhiveryAmount,
         seller_add: profileData?.address || "",
         seller_name: profileData?.agencyOwner || "",
         seller_inv: formData.sellerInvoice || "",
@@ -525,6 +533,8 @@ const NewOrderPage: FC = () => {
           paymentMode: formData.paymentMode === "COD" ? "COD" : "Prepaid",
           codAmount: payableAmount,
           totalAmount: payableAmount,
+          delhiveryCodAmount: formData.paymentMode === "COD" ? delhiveryAmount : "",
+          delhiveryTotalAmount: delhiveryAmount,
           weight: formData.weight || cgmDisplay.toString() || totalWeight.toString(),
           productsDesc: formData.productsDesc || "",
           quantity: formData.quantity || "",
@@ -547,6 +557,8 @@ const NewOrderPage: FC = () => {
         await createHubOrder(hubPayload)
       } else {
         await createDelhiveryShipment(shipmentData, formData.pickupLocation, {
+          freightrekCodAmount: formData.paymentMode === "COD" ? payableAmount : "",
+          freightrekTotalAmount: payableAmount,
           fromName: formData.fromName,
           fromAdd: formData.fromAdd,
           fromPin: formData.fromPin,
