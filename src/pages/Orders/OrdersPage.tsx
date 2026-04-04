@@ -224,7 +224,7 @@ const OrdersPage: FC = () => {
                 const normalizedStatus = String(order.status || "").toLowerCase().replace(/[\s_-]/g, "")
                 const isPending = normalizedStatus === "pending"
                 const canShowAllIcons = true
-                const isNonViewActionEnabled = !isHubLogin || !isPending
+                const isNonViewActionEnabled = true
 
                 return (
                 <tr
