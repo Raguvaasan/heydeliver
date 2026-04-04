@@ -13,8 +13,13 @@ import { useOrderStore } from "../../store/orderStore"
 interface ProfileData {
   firstName: string
   lastName: string
+  username: string
   email: string
   phone: string
+  city: string
+  state: string
+  pincode: string
+  hubManagerName: string
   franchiseName: string
   franchiseCode: string
   hubCity: string
@@ -49,21 +54,28 @@ const ProfilePageModern: FC = () => {
       const profileDataStr = sessionStorage.getItem("profileData")
       if (profileDataStr) {
         const rawData = JSON.parse(profileDataStr)
-        const baseData = rawData?.data || rawData
-        console.log("baseData",baseData)
-        const hubData = rawData.hubId
+        const baseData =
+          rawData?.data?.data ||
+          rawData?.data ||
+          rawData?.user ||
+          rawData
+        console.log("baseData", baseData)
+        const hubData = rawData?.hubId || rawData?.data?.hubId || baseData?.hubId
         const isFranchiseUser = sessionLoginType === "franchise"
         const isHubUser =
           sessionLoginType === "hub" ||
           rawData?.type === "hub" ||
+          rawData?.loginType === "hub" ||
+          rawData?.data?.loginType === "hub" ||
           baseData?.type === "hub" ||
+          baseData?.loginType === "hub" ||
           rawData?.loginType === "hub_staff" ||
           baseData?.loginType === "hub_staff"
 
         const fullName =
           baseData?.name ||
           rawData?.name ||
-          baseData?.username ||
+          baseData.username ||
           rawData?.username ||
           baseData?.agencyName ||
           "User"
@@ -74,8 +86,13 @@ const ProfilePageModern: FC = () => {
         return {
           firstName: isFranchiseUser ? (baseData.agencyName || "") : (baseData?.firstName || firstName),
           lastName: isFranchiseUser ? (baseData?.agencyOwner || "") : (baseData?.lastName || lastName),
+          username: baseData?.username || rawData?.username || rawData?.data?.username || "",
           email: baseData?.email || rawData?.email || "",
-          phone: baseData?.mobile || baseData?.phone || baseData?.phoneNumber || rawData?.phone || "",
+          phone: String(baseData?.phoneNo || baseData?.mobile || baseData?.phone || baseData?.phoneNumber || rawData?.phone || rawData?.data?.phoneNo || ""),
+          city: baseData?.city || rawData?.city || rawData?.data?.city || "",
+          state: baseData?.state || rawData?.state || rawData?.data?.state || "",
+          pincode: String(baseData?.pincode || rawData?.pincode || rawData?.data?.pincode || ""),
+          hubManagerName: baseData?.hubManagerName || rawData?.hubManagerName || rawData?.data?.hubManagerName || "",
           franchiseName: isHubUser
             ? (hubData?.hubName || baseData?.hubName || "")
             : (baseData?.agencyName || baseData?.franchiseName || ""),
@@ -104,8 +121,13 @@ const ProfilePageModern: FC = () => {
     return {
       firstName: "",
       lastName: "",
+      username: "",
       email: "",
       phone: "",
+      city: "",
+      state: "",
+      pincode: "",
+      hubManagerName: "",
       franchiseName: "",
       franchiseCode: "",
       hubCity: "",
@@ -123,13 +145,16 @@ const ProfilePageModern: FC = () => {
     }
   }
 
-  const [profileData] = useState(getProfileFromSession())
+  const profileData = getProfileFromSession()
+  console.log("profileData",profileData)
   const isHubLogin =
     sessionLoginType === "hub" ||
     sessionLoginType === "hub_staff" ||
     profileDataRaw?.type === "hub" ||
+    profileDataRaw?.loginType === "hub" ||
     profileDataRaw?.loginType === "hub_staff" ||
     profileDataRaw?.data?.type === "hub" ||
+    profileDataRaw?.data?.loginType === "hub" ||
     profileDataRaw?.data?.loginType === "hub_staff"
   const isFranchiseLogin = sessionLoginType === "franchise"
 
@@ -143,19 +168,6 @@ const ProfilePageModern: FC = () => {
     profileDataRaw?.data?.hubName ||
     profileData.franchiseName ||
     ""
-  const resolvedHubCity =
-    resolvedHub?.city ||
-    profileDataRaw?.city ||
-    profileDataRaw?.data?.city ||
-    profileData.hubCity ||
-    ""
-  const resolvedHubPincode =
-    resolvedHub?.pincode ||
-    profileDataRaw?.pincode ||
-    profileDataRaw?.data?.pincode ||
-    profileData.franchiseCode ||
-    ""
-
   useEffect(() => {
     fetchOrders(1, 50)
   }, [fetchOrders])
@@ -347,31 +359,88 @@ const ProfilePageModern: FC = () => {
                       icon={<HiUser className="w-5 h-5" />}
                     >
                       <div className="space-y-4">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          <FormInput
-                            name="firstName"
-                            label={isFranchiseLogin ? "Agency Name" : "First Name"}
-                            required
-                          />
-                          <FormInput
-                            name="lastName"
-                            label={isFranchiseLogin ? "Agency Owner" : "Last Name"}
-                            required
-                          />
-                        </div>
-                        <FormInput
-                          name="email"
-                          label="Email Address"
-                          type="email"
-                          required
-                        />
-                        <FormInput
-                          name="phone"
-                          label="Phone Number"
-                          type="tel"
-                          required
-                          helperText="10-digit mobile number"
-                        />
+                        {isHubLogin ? (
+                          <>
+                            <div>
+                              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Username
+                              </label>
+                              <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
+                                {profileData.username || "N/A"}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Phone Number
+                              </label>
+                              <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
+                                {profileData.phone || "N/A"}
+                              </div>
+                            </div>
+                            <div>
+                              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Address
+                              </label>
+                              <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
+                                {profileData.address || "N/A"}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                              <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  City
+                                </label>
+                                <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
+                                  {profileData.city || "N/A"}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  State
+                                </label>
+                                <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
+                                  {profileData.state || "N/A"}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  Pincode
+                                </label>
+                                <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
+                                  {profileData.pincode || "N/A"}
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                              <FormInput
+                                name="firstName"
+                                label={isFranchiseLogin ? "Agency Name" : "First Name"}
+                                required
+                              />
+                              <FormInput
+                                name="lastName"
+                                label={isFranchiseLogin ? "Agency Owner" : "Last Name"}
+                                required
+                              />
+                            </div>
+                            <FormInput
+                              name="email"
+                              label="Email Address"
+                              type="email"
+                              required
+                            />
+                            <FormInput
+                              name="phone"
+                              label="Phone Number"
+                              type="tel"
+                              required
+                              helperText="10-digit mobile number"
+                            />
+                          </>
+                        )}
                         {!isHubLogin && (
                           <FormTextarea
                             name="address"
@@ -400,22 +469,12 @@ const ProfilePageModern: FC = () => {
                           </div>
                           <div>
                             <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {isHubLogin ? "City" : "Franchise Code"}
+                              {isHubLogin ? "Hub Manager Name" : "Franchise Code"}
                             </label>
                             <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
-                              {isHubLogin ? (resolvedHubCity || "N/A") : (profileData.franchiseCode || "N/A")}
+                              {isHubLogin ? (profileData.hubManagerName || "N/A") : (profileData.franchiseCode || "N/A")}
                             </div>
                           </div>
-                          {isHubLogin && (
-                            <div>
-                              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Hub Pincode
-                              </label>
-                              <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
-                                {String(resolvedHubPincode || "N/A")}
-                              </div>
-                            </div>
-                          )}
                         </div>
                         {!isHubLogin && (
                           <FormInput

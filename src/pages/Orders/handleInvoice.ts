@@ -105,7 +105,7 @@ export const handleInvoice = async (orderId: string): Promise<void> => {
 
     // --- Header ---
     try {
-      const logoImg = await loadImage("/truecargo-invoice-logo.jpeg");
+      const logoImg = await loadImage("/truecargo-invoice-logo.png");
       const logoW = 40;
       const logoH = (logoImg.height / logoImg.width) * logoW;
       doc.addImage(logoImg, "PNG", margin, margin, logoW, logoH);
