@@ -224,6 +224,7 @@ const OrdersPage: FC = () => {
                 const normalizedStatus = String(order.status || "").toLowerCase().replace(/[\s_-]/g, "")
                 const isPending = normalizedStatus === "pending"
                 const canShowAllIcons = true
+                const isDocumentActionEnabled = !isPending
                 const isNonViewActionEnabled = true
 
                 return (
@@ -275,25 +276,25 @@ const OrdersPage: FC = () => {
                       {canShowAllIcons && (
                         <>
                           <button
-                            onClick={() => isNonViewActionEnabled && handleInvoice(order.orderId)}
-                            disabled={!isNonViewActionEnabled}
-                            className={`p-1.5 dark:text-gray-300 ${isNonViewActionEnabled ? "text-gray-700 hover:text-gray-900" : "text-gray-400 cursor-not-allowed opacity-60"}`}
+                            onClick={() => isDocumentActionEnabled && handleInvoice(order.orderId)}
+                            disabled={!isDocumentActionEnabled}
+                            className={`p-1.5 dark:text-gray-300 ${isDocumentActionEnabled ? "text-gray-700 hover:text-gray-900" : "text-gray-400 cursor-not-allowed opacity-60"}`}
                             title="View Invoice"
                           >
                             <HiDocumentDownload className="h-5 w-5" />
                           </button>
                           <button
-                            onClick={() => isNonViewActionEnabled && handleLabel(order.orderId)}
-                            disabled={!isNonViewActionEnabled}
-                            className={`p-1.5 dark:text-gray-300 ${isNonViewActionEnabled ? "text-gray-700 hover:text-gray-900" : "text-gray-400 cursor-not-allowed opacity-60"}`}
+                            onClick={() => isDocumentActionEnabled && handleLabel(order.orderId)}
+                            disabled={!isDocumentActionEnabled}
+                            className={`p-1.5 dark:text-gray-300 ${isDocumentActionEnabled ? "text-gray-700 hover:text-gray-900" : "text-gray-400 cursor-not-allowed opacity-60"}`}
                             title="Print Label"
                           >
                             <HiOutlinePrinter className="h-5 w-5" />
                           </button>
                           <button
-                            onClick={() => isNonViewActionEnabled && handleDelhiveryLabel(order.waybill)}
-                            disabled={!isNonViewActionEnabled}
-                            className={`${isNonViewActionEnabled ? "text-orange-600 hover:text-orange-700 dark:text-orange-400" : "text-gray-400 cursor-not-allowed opacity-60"} p-1.5`}
+                            onClick={() => isDocumentActionEnabled && handleDelhiveryLabel(order.waybill)}
+                            disabled={!isDocumentActionEnabled}
+                            className={`${isDocumentActionEnabled ? "text-orange-600 hover:text-orange-700 dark:text-orange-400" : "text-gray-400 cursor-not-allowed opacity-60"} p-1.5`}
                             title="Delhivery Label"
                           >
                             <HiDocumentDownload className="h-5 w-5" />
