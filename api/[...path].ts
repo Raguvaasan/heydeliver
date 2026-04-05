@@ -553,6 +553,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(backendResponse.status).json(backendResponse.data)
     }
 
+    // --- Delhivery label proxy (fetches packing slip + follows S3 redirect server-side) ---
+    if (segments[0] === 'delhivery-label') {
+      const waybill = String(parsedUrl.searchParams.get('waybill') || '').trim()
+      if (!waybill) {
+        return res.status(400).json({ error: 'waybill is required' })
+      }
+
+      const delhiveryUrl = `https://track.delhivery.com/api/p/packing_slip?wbns=${encodeURIComponent(waybill)}&pdf=true&pdf_size=4R`
+      const delhiveryRes = await fetch(delhiveryUrl, {
+        headers: { Authorization: `Token ${DELHIVERY_TOKEN}`, Accept: '*/*' },
+      })
+
+      if (!delhiveryRes.ok) {
+        const text = await delhiveryRes.text()
+        return res.status(delhiveryRes.status).json({ error: 'Delhivery error', details: text })
+      }
+
+      const ct = delhiveryRes.headers.get('content-type') || ''
+      if (ct.includes('application/pdf')) {
+        const buf = Buffer.from(await delhiveryRes.arrayBuffer())
+        res.setHeader('Content-Type', 'application/pdf')
+        res.setHeader('Content-Disposition', `attachment; filename="label-${waybill}.pdf"`)
+        return res.status(200).send(buf)
+      }
+
+      // JSON with pdf_download_link — fetch S3 URL server-side to avoid CORS
+      const json = await delhiveryRes.json()
+      const s3Url = json?.packages?.[0]?.pdf_download_link
+      if (!s3Url) {
+        return res.status(502).json({ error: 'pdf_download_link not found' })
+      }
+
+      const pdfRes = await fetch(s3Url)
+      if (!pdfRes.ok) {
+        return res.status(pdfRes.status).json({ error: 'Failed to fetch PDF from S3' })
+      }
+
+      const pdfBuf = Buffer.from(await pdfRes.arrayBuffer())
+      res.setHeader('Content-Type', 'application/pdf')
+      res.setHeader('Content-Disposition', `attachment; filename="label-${waybill}.pdf"`)
+      return res.status(200).send(pdfBuf)
+    }
+
     if (segments[0] === 'delhivery') {
       // copy from api/delhivery.ts with path query
       const pathSegments = parsedUrl.searchParams.get('path') || 'c/api/pin-codes/json'
