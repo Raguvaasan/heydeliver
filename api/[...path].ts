@@ -3,6 +3,7 @@ import axios from 'axios'
 import puppeteer from 'puppeteer-core'
 import chromium from '@sparticuz/chromium'
 import url from 'url'
+import { PDFDocument, rgb } from 'pdf-lib'
 
 // Helper constants
 const BACKEND_API_URL = process.env['BACKEND_API_URL'] || 'https://freightrekapi.vercel.app'
@@ -553,7 +554,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(backendResponse.status).json(backendResponse.data)
     }
 
-    // --- Delhivery label proxy (fetches packing slip + follows S3 redirect server-side) ---
+    // --- Delhivery label proxy (fetches packing slip, strips amounts, returns PDF) ---
     if (segments[0] === 'delhivery-label') {
       const waybill = String(parsedUrl.searchParams.get('waybill') || '').trim()
       if (!waybill) {
@@ -570,30 +571,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(delhiveryRes.status).json({ error: 'Delhivery error', details: text })
       }
 
+      let pdfBytes: ArrayBuffer
+
       const ct = delhiveryRes.headers.get('content-type') || ''
       if (ct.includes('application/pdf')) {
-        const buf = Buffer.from(await delhiveryRes.arrayBuffer())
-        res.setHeader('Content-Type', 'application/pdf')
-        res.setHeader('Content-Disposition', `attachment; filename="label-${waybill}.pdf"`)
-        return res.status(200).send(buf)
+        pdfBytes = await delhiveryRes.arrayBuffer()
+      } else {
+        // JSON with pdf_download_link — fetch S3 URL server-side to avoid CORS
+        const json = await delhiveryRes.json()
+        const s3Url = json?.packages?.[0]?.pdf_download_link
+        if (!s3Url) {
+          return res.status(502).json({ error: 'pdf_download_link not found' })
+        }
+        const pdfRes = await fetch(s3Url)
+        if (!pdfRes.ok) {
+          return res.status(pdfRes.status).json({ error: 'Failed to fetch PDF from S3' })
+        }
+        pdfBytes = await pdfRes.arrayBuffer()
       }
 
-      // JSON with pdf_download_link — fetch S3 URL server-side to avoid CORS
-      const json = await delhiveryRes.json()
-      const s3Url = json?.packages?.[0]?.pdf_download_link
-      if (!s3Url) {
-        return res.status(502).json({ error: 'pdf_download_link not found' })
+      // Strip amount values from the PDF by drawing white rectangles over Price & Total columns
+      try {
+        const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true })
+        const pages = pdfDoc.getPages()
+        for (const page of pages) {
+          const { width, height } = page.getSize()
+          // Cover Price & Total column values (product rows + total row)
+          page.drawRectangle({
+            x: width * 0.55,
+            y: height * 0.04,
+            width: width * 0.45,
+            height: height * 0.30,
+            color: rgb(1, 1, 1),
+            borderWidth: 0,
+          })
+        }
+        pdfBytes = await pdfDoc.save()
+      } catch (pdfErr: any) {
+        console.error('[delhivery-label] PDF stripping failed:', pdfErr?.message)
+        // Return original PDF if stripping fails
       }
 
-      const pdfRes = await fetch(s3Url)
-      if (!pdfRes.ok) {
-        return res.status(pdfRes.status).json({ error: 'Failed to fetch PDF from S3' })
-      }
-
-      const pdfBuf = Buffer.from(await pdfRes.arrayBuffer())
+      const finalBuf = Buffer.from(pdfBytes)
       res.setHeader('Content-Type', 'application/pdf')
       res.setHeader('Content-Disposition', `attachment; filename="label-${waybill}.pdf"`)
-      return res.status(200).send(pdfBuf)
+      return res.status(200).send(finalBuf)
     }
 
     if (segments[0] === 'delhivery') {

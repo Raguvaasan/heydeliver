@@ -105,7 +105,7 @@ app.use("/delhivery-api", async (req, res) => {
 
 /*
 ---------------------------------------------------
-Delhivery label proxy — fetches packing slip + follows S3 redirect server-side
+Delhivery label proxy — fetches packing slip, strips amounts, returns PDF
 ---------------------------------------------------
 */
 const DELHIVERY_TOKEN = process.env.DELHIVERY_API_TOKEN || "91aeec33f78a2d21a6348658708de71f31489038";
@@ -130,30 +130,48 @@ app.get("/api/delhivery-label", async (req, res) => {
       return res.status(delhiveryRes.status).json({ error: "Delhivery error", details: text });
     }
 
+    let pdfBytes;
     const contentType = delhiveryRes.headers.get("content-type") || "";
     if (contentType.includes("application/pdf")) {
-      const buf = Buffer.from(await delhiveryRes.arrayBuffer());
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="label-${waybill}.pdf"`);
-      return res.status(200).send(buf);
+      pdfBytes = await delhiveryRes.arrayBuffer();
+    } else {
+      const json = await delhiveryRes.json();
+      const s3Url = json?.packages?.[0]?.pdf_download_link;
+      if (!s3Url) {
+        return res.status(502).json({ error: "pdf_download_link not found" });
+      }
+      const pdfRes = await fetch(s3Url);
+      if (!pdfRes.ok) {
+        return res.status(pdfRes.status).json({ error: "Failed to fetch PDF from S3" });
+      }
+      pdfBytes = await pdfRes.arrayBuffer();
     }
 
-    // JSON response with pdf_download_link — fetch the S3 URL server-side to avoid CORS
-    const json = await delhiveryRes.json();
-    const s3Url = json?.packages?.[0]?.pdf_download_link;
-    if (!s3Url) {
-      return res.status(502).json({ error: "pdf_download_link not found in Delhivery response" });
+    // Strip amount values from PDF using pdf-lib
+    try {
+      const { PDFDocument, rgb } = await import("pdf-lib");
+      const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+      const pages = pdfDoc.getPages();
+      for (const page of pages) {
+        const { width, height } = page.getSize();
+        page.drawRectangle({
+          x: width * 0.55,
+          y: height * 0.04,
+          width: width * 0.45,
+          height: height * 0.30,
+          color: rgb(1, 1, 1),
+          borderWidth: 0,
+        });
+      }
+      pdfBytes = await pdfDoc.save();
+    } catch (pdfErr) {
+      console.error("[delhivery-label] PDF stripping failed:", pdfErr?.message);
     }
 
-    const pdfRes = await fetch(s3Url);
-    if (!pdfRes.ok) {
-      return res.status(pdfRes.status).json({ error: "Failed to fetch PDF from S3" });
-    }
-
-    const pdfBuf = Buffer.from(await pdfRes.arrayBuffer());
+    const finalBuf = Buffer.from(pdfBytes);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="label-${waybill}.pdf"`);
-    return res.status(200).send(pdfBuf);
+    return res.status(200).send(finalBuf);
   } catch (err) {
     console.error("delhivery-label error:", err);
     return res.status(500).json({ error: "Internal error", message: err.message });
