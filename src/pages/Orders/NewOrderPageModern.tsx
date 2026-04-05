@@ -141,7 +141,7 @@ const NewOrderPageModern: FC = () => {
         order: sanitizedValues.orderId,
         payment_mode: sanitizedValues.paymentMode,
         cod_amount: sanitizedValues.paymentMode === "COD" ? sanitizedValues.codAmount : "0",
-        total_amount: "0",
+        total_amount: sanitizedValues.totalAmount,
         products_desc: sanitizedValues.productsDesc,
         hsn_code: sanitizedValues.hsnCode,
         quantity: sanitizedValues.quantity,
@@ -170,11 +170,7 @@ const NewOrderPageModern: FC = () => {
       // Create shipment
       const response = await createDelhiveryShipment(
         shipmentData,
-        sanitizedValues.pickupLocation,
-        {
-          freightrekTotalAmount: sanitizedValues.totalAmount || sanitizedValues.codAmount || "0",
-          freightrekCodAmount: sanitizedValues.codAmount || "0",
-        }
+        sanitizedValues.pickupLocation
       )
 
       if (response.success) {
