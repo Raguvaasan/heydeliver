@@ -30,8 +30,13 @@ const FranchiseAddRolePage: FC = () => {
     "Invoice Management",
     "Reports"
   ]
-  
-  const displayModules = modules.length > 0 ? modules : defaultModules
+
+  const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
+  const hubRestrictedModules = ["Wallet Management", "Invoice Management", "Reports"]
+  const baseModules = modules.length > 0 ? modules : defaultModules
+  const displayModules = loginType === "hub"
+    ? baseModules.filter((module) => !hubRestrictedModules.includes(module))
+    : baseModules
 
   const handleCheckboxChange = (moduleName: string, key: string) => {
     setPermissions((prevPermissions) => {

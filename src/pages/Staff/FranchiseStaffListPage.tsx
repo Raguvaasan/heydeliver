@@ -53,9 +53,10 @@ const FranchiseStaffListPage: FC = () => {
     setLoading(true)
     try {
       // Check if franchise user - use franchise-specific endpoint
-      const loginType = sessionStorage.getItem("loginType")
+      const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
+      const isHub = loginType === "hub"
       const isFranchise = loginType === "franchise" || loginType === "staff"
-      const endpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
+      const endpoint = isHub ? "/hub/manage/staff" : isFranchise ? "/admin/franchise/staff" : "/admin/staff"
       const response = await http.get(endpoint)
       let staffData = []
       if (response.data?.data) {
@@ -116,10 +117,10 @@ const FranchiseStaffListPage: FC = () => {
     const fetchAllData = async () => {
       setLoading(true)
       try {
-        const loginType = sessionStorage.getItem("loginType")
+        const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
         const isHub = loginType === "hub"
         const isFranchise = loginType === "franchise" || loginType === "staff"
-        const staffEndpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
+        const staffEndpoint = isHub ? "/hub/manage/staff" : isFranchise ? "/admin/franchise/staff" : "/admin/staff"
         const roleEndpoint = isHub ? "/hub/role" : isFranchise ? "/admin/franchise/role" : "/admin/role"
 
         // Agencies data is not required for franchise/staff list view.
@@ -244,9 +245,14 @@ const FranchiseStaffListPage: FC = () => {
 
     try {
       // Check if franchise user - use franchise-specific endpoint
-      const loginType = sessionStorage.getItem("loginType")
+      const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
+      const isHub = loginType === "hub"
       const isFranchise = loginType === "franchise" || loginType === "staff"
-      const endpoint = isFranchise ? `/admin/franchise/staff/${staffToDelete._id}` : `/admin/staff/${staffToDelete._id}`
+      const endpoint = isHub
+        ? `/hub/manage/staff/${staffToDelete._id}`
+        : isFranchise
+          ? `/admin/franchise/staff/${staffToDelete._id}`
+          : `/admin/staff/${staffToDelete._id}`
 
       await http.delete(endpoint)
       toast.success("Staff deleted successfully")
