@@ -60,8 +60,9 @@ export const useFranchiseStaffStore = create<FranchiseStaffStore>((set) => ({
     try {
       // Check if franchise user - use franchise-specific endpoint
       const loginType = sessionStorage.getItem("loginType")
+      const isHub = loginType === "hub"
       const isFranchise = loginType === "franchise" || loginType === "staff"
-      const endpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
+      const endpoint = isHub ? "/hub/role" : isFranchise ? "/admin/franchise/role" : "/admin/role"
       const response = await http.get(endpoint)
       const roleData = response.data?.data || []
       set({ roles: roleData, loading: false })

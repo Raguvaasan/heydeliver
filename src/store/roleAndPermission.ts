@@ -44,10 +44,23 @@ interface RoleState {
 
 // Helper function to get correct endpoint based on login type
 const getRoleEndpoint = (path: string = '') => {
-  const loginType = sessionStorage.getItem("loginType")
+  const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
+  const isHub = loginType === "hub"
   const isFranchise = loginType === "franchise" || loginType === "staff"
-  const baseEndpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
+  const baseEndpoint = isHub
+    ? "/hub/role"
+    : isFranchise
+      ? "/admin/franchise/role"
+      : "/admin/role"
   return path ? `${baseEndpoint}${path}` : baseEndpoint
+}
+
+const getModulesEndpoint = () => {
+  const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
+  const isHub = loginType === "hub"
+  const isFranchise = loginType === "franchise" || loginType === "staff"
+  if (isHub) return "/hub/modules"
+  return isFranchise ? "/admin/franchise/modules" : "/admin/modules"
 }
 
 export const useRoleStore = create<RoleState>((set, get) => ({
@@ -63,7 +76,6 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     try {
       // Use helper function to get correct endpoint
       const endpoint = getRoleEndpoint()
-      const loginType = sessionStorage.getItem("loginType")
       const res = await http.get(endpoint, {
         params: { page, limit }
       })
@@ -151,10 +163,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   fetchModules: async () => {
     set({ loading: true, error: null })
     try {
-      // Use different endpoint for franchise users
-      const loginType = sessionStorage.getItem("loginType")
-      const isFranchise = loginType === "franchise" || loginType === "staff"
-      const endpoint = isFranchise ? "/admin/franchise/modules" : "/admin/modules"
+      const endpoint = getModulesEndpoint()
       const res = await http.get(endpoint)
       const modules = res.data?.data
         ? (Object.values(res.data.data) as string[])

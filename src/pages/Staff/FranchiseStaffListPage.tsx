@@ -92,8 +92,9 @@ const FranchiseStaffListPage: FC = () => {
     try {
       // Check if franchise user - use franchise-specific endpoint
       const loginType = sessionStorage.getItem("loginType")
+      const isHub = loginType === "hub"
       const isFranchise = loginType === "franchise" || loginType === "staff"
-      const endpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
+      const endpoint = isHub ? "/hub/role" : isFranchise ? "/admin/franchise/role" : "/admin/role"
       const response = await http.get(endpoint)
       setRoles(response.data?.data || [])
     } catch (error) {
@@ -116,9 +117,10 @@ const FranchiseStaffListPage: FC = () => {
       setLoading(true)
       try {
         const loginType = sessionStorage.getItem("loginType")
+        const isHub = loginType === "hub"
         const isFranchise = loginType === "franchise" || loginType === "staff"
         const staffEndpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
-        const roleEndpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
+        const roleEndpoint = isHub ? "/hub/role" : isFranchise ? "/admin/franchise/role" : "/admin/role"
 
         // Agencies data is not required for franchise/staff list view.
         // Fetch with allSettled so one failing endpoint doesn't hide staff data.

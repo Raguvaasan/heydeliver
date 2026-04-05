@@ -46,35 +46,38 @@ const FranchiseAddEditStaffPage: FC = () => {
   useEffect(() => {
     // Optimized: Fetch all required data in parallel
     const fetchAllData = async () => {
-      const loginType = sessionStorage.getItem("loginType")
+      const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
+      const isHub = loginType === "hub"
       const isFranchise = loginType === "franchise" || loginType === "staff"
 
       try {
-        if (isFranchise) {
+        if (isFranchise || isHub) {
           // For franchise: only fetch roles + staff data (if editing)
           const promises: Promise<any>[] = [
-            http.get("/admin/franchise/role")
+            http.get(isHub ? "/hub/role" : "/admin/franchise/role")
           ]
 
           if (isEditMode && id) {
-            promises.push(http.get(`/admin/franchise/staff/${id}`))
+            promises.push(http.get(isHub ? `/hub/manage/staff/${id}` : `/admin/franchise/staff/${id}`))
           }
 
           const [rolesRes, staffRes] = await Promise.all(promises)
 
           setRoles(rolesRes.data?.data || [])
 
-          // Set franchise from profile
-          const profileData = sessionStorage.getItem("profileData")
-          if (profileData) {
-            try {
-              const profile = JSON.parse(profileData)
-              const franchiseId = profile.franchiseId || profile.franchise?._id || profile.franchise
-              if (franchiseId) {
-                setFormData(prev => ({ ...prev, franchiseId }))
+          if (isFranchise) {
+            // Set franchise from profile for franchise/staff users only
+            const profileData = sessionStorage.getItem("profileData")
+            if (profileData) {
+              try {
+                const profile = JSON.parse(profileData)
+                const franchiseId = profile.franchiseId || profile.franchise?._id || profile.franchise
+                if (franchiseId) {
+                  setFormData(prev => ({ ...prev, franchiseId }))
+                }
+              } catch (error) {
+                // Profile parsing failed
               }
-            } catch (error) {
-              // Profile parsing failed
             }
           }
 
@@ -137,9 +140,14 @@ const FranchiseAddEditStaffPage: FC = () => {
     setFetchLoading(true)
     try {
       // Check login type to use correct endpoint
-      const loginType = sessionStorage.getItem("loginType")
+      const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
       const isFranchise = loginType === "franchise" || loginType === "staff"
-      const endpoint = isFranchise ? `/admin/franchise/staff/${staffId}` : `/admin/staff/${staffId}`
+      const isHub = loginType === "hub"
+      const endpoint = isHub
+        ? `/hub/manage/staff/${staffId}`
+        : isFranchise
+          ? `/admin/franchise/staff/${staffId}`
+          : `/admin/staff/${staffId}`
       const response = await http.get(endpoint)
       const staff = response.data?.data
 
@@ -166,9 +174,10 @@ const FranchiseAddEditStaffPage: FC = () => {
   const fetchRoles = async () => {
     try {
       // Check login type to use correct endpoint
-      const loginType = sessionStorage.getItem("loginType")
+      const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
+      const isHub = loginType === "hub"
       const isFranchise = loginType === "franchise" || loginType === "staff"
-      const endpoint = isFranchise ? "/admin/franchise/role" : "/admin/role"
+      const endpoint = isHub ? "/hub/role" : isFranchise ? "/admin/franchise/role" : "/admin/role"
       const response = await http.get(endpoint)
       const rolesData = response.data?.data || []
       setRoles(rolesData)
@@ -209,7 +218,9 @@ const FranchiseAddEditStaffPage: FC = () => {
       return
     }
 
-    if (!franchiseId) {
+    const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
+    const isHub = loginType === "hub"
+    if (!isHub && !franchiseId) {
       toast.error("Franchise is required")
       return
     }
@@ -225,9 +236,11 @@ const FranchiseAddEditStaffPage: FC = () => {
       phone,
       type,
       roleId,
-      franchiseId,
       username,
       status: formData.status,
+    }
+    if (!isHub) {
+      payload.franchiseId = franchiseId
     }
 
     if (password) {
@@ -237,15 +250,22 @@ const FranchiseAddEditStaffPage: FC = () => {
     setLoading(true)
     try {
       // Check login type to use correct endpoint
-      const loginType = sessionStorage.getItem("loginType")
       const isFranchise = loginType === "franchise" || loginType === "staff"
 
-      if (isEditMode && id) {
+      if (isHub && isEditMode && id) {
+        const hubPayload: any = {
+          name,
+          phone,
+          roleId,
+        }
+        await http.put(`/hub/manage/staff/${id}`, hubPayload)
+        toast.success("Staff updated successfully")
+      } else if (isEditMode && id) {
         const endpoint = isFranchise ? `/admin/franchise/staff/${id}` : `/admin/staff/${id}`
         await http.put(endpoint, payload)
         toast.success("Staff updated successfully")
       } else {
-        const endpoint = isFranchise ? "/admin/franchise/staff" : "/admin/staff"
+        const endpoint = isHub ? "/hub/manage/staff" : isFranchise ? "/admin/franchise/staff" : "/admin/staff"
         await http.post(endpoint, payload)
         toast.success("Staff added successfully")
       }
@@ -344,32 +364,36 @@ const FranchiseAddEditStaffPage: FC = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="franchiseId">
-                    Franchise<span className="text-red-500">*</span>
-                  </Label>
-                  {sessionStorage.getItem("loginType") === "franchise" || sessionStorage.getItem("loginType") === "staff" ? (
-                    <TextInput
-                      id="franchiseId"
-                      name="franchiseId"
-                      value="Current Franchise (Auto-selected)"
-                      disabled
-                      className="bg-gray-100"
-                    />
-                  ) : (
-                    <Select
-                      id="franchiseId"
-                      name="franchiseId"
-                      value={formData.franchiseId}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Select Franchise</option>
-                      {agencies.map((agency) => (
-                        <option key={agency._id} value={agency._id}>
-                          {agency.agencyName || agency.franchiseName}
-                        </option>
-                      ))}
-                    </Select>
+                  {(sessionStorage.getItem("loginType") || "").toLowerCase() !== "hub" && (
+                    <>
+                      <Label htmlFor="franchiseId">
+                        Franchise<span className="text-red-500">*</span>
+                      </Label>
+                      {(sessionStorage.getItem("loginType") || "").toLowerCase() === "franchise" || (sessionStorage.getItem("loginType") || "").toLowerCase() === "staff" ? (
+                        <TextInput
+                          id="franchiseId"
+                          name="franchiseId"
+                          value="Current Franchise (Auto-selected)"
+                          disabled
+                          className="bg-gray-100"
+                        />
+                      ) : (
+                        <Select
+                          id="franchiseId"
+                          name="franchiseId"
+                          value={formData.franchiseId}
+                          onChange={handleChange}
+                          required
+                        >
+                          <option value="">Select Franchise</option>
+                          {agencies.map((agency) => (
+                            <option key={agency._id} value={agency._id}>
+                              {agency.agencyName || agency.franchiseName}
+                            </option>
+                          ))}
+                        </Select>
+                      )}
+                    </>
                   )}
                 </div>
                 <div>
