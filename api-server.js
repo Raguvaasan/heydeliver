@@ -117,7 +117,7 @@ app.get("/api/delhivery-label", async (req, res) => {
   }
 
   try {
-    const delhiveryUrl = `https://track.delhivery.com/api/p/packing_slip?wbns=${encodeURIComponent(waybill)}&pdf=false&pdf_size=4R`;
+    const delhiveryUrl = `https://track.delhivery.com/api/p/packing_slip?wbns=${encodeURIComponent(waybill)}&pdf=true&pdf_size=4R`;
     const delhiveryRes = await fetch(delhiveryUrl, {
       headers: {
         Authorization: `Token ${DELHIVERY_TOKEN}`,
