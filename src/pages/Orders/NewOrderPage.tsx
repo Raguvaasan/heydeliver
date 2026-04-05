@@ -506,7 +506,7 @@ const NewOrderPage: FC = () => {
         hsn_code: formData.hsnCode || "",
         cod_amount: formData.paymentMode === "COD" ? delhiveryAmount : "",
         order_date: new Date().toISOString(),
-        total_amount: delhiveryAmount,
+        total_amount: "0",
         seller_add: profileData?.address || "",
         seller_name: profileData?.agencyOwner || "",
         seller_inv: formData.sellerInvoice || "",

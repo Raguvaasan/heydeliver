@@ -546,7 +546,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
             hsn_code: payload?.hsnCode || "",
             cod_amount: payload?.delhiveryCodAmount ? String(payload.delhiveryCodAmount) : (payload?.codAmount ? String(payload.codAmount) : ""),
             order_date: payload?.orderDate || null,
-            total_amount: payload?.delhiveryTotalAmount ? String(payload.delhiveryTotalAmount) : (payload?.totalAmount ? String(payload.totalAmount) : ""),
+            total_amount: "0",
             seller_add: payload?.sellerAdd || payload?.fromAdd || "",
             seller_name: payload?.sellerName || payload?.fromName || "",
             seller_inv: payload?.sellerInv || "",
