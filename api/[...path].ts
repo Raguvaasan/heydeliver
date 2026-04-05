@@ -561,7 +561,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'waybill is required' })
       }
 
-      const delhiveryUrl = `https://track.delhivery.com/api/p/packing_slip?wbns=${encodeURIComponent(waybill)}&pdf=true&pdf_size=4R`
+      const delhiveryUrl = `https://track.delhivery.com/api/p/packing_slip?wbns=${encodeURIComponent(waybill)}&pdf=false&pdf_size=4R`
       const delhiveryRes = await fetch(delhiveryUrl, {
         headers: { Authorization: `Token ${DELHIVERY_TOKEN}`, Accept: '*/*' },
       })
