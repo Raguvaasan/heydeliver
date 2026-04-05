@@ -6,24 +6,33 @@ import { PDFDocument, rgb } from "pdf-lib"
  * by drawing white rectangles over the Price and Total columns.
  */
 async function stripAmountsFromPdf(pdfBytes: ArrayBuffer): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.load(pdfBytes)
-  const pages = pdfDoc.getPages()
+  try {
+    const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true })
+    const pages = pdfDoc.getPages()
+    console.log(`[stripAmounts] pages: ${pages.length}`)
 
-  for (const page of pages) {
-    const { width, height } = page.getSize()
+    for (const page of pages) {
+      const { width, height } = page.getSize()
+      console.log(`[stripAmounts] page size: ${width} x ${height}`)
 
-    // Cover Price & Total column values (product rows + total row)
-    page.drawRectangle({
-      x: width * 0.61,
-      y: height * 0.12,
-      width: width * 0.39,
-      height: height * 0.16,
-      color: rgb(1, 1, 1),
-      borderWidth: 0,
-    })
+      // DEBUG: Draw RED rectangle to SEE where it lands
+      // Will change to white once position is confirmed
+      page.drawRectangle({
+        x: width * 0.55,
+        y: height * 0.04,
+        width: width * 0.45,
+        height: height * 0.30,
+        color: rgb(1, 0, 0),
+        opacity: 0.8,
+        borderWidth: 0,
+      })
+    }
+
+    return pdfDoc.save()
+  } catch (err) {
+    console.error('[stripAmounts] PDF processing failed:', err)
+    return new Uint8Array(pdfBytes)
   }
-
-  return pdfDoc.save()
 }
 
 function openPdfBlob(pdfBytes: Uint8Array | ArrayBuffer): void {
