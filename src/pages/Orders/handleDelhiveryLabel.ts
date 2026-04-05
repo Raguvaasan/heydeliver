@@ -12,15 +12,6 @@ async function stripAmountsFromPdf(pdfBytes: ArrayBuffer): Promise<Uint8Array> {
   for (const page of pages) {
     const { width, height } = page.getSize()
 
-    // Delhivery 4R packing slip layout (bottom-up, PDF y=0 is bottom):
-    //   - Return barcode + address at the very bottom
-    //   - "Total" row just above
-    //   - Product row(s) above that
-    //   - "Product | Price | Total" header row above that
-    //
-    // We cover the Price & Total data columns (right ~38% of width)
-    // in the product table zone (roughly 12% to 27% from bottom).
-
     // Cover Price & Total column values (product rows + total row)
     page.drawRectangle({
       x: width * 0.61,
@@ -35,16 +26,8 @@ async function stripAmountsFromPdf(pdfBytes: ArrayBuffer): Promise<Uint8Array> {
   return pdfDoc.save()
 }
 
-async function fetchPdfBytes(url: string): Promise<ArrayBuffer> {
-  const res = await fetch(url, { method: "GET" })
-  if (!res.ok) {
-    throw new Error("Failed to fetch PDF from download link")
-  }
-  return res.arrayBuffer()
-}
-
-function openPdfBlob(pdfBytes: Uint8Array | ArrayBuffer, waybill: string): void {
-  const blob = new Blob([pdfBytes], { type: "application/pdf" })
+function openPdfBlob(pdfBytes: Uint8Array | ArrayBuffer): void {
+  const blob = new Blob([pdfBytes instanceof Uint8Array ? pdfBytes.buffer as ArrayBuffer : pdfBytes], { type: "application/pdf" })
   if (!blob || blob.size === 0) {
     throw new Error("Received empty PDF file")
   }
@@ -64,8 +47,8 @@ export const handleDelhiveryLabel = async (waybill: string): Promise<void> => {
       return
     }
 
-    const endpoint = `/delhivery-api/api/p/packing_slip?wbns=${encodeURIComponent(cleanWaybill)}&pdf=true&pdf_size=4R`
-    const response = await fetch(endpoint, {
+    // Use server-side proxy — avoids CORS when Delhivery returns an S3 redirect
+    const response = await fetch(`/api/delhivery-label?waybill=${encodeURIComponent(cleanWaybill)}`, {
       method: "GET",
     })
 
@@ -74,24 +57,11 @@ export const handleDelhiveryLabel = async (waybill: string): Promise<void> => {
       throw new Error(errorText || "Failed to fetch Delhivery label")
     }
 
-    let pdfBytes: ArrayBuffer
-
-    const contentType = response.headers.get("content-type") || ""
-    if (contentType.includes("application/pdf")) {
-      pdfBytes = await response.arrayBuffer()
-    } else {
-      // JSON response with pdf_download_link
-      const json = await response.json()
-      const pdfDownloadLink = json?.packages?.[0]?.pdf_download_link
-      if (!pdfDownloadLink) {
-        throw new Error("Delhivery PDF link not found in response")
-      }
-      pdfBytes = await fetchPdfBytes(pdfDownloadLink)
-    }
+    const pdfBytes = await response.arrayBuffer()
 
     // Strip amount values from the PDF before displaying
     const cleanedPdf = await stripAmountsFromPdf(pdfBytes)
-    openPdfBlob(cleanedPdf, cleanWaybill)
+    openPdfBlob(cleanedPdf)
   } catch (error: any) {
     toast.error(error?.message || "Failed to open Delhivery label")
   }
