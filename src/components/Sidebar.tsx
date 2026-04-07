@@ -103,6 +103,7 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/payments",
       submenu: [
         { title: "Wallet Transactions", path: "/wallet/transactions" },
+        { title: "Revenue", path: "/payments/revenue" },
         // { title: "Invoices", path: "/invoice" },
       ],
     },

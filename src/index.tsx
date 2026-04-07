@@ -73,6 +73,7 @@ const PaymentCallbackPage = lazy(() => import("./pages/Wallet/PaymentCallbackPag
 const TransactionsPage = lazy(() => import("./pages/Wallet/TransactionsPage"))
 const RechargesPage = lazy(() => import("./pages/Wallet/RechargesPage"))
 const PaymentsPage = lazy(() => import("./pages/Payments/PaymentsPage"))
+const RevenuePage = lazy(() => import("./pages/Payments/RevenuePage"))
 const InvoicePage = lazy(() => import("./pages/Invoice/InvoicePage"))
 
 // Reports
@@ -488,6 +489,15 @@ root.render(
             element={
               <ProtectedRoute>
                 <WalletPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/payments/revenue"
+            element={
+              <ProtectedRoute>
+                <RevenuePage />
               </ProtectedRoute>
             }
           />
