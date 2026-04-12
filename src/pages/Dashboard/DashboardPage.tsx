@@ -122,6 +122,21 @@ const DashboardPage: FC = () => {
         setDashboardData(dashboardRes.data?.data || dashboardRes.data)
         setTopFranchises(topFranchisesRes.data?.data || [])
         setWalletStats(walletStatsRes.data?.data || walletStatsRes.data)
+      } else if (isHubLogin) {
+        // Hub: fetch base dashboard data without period; fetch revenue with period
+        const [baseResponse, revenueResponse] = await Promise.all([
+          http.get("/hub/dashboard"),
+          http.get("/hub/dashboard", { params: { period: selectedPeriod } })
+        ])
+
+        const baseData = baseResponse.data?.data || baseResponse.data || {}
+        const revenueData = revenueResponse.data?.data || revenueResponse.data || {}
+
+        setDashboardData({
+          ...baseData,
+          revenue: revenueData.revenue ?? baseData.revenue,
+          period: revenueData.period ?? baseData.period,
+        })
       } else {
         // Franchise: Single API call
         const response = await http.get(endpoint, { params })
@@ -149,11 +164,28 @@ const DashboardPage: FC = () => {
     if (showPageLoader) setLoading(true)
     if (showRevenueLoader) setRevenueLoading(true)
     try {
-      const endpoint = loginType === "admin" ? "/admin/dashboard" : isHubLogin ? "/hub/dashboard" : "/dashboard"
-      const params = { period: selectedPeriod }
-      const response = await http.get(endpoint, { params })
-      const data = response.data?.data || response.data
-      setDashboardData(data)
+      if (isHubLogin) {
+        // Hub: keep base widgets unfiltered, refresh only revenue by period
+        const [baseResponse, revenueResponse] = await Promise.all([
+          http.get("/hub/dashboard"),
+          http.get("/hub/dashboard", { params: { period: selectedPeriod } })
+        ])
+
+        const baseData = baseResponse.data?.data || baseResponse.data || {}
+        const revenueData = revenueResponse.data?.data || revenueResponse.data || {}
+
+        setDashboardData({
+          ...baseData,
+          revenue: revenueData.revenue ?? baseData.revenue,
+          period: revenueData.period ?? baseData.period,
+        })
+      } else {
+        const endpoint = loginType === "admin" ? "/admin/dashboard" : "/dashboard"
+        const params = { period: selectedPeriod }
+        const response = await http.get(endpoint, { params })
+        const data = response.data?.data || response.data
+        setDashboardData(data)
+      }
     } catch (error: any) {
       toast.error("Failed to load dashboard data")
       setDashboardData({})
@@ -213,13 +245,19 @@ const DashboardPage: FC = () => {
         ? cards.filter((card) => card.title !== "Wallet Balance")
         : cards
     } else {
-      // Admin view - 5 cards with specific metrics
+      // Admin view - 6 cards with specific metrics
       const overview = dashboardData.overview || {}
       const revenue = overview.revenue || {}
       const totalOrders = overview.totalOrders || {}
 
       // Calculate metrics from correct API fields
       const totalFranchiseCount = overview.activeAgencies || 0
+      const totalHubsCount =
+        overview.totalHubs ??
+        overview.activeHubs ??
+        overview.hubs ??
+        overview.hubCount ??
+        0
       const totalOrdersCount = totalOrders.allTime || 0
       const totalRevenueCount = revenue.total || 0
       const todayOrderCount = totalOrders.today || 0
@@ -237,6 +275,15 @@ const DashboardPage: FC = () => {
         },
         {
           icon: <HiCube className="h-5 w-5" />,
+          title: "Total Hubs",
+          value: totalHubsCount,
+          subtitle: "Total hubs",
+          percentage: undefined,
+          iconBgColor: "bg-indigo-500",
+          onClick: () => navigate("/hubs")
+        },
+        {
+          icon: <HiCube className="h-5 w-5" />,
           title: "Total Orders Count",
           value: totalOrdersCount,
           subtitle: "All time orders",
@@ -251,7 +298,7 @@ const DashboardPage: FC = () => {
           subtitle: "All time revenue",
           percentage: undefined,
           iconBgColor: "bg-green-500",
-          // onClick: () => navigate("/reports/revenue")
+          onClick: () => navigate("/payments/revenue")
         },
         {
           icon: <HiCube className="h-5 w-5" />,
@@ -409,7 +456,7 @@ const DashboardPage: FC = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6 ${loginType === 'admin' ? 'xl:grid-cols-5' : ''}`}>
+          <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6 ${loginType === 'admin' ? 'xl:grid-cols-6' : ''}`}>
             {stats.map((stat, index) => (
               <StatCard
                 key={index}
