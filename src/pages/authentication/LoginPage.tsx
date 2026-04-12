@@ -160,7 +160,7 @@ console.log("result",result)
             <div className="space-y-6 mb-16">
               <div className="inline-block rounded-2xl bg-white/90 px-6 py-4">
                 <img
-                  src="/images/logo.png"
+                  src="/admin/images/logo.png"
                   alt="TRUECARGO Logo"
                   className="w-auto object-contain"
                 />
@@ -201,7 +201,7 @@ console.log("result",result)
             {/* Mobile Logo */}
             <div className="lg:hidden text-center mb-8">
               <img
-                src="/images/logo.png"
+                src="/admin/images/logo.png"
                 alt="TRUECARGO Logo"
                 className="h-16 sm:h-20 w-auto mx-auto object-contain"
               />
