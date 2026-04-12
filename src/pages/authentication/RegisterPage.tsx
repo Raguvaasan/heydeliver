@@ -73,7 +73,7 @@ const RegisterPage: FC = function () {
 
       <div className="my-6">
         <img 
-          src="/admin/images/logo.png" 
+          src="https://truecargos.com/admin/images/logo.png" 
           alt="TRUECARGO Logo"
           className="h-24 w-auto object-contain"
         />
