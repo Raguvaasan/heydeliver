@@ -134,7 +134,7 @@ export const handleLabel = async (orderId: string): Promise<void> => {
 
     // Project Logo instead of "DELHIVERY"
     try {
-      const logoImg = await loadImage("/images/truecargo.png");
+      const logoImg = await loadImage("/images/logo.png");
       const logoW = 1.4;
       const logoH = (logoImg.height / logoImg.width) * logoW;
       const logoX = 2.95 - (logoW / 2);
