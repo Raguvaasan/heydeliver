@@ -74,7 +74,26 @@ const StatCard: FC<StatCardProps> = ({
 
 const DashboardPage: FC = () => {
   const navigate = useNavigate()
-  const loginType = sessionStorage.getItem("loginType") || "admin"
+  const rawLoginType = sessionStorage.getItem("loginType") || "admin"
+  const profileData = (() => {
+    try {
+      const raw = sessionStorage.getItem("profileData")
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  })()
+  const staffAssignedType = String(
+    profileData?.type ||
+    profileData?.data?.type ||
+    ""
+  ).toLowerCase()
+  const loginType =
+    rawLoginType === "staff" && (staffAssignedType === "hub" || staffAssignedType === "franchise" || staffAssignedType === "head_quarter")
+      ? staffAssignedType === "head_quarter"
+        ? "admin"
+        : staffAssignedType
+      : rawLoginType
   const isHubLogin = loginType === "hub"
   const [loading, setLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<any>(null)

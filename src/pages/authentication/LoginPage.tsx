@@ -1,10 +1,9 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import { Label } from "flowbite-react"
 import { useEffect, useState, type FC, FormEvent } from "react"
-import { useNavigate } from "react-router-dom"
 import { HiEye, HiEyeOff } from "react-icons/hi"
 import { HiArrowPath } from "react-icons/hi2"
-import { loginAdminUser, loginFranchiseUser, loginStaffUser, loginHubUser } from "../../store/loginStore"
+import { loginAdminUser, loginHubUser, sendFranchiseLoginOtp, verifyFranchiseLoginOtp, sendStaffLoginOtp, verifyStaffLoginOtp } from "../../store/loginStore"
 import toast from "react-hot-toast"
 
 interface LoginResponse {
@@ -20,13 +19,18 @@ const LoginPage: FC = function () {
   const [email, setEmail] = useState("")
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [phone, setPhone] = useState("")
+  const [countryCode, setCountryCode] = useState("+91")
+  const [otp, setOtp] = useState("")
+  const [otpSent, setOtpSent] = useState(false)
+  const [isSendingOtp, setIsSendingOtp] = useState(false)
+  const [staffType, setStaffType] = useState<"franchise" | "hub" | "head_quarter">("head_quarter")
   const [showPassword, setShowPassword] = useState(false)
   const [loginType, setLoginType] = useState<"admin" | "franchise" | "staff" | "hub">("admin")
   const [captchaQuestion, setCaptchaQuestion] = useState<string>("")
   const [captchaAnswer, setCaptchaAnswer] = useState<string>("")
   const [captchaInput, setCaptchaInput] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
-  const navigate = useNavigate()
 
   useEffect(() => {
     const root = document.documentElement
@@ -60,10 +64,37 @@ const LoginPage: FC = function () {
     setCaptchaInput("")
   }
 
+  const handleSendOtp = async (): Promise<void> => {
+    if (!phone.trim()) {
+      toast.error("Please enter phone number", { duration: 4000 })
+      return
+    }
+
+    setIsSendingOtp(true)
+    try {
+      const response =
+        loginType === "staff"
+          ? await sendStaffLoginOtp(phone, countryCode, staffType)
+          : await sendFranchiseLoginOtp(phone, countryCode)
+      const sent = response?.data?.success ?? true
+      if (!sent) {
+        throw new Error(response?.data?.message || "Unable to send OTP")
+      }
+
+      setOtpSent(true)
+      toast.success(response?.data?.message || "OTP sent successfully")
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || "Failed to send OTP"
+      toast.error(errorMessage, { duration: 5000 })
+    } finally {
+      setIsSendingOtp(false)
+    }
+  }
+
   const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault()
 
-    if (captchaInput.toUpperCase() !== captchaAnswer.toUpperCase()) {
+    if (loginType !== "staff" && loginType !== "franchise" && captchaInput.toUpperCase() !== captchaAnswer.toUpperCase()) {
       toast.error("Please enter the correct captcha", { duration: 4000 })
       return
     }
@@ -71,26 +102,32 @@ const LoginPage: FC = function () {
 
     try {
       let result: LoginResponse
-      let lastError: any = null
 
       if (loginType === "franchise") {
-        result = (await loginFranchiseUser(username, password)) as LoginResponse
+        if (!otpSent) {
+          throw new Error("Please send OTP first")
+        }
+        if (!otp.trim()) {
+          throw new Error("Please enter OTP")
+        }
+        result = (await verifyFranchiseLoginOtp(phone, countryCode, otp)) as LoginResponse
+      } else if (loginType === "staff") {
+        if (!otpSent) {
+          throw new Error("Please send OTP first")
+        }
+        if (!otp.trim()) {
+          throw new Error("Please enter OTP")
+        }
+        result = (await verifyStaffLoginOtp(phone, countryCode, otp, staffType)) as LoginResponse
       } else if (loginType === "hub") {
         result = (await loginHubUser(username, password)) as LoginResponse
       } else {
-        try {
-          result = (await loginAdminUser(email, password)) as LoginResponse
-        } catch (adminError: any) {
-          lastError = adminError
-          try {
-            result = (await loginStaffUser(email, password)) as LoginResponse
-          } catch (staffError: any) {
-            throw staffError
-          }
-        }
+        result = (await loginAdminUser(email, password)) as LoginResponse
       }
-console.log("result",result)
-      const isSuccess = result.data?.success
+      const isSuccess =
+        typeof result.data?.success === "boolean"
+          ? result.data.success
+          : true
 
       if (isSuccess) {
         const token = result.data?.token || result.data?.["data"]?.token
@@ -98,6 +135,17 @@ console.log("result",result)
         const userData = result.data?.["data"]
           ? { ...rawUserData, data: result.data["data"] }
           : rawUserData
+        const resolvedType = String(
+          userData?.type ||
+          userData?.data?.type ||
+          ""
+        ).toLowerCase()
+        const effectiveLoginType =
+          loginType === "staff" && (resolvedType === "hub" || resolvedType === "franchise" || resolvedType === "head_quarter")
+            ? resolvedType === "head_quarter"
+              ? "admin"
+              : resolvedType
+            : loginType
 
         if (token) {
           sessionStorage.setItem("authToken", token)
@@ -107,7 +155,7 @@ console.log("result",result)
         }
 
         sessionStorage.setItem("profileData", JSON.stringify(userData))
-        sessionStorage.setItem("loginType", loginType)
+        sessionStorage.setItem("loginType", effectiveLoginType)
 
         toast.success("Login successful! Redirecting...")
         setTimeout(() => {
@@ -127,6 +175,21 @@ console.log("result",result)
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (loginType !== "franchise" && loginType !== "staff") {
+      setPhone("")
+      setCountryCode("+91")
+      setOtp("")
+      setOtpSent(false)
+    }
+  }, [loginType])
+
+  useEffect(() => {
+    if (loginType !== "staff") {
+      setStaffType("head_quarter")
+    }
+  }, [loginType])
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-white via-[#fffef8] to-[#fffdf3]">
@@ -222,8 +285,8 @@ console.log("result",result)
                 </p>
 
                 {/* Login Type Selector */}
-                <div className="flex mb-6 justify-center gap-2 sm:gap-4">
-                  {(["admin", "franchise", "hub"] as const).map((type) => (
+                <div className="flex mb-6 justify-center gap-2 sm:gap-4 flex-wrap">
+                  {(["admin", "franchise", "hub", "staff"] as const).map((type) => (
                     <label key={type} className="flex items-center cursor-pointer">
                       <input
                         type="radio"
@@ -259,83 +322,219 @@ console.log("result",result)
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Email / Username */}
-                  <div className="space-y-1">
-                    <Label
-                      htmlFor={loginType === "admin" ? "email" : "username"}
-                      className="block text-sm font-semibold text-gray-700"
-                    >
-                      {loginType === "admin" ? "Email Address" : "Username"}
-                    </Label>
-                    <input
-                      id={loginType === "admin" ? "email" : "username"}
-                      type={loginType === "admin" ? "email" : "text"}
-                      placeholder={loginType === "admin" ? "you@example.com" : "Enter your username"}
-                      value={loginType === "admin" ? email : username}
-                      onChange={(e) =>
-                        loginType === "admin" ? setEmail(e.target.value) : setUsername(e.target.value)
-                      }
-                      required
-                      className="w-full text-base pl-4 pr-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
-                    />
-                  </div>
+                  {/* Staff OTP Layout */}
+                  {loginType === "staff" ? (
+                    <>
+                      <div className="space-y-1">
+                        <Label htmlFor="staffPhone" className="block text-sm font-semibold text-gray-700">
+                          Phone Number
+                        </Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-[96px_1fr] gap-2">
+                          <input
+                            id="countryCode"
+                            type="text"
+                            value={countryCode}
+                            onChange={(e) => setCountryCode(e.target.value)}
+                            required
+                            className="w-full text-base px-3 py-3 rounded-xl border border-gray-300 text-gray-700 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                          />
+                          <input
+                            id="staffPhone"
+                            type="tel"
+                            placeholder="Enter phone number"
+                            value={phone}
+                            onChange={(e) => {
+                              const nextPhone = e.target.value.replace(/\D/g, "")
+                              setPhone(nextPhone)
+                              setOtpSent(false)
+                            }}
+                            required
+                            className="w-full text-base px-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                          />
+                        </div>
+                      </div>
 
-                  {/* Password */}
-                  <div className="space-y-1">
-                    <Label htmlFor="password" className="block text-sm font-semibold text-gray-700">
-                      Password
-                    </Label>
-                    <div className="relative">
-                      <input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        autoComplete="current-password"
-                        required
-                        className="w-full text-base pl-4 pr-12 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
-                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="staffType" className="block text-sm font-semibold text-gray-700">
+                          Type
+                        </Label>
+                        <select
+                          id="staffType"
+                          value={staffType}
+                          onChange={(e) => {
+                            setStaffType(e.target.value as "franchise" | "hub" | "head_quarter")
+                            setOtpSent(false)
+                          }}
+                          className="w-full text-base pl-4 pr-10 py-3 rounded-xl border border-gray-300 text-gray-700 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                        >
+                          <option value="franchise">Franchise</option>
+                          <option value="hub">Hub</option>
+                          <option value="head_quarter">Head Quarter</option>
+                        </select>
+                      </div>
+
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors p-1"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        onClick={handleSendOtp}
+                        disabled={isSendingOtp || !phone.trim()}
+                        className="w-full py-3 rounded-xl border border-primary-300 text-sm font-semibold hover:bg-primary-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                       >
-                        {showPassword ? (
-                          <HiEye className="h-5 w-5" />
-                        ) : (
-                          <HiEyeOff className="h-5 w-5" />
-                        )}
+                        {isSendingOtp ? "Sending..." : otpSent ? "Resend OTP" : "Send OTP"}
                       </button>
-                    </div>
-                  </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="otp" className="block text-sm font-semibold text-gray-700">
+                          OTP
+                        </Label>
+                        <input
+                          id="otp"
+                          type="text"
+                          placeholder="Enter OTP"
+                          value={otp}
+                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          required
+                          className="w-full text-base px-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                        />
+                      </div>
+                    </>
+                  ) : loginType === "franchise" ? (
+                    <>
+                      {/* Franchise OTP Layout */}
+                      <div className="space-y-1">
+                        <Label htmlFor="franchisePhone" className="block text-sm font-semibold text-gray-700">
+                          Phone Number
+                        </Label>
+                        <div className="grid grid-cols-1 sm:grid-cols-[96px_1fr] gap-2">
+                          <input
+                            id="countryCode"
+                            type="text"
+                            value={countryCode}
+                            onChange={(e) => setCountryCode(e.target.value)}
+                            required
+                            className="w-full text-base px-3 py-3 rounded-xl border border-gray-300 text-gray-700 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                          />
+                          <input
+                            id="franchisePhone"
+                            type="tel"
+                            placeholder="Enter phone number"
+                            value={phone}
+                            onChange={(e) => {
+                              const nextPhone = e.target.value.replace(/\D/g, "")
+                              setPhone(nextPhone)
+                              setOtpSent(false)
+                            }}
+                            required
+                            className="w-full text-base px-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={isSendingOtp || !phone.trim()}
+                        className="w-full py-3 rounded-xl border border-primary-300 text-sm font-semibold hover:bg-primary-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {isSendingOtp ? "Sending..." : otpSent ? "Resend OTP" : "Send OTP"}
+                      </button>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="otp" className="block text-sm font-semibold text-gray-700">
+                          OTP
+                        </Label>
+                        <input
+                          id="otp"
+                          type="text"
+                          placeholder="Enter OTP"
+                          value={otp}
+                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          required
+                          className="w-full text-base pl-4 pr-12 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Email / Username */}
+                      <div className="space-y-1">
+                        <Label
+                          htmlFor={loginType === "admin" ? "email" : "username"}
+                          className="block text-sm font-semibold text-gray-700"
+                        >
+                          {loginType === "admin" ? "Email Address" : "Username"}
+                        </Label>
+                        <input
+                          id={loginType === "admin" ? "email" : "username"}
+                          type={loginType === "admin" ? "email" : "text"}
+                          placeholder={loginType === "admin" ? "you@example.com" : "Enter your username"}
+                          value={loginType === "admin" ? email : username}
+                          onChange={(e) =>
+                            loginType === "admin" ? setEmail(e.target.value) : setUsername(e.target.value)
+                          }
+                          required
+                          className="w-full text-base pl-4 pr-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+                          Password
+                        </Label>
+                        <div className="relative">
+                          <input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••••"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            autoComplete="current-password"
+                            required
+                            className="w-full text-base pl-4 pr-12 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors p-1"
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                          >
+                            {showPassword ? (
+                              <HiEye className="h-5 w-5" />
+                            ) : (
+                              <HiEyeOff className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Captcha */}
-                  <div className="space-y-1">
-                    <Label className="block text-sm font-semibold text-gray-700">Captcha</Label>
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="px-4 py-3 rounded-xl border-2 border-gray-300 bg-white text-gray-900 font-semibold tracking-widest text-base min-w-[80px] text-center select-none">
-                        {captchaQuestion || "----"}
+                  {loginType !== "staff" && loginType !== "franchise" && (
+                    <div className="space-y-1">
+                      <Label className="block text-sm font-semibold text-gray-700">Captcha</Label>
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="px-4 py-3 rounded-xl border-2 border-gray-300 bg-white text-gray-900 font-semibold tracking-widest text-base min-w-[80px] text-center select-none">
+                          {captchaQuestion || "----"}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={generateCaptcha}
+                          className="px-3 py-2.5 text-sm font-semibold border border-primary-300 rounded-lg transition-colors flex items-center gap-1.5 hover:bg-primary-50 whitespace-nowrap flex-shrink-0"
+                        >
+                          <HiArrowPath className="h-4 w-4" />
+                          <span className="hidden sm:inline">Refresh</span>
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={generateCaptcha}
-                        className="px-3 py-2.5 text-sm font-semibold border border-primary-300 rounded-lg transition-colors flex items-center gap-1.5 hover:bg-primary-50 whitespace-nowrap flex-shrink-0"
-                      >
-                        <HiArrowPath className="h-4 w-4" />
-                        <span className="hidden sm:inline">Refresh</span>
-                      </button>
+                      <input
+                        type="text"
+                        placeholder="Enter the letters above"
+                        value={captchaInput}
+                        onChange={(e) => setCaptchaInput(e.target.value.toUpperCase())}
+                        required
+                        className="w-full text-base pl-4 pr-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                      />
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Enter the letters above"
-                      value={captchaInput}
-                      onChange={(e) => setCaptchaInput(e.target.value.toUpperCase())}
-                      required
-                      className="w-full text-base pl-4 pr-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
-                    />
-                  </div>
+                  )}
 
                   {/* Submit Button */}
                   <button

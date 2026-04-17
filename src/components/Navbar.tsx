@@ -21,9 +21,16 @@ const Navbar: FC<NavbarProps> = ({
   const [userInitial, setUserInitial] = useState("A")
   const [userRole, setUserRole] = useState("Admin")
   const [loginType, setLoginType] = useState("admin")
+  const [staffAssignedType, setStaffAssignedType] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const effectiveLoginType =
+    loginType === "staff" && (staffAssignedType === "hub" || staffAssignedType === "franchise" || staffAssignedType === "head_quarter")
+      ? staffAssignedType === "head_quarter"
+        ? "admin"
+        : staffAssignedType
+      : loginType
   
   // Wallet store for franchise users
   const { balance, fetchBalance } = useWalletStore()
@@ -51,6 +58,7 @@ const Navbar: FC<NavbarProps> = ({
         }
         setUserName(name)
         setUserInitial(name.charAt(0).toUpperCase())
+        setStaffAssignedType(String(profileData?.type || profileData?.data?.type || "").toLowerCase())
         
         // Get user role from loginType in sessionStorage
         const loginTypeValue = sessionStorage.getItem("loginType") || "admin"
@@ -64,7 +72,14 @@ const Navbar: FC<NavbarProps> = ({
         }
         
         // Fetch wallet balance for franchise users
-        if (loginTypeValue === "franchise" || loginTypeValue === "staff") {
+        const assignedType = String(profileData?.type || profileData?.data?.type || "").toLowerCase()
+        const effectiveType =
+          loginTypeValue === "staff" && (assignedType === "hub" || assignedType === "franchise" || assignedType === "head_quarter")
+            ? assignedType === "head_quarter"
+              ? "admin"
+              : assignedType
+            : loginTypeValue
+        if (effectiveType === "franchise" || effectiveType === "staff") {
           fetchBalance()
         }
       }
@@ -114,17 +129,17 @@ const Navbar: FC<NavbarProps> = ({
     ]
 
     // Franchise/staff users don't use agencies page in their nav
-    if (loginType === "franchise" || loginType === "staff") {
+    if (effectiveLoginType === "franchise" || effectiveLoginType === "staff") {
       return baseRoutes.filter((item) => item.path !== "/agencies")
     }
 
     // Hub users don't use wallet and agencies in their nav
-    if (loginType === "hub") {
+    if (effectiveLoginType === "hub") {
       return baseRoutes.filter((item) => item.path !== "/wallet" && item.path !== "/agencies")
     }
 
     return baseRoutes
-  }, [loginType])
+  }, [effectiveLoginType])
 
   const handleSearchNavigate = () => {
     const query = searchTerm.trim().toLowerCase()
@@ -191,7 +206,7 @@ const Navbar: FC<NavbarProps> = ({
         {/* Right Section */}
         <div className="flex items-center gap-3">
           {/* Wallet Balance (Franchise) or Notifications (Admin) */}
-          {loginType === "franchise" || loginType === "staff" ? (
+          {effectiveLoginType === "franchise" || effectiveLoginType === "staff" ? (
             <div 
               onClick={() => navigate("/wallet")}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"

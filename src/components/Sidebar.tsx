@@ -57,6 +57,59 @@ const Sidebar: FC<SidebarProps> = ({
   const profileData = getProfileData()
   const userRole = profileData?.role?.name?.toLowerCase() || ""
   const isAdmin = userRole === "admin" || userRole === "super admin"
+  const staffAssignedType = String(
+    profileData?.type ||
+    profileData?.data?.type ||
+    ""
+  ).toLowerCase()
+  const effectiveLoginType =
+    loginType === "staff" && (staffAssignedType === "hub" || staffAssignedType === "franchise" || staffAssignedType === "head_quarter")
+      ? staffAssignedType === "head_quarter"
+        ? "admin"
+        : staffAssignedType
+      : loginType
+  const staffPermissions: any[] =
+    profileData?.role?.permissions ||
+    profileData?.data?.role?.permissions ||
+    profileData?.roleinfo?.permissions ||
+    profileData?.data?.roleinfo?.permissions ||
+    []
+
+  const hasStaffModuleAccess = (moduleKeys: string[]) => {
+    if (loginType !== "staff") return true
+    if (!Array.isArray(staffPermissions) || staffPermissions.length === 0) {
+      return false
+    }
+
+    return staffPermissions.some((perm: any) => {
+      const moduleName = String(
+        perm?.moduleName || perm?.module || perm?.name || ""
+      ).toLowerCase()
+      if (!moduleName) return false
+
+      const matchesModule = moduleKeys.some((key) => moduleName.includes(key))
+      if (!matchesModule) return false
+
+      const permission = perm?.permission || {}
+      const canRead =
+        permission?.view === true ||
+        permission?.read === true ||
+        perm?.view === true ||
+        perm?.read === true
+      const hasAnyAccess =
+        canRead ||
+        permission?.add === true ||
+        permission?.write === true ||
+        permission?.edit === true ||
+        permission?.update === true ||
+        permission?.delete === true ||
+        perm?.write === true ||
+        perm?.update === true ||
+        perm?.delete === true
+
+      return hasAnyAccess
+    })
+  }
   
   // Admin menu items
   const adminMenuItems: MenuItem[] = [
@@ -218,18 +271,65 @@ const Sidebar: FC<SidebarProps> = ({
     },
   ]
 
-  // Staff menu items (similar to franchise)
+  // Staff menu items (filtered by role permissions)
   const staffMenuItems: MenuItem[] = franchiseMenuItems
+    .map((item) => {
+      if (item.title === "Dashboard" || item.title === "Profile") return item
+
+      if (item.title === "Orders") {
+        return hasStaffModuleAccess(["order", "booking", "shipment"]) ? item : null
+      }
+
+      if (item.title === "Staffs") {
+        const canStaff = hasStaffModuleAccess(["staff", "user"])
+        const canRole = hasStaffModuleAccess(["role", "permission"])
+        if (!canStaff && !canRole) return null
+
+        const filteredSubmenu = (item.submenu || []).filter((sub) => {
+          if (sub.path === "/franchise-staff") return canStaff
+          if (sub.path === "/franchise-role") return canRole
+          return false
+        })
+
+        if (filteredSubmenu.length === 0) return null
+        return { ...item, submenu: filteredSubmenu }
+      }
+
+      if (item.title === "Rate Calculator") {
+        return hasStaffModuleAccess(["rate"]) ? item : null
+      }
+
+      if (item.title === "Service Availability Check") {
+        return hasStaffModuleAccess(["service", "pincode"]) ? item : null
+      }
+
+      if (item.title === "Tracking") {
+        return hasStaffModuleAccess(["tracking"]) ? item : null
+      }
+
+      if (item.title === "Wallet") {
+        return hasStaffModuleAccess(["wallet", "payment", "transaction"]) ? item : null
+      }
+
+      if (item.title === "Reports") {
+        return hasStaffModuleAccess(["report"]) ? item : null
+      }
+
+      return item
+    })
+    .filter(Boolean) as MenuItem[]
 
   // Hub menu items (franchise items without Wallet)
   const hubMenuItems: MenuItem[] = franchiseMenuItems
     .filter(item => item.title !== "Wallet" && item.title !== "Reports")
 
   // Select menu items based on login type
-  const menuItems = loginType === "franchise" || loginType === "staff" 
-    ? franchiseMenuItems 
-    : loginType === "hub"
+  const menuItems = effectiveLoginType === "franchise"
+    ? franchiseMenuItems
+    : effectiveLoginType === "hub"
     ? hubMenuItems
+    : effectiveLoginType === "staff"
+    ? staffMenuItems
     : adminMenuItems
 
   const isActive = (path: string) => {
