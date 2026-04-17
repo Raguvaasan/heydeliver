@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useRoleStore } from "../../store/roleAndPermission"
 import toast from "react-hot-toast"
+import { getRoleModules } from "../../utils/roleModules"
 
 const AddRolePage: FC = () => {
   const navigate = useNavigate()
@@ -18,19 +19,11 @@ const AddRolePage: FC = () => {
     fetchModules()
   }, [fetchModules])
 
-  // Default modules if API fails
-  const defaultModules = [
-    "Dashboard",
-    "Franchise Management", 
-    "Access Management",
-    "Orders Management",
-    "Payment Management",
-    "Reports",
-    "Tracking",
-    "Settings"
-  ]
-  
-  const displayModules = modules.length > 0 ? modules : defaultModules
+  const loginType = sessionStorage.getItem("loginType") || "admin"
+  const displayModules = getRoleModules({
+    loginType,
+    apiModules: modules,
+  })
 
   const handleCheckboxChange = (moduleName: string, key: string) => {
     setPermissions((prevPermissions) => {

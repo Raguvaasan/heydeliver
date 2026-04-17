@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useRoleStore } from "../../store/roleAndPermission"
 import toast from "react-hot-toast"
+import { getRoleModules } from "../../utils/roleModules"
 
 const FranchiseEditRolePage: FC = () => {
   const navigate = useNavigate()
@@ -50,28 +51,12 @@ const FranchiseEditRolePage: FC = () => {
     }
   }, [selectedRole])
 
-  // Default modules for franchise users
-  const defaultModules = [
-    "Dashboard",
-    "Orders Management",
-    "Staff Management",
-    "Rate Calculator",
-    "Service Availability",
-    "Tracking",
-    "Wallet Management",
-    "Invoice Management",
-    "Reports"
-  ]
-
   const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
-  const hubRestrictedModules = ["Wallet Management", "Invoice Management", "Reports"]
-
-  // Always show all modules from API, fallback to default if API fails
-  // This ensures all modules are displayed, not just the ones with permissions
-  const baseModules = modules.length > 0 ? modules : defaultModules
-  const displayModules = loginType === "hub"
-    ? baseModules.filter((module) => !hubRestrictedModules.includes(module))
-    : baseModules
+  const displayModules = getRoleModules({
+    loginType,
+    apiModules: modules,
+    extraModules: (selectedRole?.permissions || []).map((perm) => perm.module),
+  })
 
   const handleCheckboxChange = (moduleName: string, key: string) => {
     setPermissions((prevPermissions) => {
