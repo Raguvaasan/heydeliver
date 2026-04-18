@@ -192,15 +192,6 @@ const OrdersPage: FC = () => {
         <table className="min-w-[1100px] w-full text-left text-sm">
           <thead className="bg-gray-800 text-white text-xs uppercase">
             <tr>
-              <th className="px-4 py-3">
-                <input
-                  type="checkbox"
-                  checked={ordersList.length > 0 && selectedOrders.length === ordersList.length}
-                  onChange={() => handleSelectAll(ordersList)}
-                  className="form-checkbox h-4 w-4"
-                  disabled={ordersList.length === 0}
-                />
-              </th>
               <th className="px-4 py-3 whitespace-nowrap">Order ID</th>
               <th className="px-4 py-3 whitespace-nowrap">AWB</th>
               <th className="px-4 py-3 whitespace-nowrap">BOOKING DATE & TIME</th>
@@ -233,14 +224,6 @@ const OrdersPage: FC = () => {
                   className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                   onClick={() => handleView(order._id || order.orderId || order.bookingId)}
                 >
-                  <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={selectedOrders.includes(order._id)}
-                      onChange={() => handleSelectOrder(order._id)}
-                      className="form-checkbox h-4 w-4"
-                    />
-                  </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="font-medium text-gray-900 dark:text-white">
                       {order.shipmentDetails.order}
@@ -353,13 +336,6 @@ const OrdersPage: FC = () => {
             Orders
           </h1>
           <div className="flex gap-3">
-            <Button
-              onClick={() => navigate("/orders/bulk")}
-              color="light"
-              className="border-2 border-orange-500 text-orange-500 bg-transparent hover:bg-transparent"
-            >
-              BULK ORDER
-            </Button>
             <Button
               onClick={() => navigate("/orders/new")}
               className="bg-orange-500 hover:bg-orange-600"
