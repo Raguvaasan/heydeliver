@@ -9,7 +9,7 @@ import {
   Spinner,
 } from "flowbite-react"
 import { ChangeEvent, FC, useEffect, useState } from "react"
-import { HiOutlineExclamationCircle, HiEye, HiPencil, HiTrash, HiEyeOff } from "react-icons/hi"
+import { HiOutlineExclamationCircle, HiEye, HiPencil, HiTrash } from "react-icons/hi"
 import { useStaffStore } from "../../store/staffStore"
 import { useAgencyStore } from "../../store/agencyStore"
 import http from "../../common/httpRequest"
@@ -346,11 +346,8 @@ const AddStaffModal: FC<{
     roleId: "",
     franchiseId: "",
     hubId: "",
-    username: "",
-    password: "",
     status: "Active",
   })
-  const [showPasswordAdd, setShowPasswordAdd] = useState(false)
   const [modalTab, setModalTab] = useState<"headquarters" | "franchise" | "hub">("headquarters")
 
   const handleChange = (
@@ -361,10 +358,10 @@ const AddStaffModal: FC<{
   }
 
   const handleSubmit = async () => {
-    const { name, email, phone, roleId, franchiseId, hubId, username, password, type } = formData
+    const { name, email, phone, roleId, franchiseId, hubId, type } = formData
 
     // Validate based on staff type
-    if (!name || !email || !phone || !username || !password) {
+    if (!name || !email || !phone) {
       toast.error("All required fields must be filled")
       return
     }
@@ -397,8 +394,6 @@ const AddStaffModal: FC<{
         roleId: "",
         franchiseId: "",
         hubId: "",
-        username: "",
-        password: "",
         status: "Active",
       })
     } catch (error: any) {
@@ -583,56 +578,6 @@ const AddStaffModal: FC<{
             </div>
           </div>
 
-          {/* Login Credentials */}
-          <div>
-            <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
-              Login Credentials
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="username">
-                  Email<span className="text-red-500">*</span>
-                </Label>
-                <TextInput
-                  id="username"
-                  name="username"
-                  placeholder="Enter email"
-                  value={formData.username}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">
-                  Set Password<span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <TextInput
-                    id="password"
-                    name="password"
-                    type={showPasswordAdd ? "text" : "password"}
-                    placeholder="Enter password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    className="[&_input]:pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswordAdd(!showPasswordAdd)}
-                    className="absolute inset-y-0 right-0 z-10 flex items-center pr-3 text-gray-500 focus:outline-none"
-                    aria-label={showPasswordAdd ? "Hide password" : "Show password"}
-                  >
-                    {!showPasswordAdd ? (
-                      <HiEyeOff className="h-5 w-5" />
-                    ) : (
-                      <HiEye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </Modal.Body>
       <Modal.Footer>
@@ -665,11 +610,8 @@ const EditStaffModal: FC<{
     roleId: "",
     franchiseId: "",
     hubId: "",
-    username: "",
-    password: "",
     status: "Active",
   })
-  const [showPasswordEdit, setShowPasswordEdit] = useState(false)
   const [modalTab, setModalTab] = useState<"headquarters" | "franchise" | "hub">("headquarters")
 
   useEffect(() => {
@@ -686,8 +628,6 @@ const EditStaffModal: FC<{
         roleId: userData.role?._id || userData.roleId || "",
         franchiseId: userData.franchiseId || userData.franchise || "",
         hubId: userData.hubId || userData.hub || "",
-        username: userData.username || userData.email || "",
-        password: "",
         status: userData.status === "Active" || userData.status === true ? "Active" : "Inactive",
       })
       setModalTab(tab)
@@ -702,11 +642,11 @@ const EditStaffModal: FC<{
   }
 
   const handleSubmit = async () => {
-    const { name, email, phone, roleId, franchiseId, hubId, username, type } = formData
+    const { name, email, phone, roleId, franchiseId, hubId, type } = formData
 
     // Validate based on staff type
-    if (!name || !email || !phone || !username) {
-      toast.error("All fields except password are required")
+    if (!name || !email || !phone) {
+      toast.error("All required fields must be filled")
       return
     }
 
@@ -730,7 +670,6 @@ const EditStaffModal: FC<{
       email,
       phone,
       type,
-      username,
       status: formData.status
     }
 
@@ -747,10 +686,6 @@ const EditStaffModal: FC<{
     // Include hubId only for hub staff
     if (type === "hub" && hubId) {
       payload.hubId = hubId
-    }
-
-    if (formData.password) {
-      payload.password = formData.password
     }
 
     try {
@@ -936,53 +871,6 @@ const EditStaffModal: FC<{
             </div>
           </div>
 
-          {/* Login Credentials */}
-          <div>
-            <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
-              Login Credentials
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-username">
-                  Email<span className="text-red-500">*</span>
-                </Label>
-                <TextInput
-                  id="edit-username"
-                  name="username"
-                  placeholder="Enter username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-password">Set Password (optional)</Label>
-                <div className="relative">
-                  <TextInput
-                    id="edit-password"
-                    name="password"
-                    type={showPasswordEdit ? "text" : "password"}
-                    placeholder="Leave blank to keep unchanged"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="[&_input]:pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswordEdit(!showPasswordEdit)}
-                    className="absolute inset-y-0 right-0 z-10 flex items-center pr-3 text-gray-500 focus:outline-none"
-                    aria-label={showPasswordEdit ? "Hide password" : "Show password"}
-                  >
-                    {!showPasswordEdit ? (
-                      <HiEyeOff className="h-5 w-5" />
-                    ) : (
-                      <HiEye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </Modal.Body>
       <Modal.Footer>

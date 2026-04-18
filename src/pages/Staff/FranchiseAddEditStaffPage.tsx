@@ -1,10 +1,6 @@
 import { FC, useState, useEffect, ChangeEvent } from "react"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { Card, Button, Label, TextInput, Select, Spinner } from "flowbite-react"
-import http from "../../common/httpRequest"
-import toast from "react-hot-toast"
-import { useNavigate, useParams } from "react-router-dom"
-import { HiEye, HiEyeOff } from "react-icons/hi"
 
 interface Role {
   _id: string
@@ -32,8 +28,6 @@ const FranchiseAddEditStaffPage: FC = () => {
     type: "franchise",
     roleId: "",
     franchiseId: "",
-    username: "",
-    password: "",
     status: "Active",
   })
 
@@ -41,7 +35,6 @@ const FranchiseAddEditStaffPage: FC = () => {
   const [agencies, setAgencies] = useState<Agency[]>([])
   const [loading, setLoading] = useState(false)
   const [fetchLoading, setFetchLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     // Optimized: Fetch all required data in parallel
@@ -91,8 +84,6 @@ const FranchiseAddEditStaffPage: FC = () => {
               type: staff.type || "franchise",
               roleId: typeof staff.roleId === 'object' ? staff.roleId?._id : staff.roleId || staff.role?._id || "",
               franchiseId: typeof staff.franchiseId === 'object' ? staff.franchiseId?._id : staff.franchiseId || "",
-              username: staff.username || "",
-              password: "",
               status: staff.status === "Active" || staff.status === true ? "Active" : "Inactive",
             })
           }
@@ -122,8 +113,6 @@ const FranchiseAddEditStaffPage: FC = () => {
               type: staff.type || "franchise",
               roleId: typeof staff.roleId === 'object' ? staff.roleId?._id : staff.roleId || staff.role?._id || "",
               franchiseId: typeof staff.franchiseId === 'object' ? staff.franchiseId?._id : staff.franchiseId || "",
-              username: staff.username || "",
-              password: "",
               status: staff.status === "Active" || staff.status === true ? "Active" : "Inactive",
             })
           }
@@ -159,8 +148,6 @@ const FranchiseAddEditStaffPage: FC = () => {
           type: staff.type || "franchise",
           roleId: typeof staff.roleId === 'object' ? staff.roleId?._id : staff.roleId || staff.role?._id || "",
           franchiseId: typeof staff.franchiseId === 'object' ? staff.franchiseId?._id : staff.franchiseId || "",
-          username: staff.username || "",
-          password: "",
           status: staff.status === "Active" || staff.status === true ? "Active" : "Inactive",
         })
       }
@@ -205,11 +192,11 @@ const FranchiseAddEditStaffPage: FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const { name, email, phone, roleId, franchiseId, username, password, type } = formData
+    const { name, email, phone, roleId, franchiseId, type } = formData
 
     // Validation
-    if (!name || !email || !phone || !username) {
-      toast.error("All fields except password are required")
+    if (!name || !email || !phone) {
+      toast.error("All fields are required")
       return
     }
 
@@ -236,15 +223,10 @@ const FranchiseAddEditStaffPage: FC = () => {
       phone,
       type,
       roleId,
-      username,
       status: formData.status,
     }
     if (!isHub) {
       payload.franchiseId = franchiseId
-    }
-
-    if (password) {
-      payload.password = password
     }
 
     setLoading(true)
@@ -410,58 +392,6 @@ const FranchiseAddEditStaffPage: FC = () => {
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
                   </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Login Credentials */}
-            <div>
-              <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-3">
-                Login Credentials
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="username">
-                    Username<span className="text-red-500">*</span>
-                  </Label>
-                  <TextInput
-                    id="username"
-                    name="username"
-                    placeholder="Enter username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="password">
-                    {isEditMode ? "Set Password (optional)" : "Set Password"}
-                    {!isEditMode && <span className="text-red-500">*</span>}
-                  </Label>
-                  <div className="relative">
-                    <TextInput
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder={isEditMode ? "Leave blank to keep unchanged" : "Enter password"}
-                      value={formData.password}
-                      onChange={handleChange}
-                      required={!isEditMode}
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? (
-                        <HiEyeOff className="h-5 w-5" />
-                      ) : (
-                        <HiEye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>

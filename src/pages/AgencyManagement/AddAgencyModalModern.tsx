@@ -1,27 +1,12 @@
-import { FC, useState } from "react"
+import { FC } from "react"
 import { Modal } from "flowbite-react"
 import { useAgencyStore } from "../../store/agencyStore"
-import {
-  HiX,
-  HiOfficeBuilding,
-  HiLocationMarker,
-  HiLockClosed,
-  HiUser,
-  HiMail,
-  HiPhone,
-  HiEye,
-  HiEyeOff,
-} from "react-icons/hi"
-import { Formik, Form, useField } from "formik"
+import { HiX, HiOfficeBuilding, HiLocationMarker, HiLockClosed } from "react-icons/hi"
+import { Formik, Form } from "formik"
 import { FormInput, FormSelect, FormTextarea } from "../../components/FormComponents"
 import { SaveButton, FormSection } from "../../components/FormHelpers"
-import {
-  agencyValidationSchema,
-  emailValidation,
-  passwordValidation,
-} from "../../utils/validationSchemas"
+import { agencyValidationSchema, emailValidation } from "../../utils/validationSchemas"
 import { sanitizeText } from "../../utils/sanitize"
-import * as Yup from "yup"
 
 interface AddAgencyModalProps {
   isOpen: boolean
@@ -30,89 +15,7 @@ interface AddAgencyModalProps {
 
 const addAgencyModalValidationSchema = agencyValidationSchema.shape({
   email: emailValidation,
-  password: passwordValidation,
-  username: Yup.string()
-    .email("Please enter a valid login email")
-    .required("Login email is required"),
 })
-
-const PasswordInputField: FC<{
-  name: string
-  label: string
-  helperText?: string
-  required?: boolean
-}> = ({ name, label, helperText, required = false }) => {
-  const [field, meta] = useField(name)
-  const [showPassword, setShowPassword] = useState(false)
-  const hasError = meta.touched && meta.error
-
-  return (
-    <div className="relative">
-      <div className="relative">
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
-          <HiLockClosed />
-        </div>
-        <input
-          {...field}
-          id={name}
-          type={showPassword ? "text" : "password"}
-          className={`
-            peer w-full px-4 py-3 pl-10 pr-10
-            border-2 rounded-lg
-            bg-white dark:bg-gray-800
-            text-gray-900 dark:text-white
-            placeholder-transparent
-            transition-all duration-200
-            focus:outline-none focus:ring-2 focus:ring-offset-0
-            ${
-              hasError
-                ? "border-red-500 focus:border-red-500 focus:ring-red-200"
-                : "border-gray-300 dark:border-gray-600 focus:border-orange-500 focus:ring-orange-200"
-            }
-          `}
-          placeholder={label}
-        />
-        <button
-          type="button"
-          onClick={() => setShowPassword((prev) => !prev)}
-          className="absolute inset-y-0 right-0 z-10 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          aria-label={showPassword ? "Hide password" : "Show password"}
-        >
-          {!showPassword ? (
-            <HiEyeOff className="h-5 w-5" />
-          ) : (
-            <HiEye className="h-5 w-5" />
-          )}
-        </button>
-        <label
-          htmlFor={name}
-          className={`
-            absolute left-10 -top-2.5 px-1
-            bg-white dark:bg-gray-800
-            text-sm font-medium
-            transition-all duration-200
-            peer-placeholder-shown:text-base peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-gray-400
-            peer-focus:-top-2.5 peer-focus:text-sm
-            ${
-              hasError
-                ? "text-red-600 dark:text-red-400 peer-focus:text-red-600"
-                : "text-gray-700 dark:text-gray-300 peer-focus:text-orange-600"
-            }
-          `}
-        >
-          {label}
-          {required && <span className="ml-1 text-red-500">*</span>}
-        </label>
-      </div>
-      {hasError && (
-        <p className="mt-1.5 text-sm text-red-600 dark:text-red-400">{meta.error}</p>
-      )}
-      {!hasError && helperText && (
-        <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">{helperText}</p>
-      )}
-    </div>
-  )
-}
 
 const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
   const { addAgency, loading } = useAgencyStore()
@@ -148,8 +51,6 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
         city: sanitizeText(values.city),
         state: values.state,
         pincode: sanitizeText(values.pincode),
-        username: sanitizeText(values.username),
-        password: sanitizeText(values.password),
         status: values.status
       }
 
@@ -190,8 +91,6 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
               city: "",
               state: "",
               pincode: "",
-              username: "",
-              password: "",
               status: "Active",
             }}
             validationSchema={addAgencyModalValidationSchema}
@@ -280,28 +179,6 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                       label="Pincode"
                       required
                       helperText="6-digit pincode"
-                    />
-                  </div>
-                </FormSection>
-
-                {/* Login Credentials */}
-                <FormSection
-                  title="Login Credentials"
-                  description="Create login credentials for franchise"
-                  icon={<HiLockClosed className="w-5 h-5" />}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormInput
-                      name="username"
-                      label="Email Address"
-                      required
-                      helperText="Unique email for login"
-                    />
-                    <PasswordInputField
-                      name="password"
-                      label="Password"
-                      required
-                      helperText="Strong password"
                     />
                   </div>
                 </FormSection>
