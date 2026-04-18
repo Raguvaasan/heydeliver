@@ -376,9 +376,9 @@ const Sidebar: FC<SidebarProps> = ({
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0 ${isExpanded ? "w-64" : "w-20"}`}
       >
-        <div className="h-full bg-[#2c2c2c] dark:bg-[#1a1a1a] flex flex-col">
+        <div className="h-full bg-white text-black dark:bg-[#1a1a1a] dark:text-white flex flex-col">
           {/* Logo Section */}
-          <div className={`h-16 flex items-center border-b border-gray-700 ${isExpanded ? "justify-between px-4" : "justify-center px-2"}`}>
+          <div className={`h-16 flex items-center border-b border-gray-200 dark:border-gray-700 ${isExpanded ? "justify-between px-4" : "justify-center px-2"}`}>
             <Link to="/dashboard" className="flex items-center gap-2">
               <div className="flex items-center">
                 {isExpanded ? (
@@ -405,7 +405,7 @@ const Sidebar: FC<SidebarProps> = ({
                       className={`w-full flex items-center px-3 py-2.5 rounded-lg transition-all ${
                         isActive(item.path)
                           ? "bg-orange-500 text-white"
-                          : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                          : "text-black hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
                       } ${isExpanded ? "gap-3" : "justify-center"}`}
                       title={!isExpanded ? item.title : undefined}
                     >
@@ -435,7 +435,7 @@ const Sidebar: FC<SidebarProps> = ({
                       className={`flex items-center px-3 py-2.5 rounded-lg transition-all ${
                         isActive(item.path)
                           ? "bg-orange-500 text-white"
-                          : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                          : "text-black hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
                       } ${isExpanded ? "gap-3" : "justify-center"}`}
                       onClick={() => setIsMobileOpen(false)}
                       title={!isExpanded ? item.title : undefined}
@@ -466,7 +466,7 @@ const Sidebar: FC<SidebarProps> = ({
                           className={`block px-3 py-2 text-sm rounded-lg transition-all ${
                             location.pathname === subItem.path
                               ? "text-orange-400 font-medium"
-                              : "text-gray-400 hover:text-white hover:bg-gray-700"
+                              : "text-gray-700 hover:text-black hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
                           }`}
                         >
                           {subItem.title}
@@ -480,7 +480,7 @@ const Sidebar: FC<SidebarProps> = ({
           </nav>
 
           {/* User Profile Section */}
-          <div className="p-3 border-t border-gray-700">
+          <div className="p-3 border-t border-gray-200 dark:border-gray-700">
             <div className={`flex items-center mb-2 ${isExpanded ? "gap-2" : "justify-center"}`}>
               <div className="w-9 h-9 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
                 {(() => {
@@ -495,7 +495,7 @@ const Sidebar: FC<SidebarProps> = ({
               </div>
               {isExpanded && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-white truncate">
+                  <p className="text-xs font-medium text-black dark:text-white truncate">
                     {(() => {
                       try {
                         const profileData = JSON.parse(sessionStorage.getItem("profileData") || "{}")
@@ -505,7 +505,7 @@ const Sidebar: FC<SidebarProps> = ({
                       }
                     })()}
                   </p>
-                  <p className="text-[10px] text-gray-400 capitalize">
+                  <p className="text-[10px] text-gray-600 dark:text-gray-400 capitalize">
                     {loginType}
                   </p>
                 </div>
@@ -513,7 +513,7 @@ const Sidebar: FC<SidebarProps> = ({
             </div>
             <button
               onClick={handleLogout}
-              className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs text-gray-300 hover:text-white bg-gray-700 hover:bg-gray-600 rounded transition-colors ${isExpanded ? "" : "px-0"}`}
+              className={`w-full flex items-center justify-center gap-2 px-3 py-1.5 text-xs text-black hover:text-black bg-gray-100 hover:bg-gray-200 dark:text-gray-300 dark:hover:text-white dark:bg-gray-700 dark:hover:bg-gray-600 rounded transition-colors ${isExpanded ? "" : "px-0"}`}
               title={!isExpanded ? "Logout" : undefined}
             >
               <HiLogout className="h-3.5 w-3.5" />
