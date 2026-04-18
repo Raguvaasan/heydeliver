@@ -160,17 +160,17 @@ const Sidebar: FC<SidebarProps> = ({
         // { title: "Invoices", path: "/invoice" },
       ],
     },
-    {
-      title: "Reports",
-      icon: <HiChartBar className="h-5 w-5" />,
-      path: "/reports",
-      submenu: [
-        { title: "Franchise wise", path: "/reports/franchise-wise" },
-        { title: "Total orders", path: "/reports/total-orders" },
-        { title: "Total Revenue", path: "/reports/total-revenue" },
-        // { title: "Delivery Performance", path: "/reports/delivery-performance" },
-      ],
-    },
+    // {
+    //   title: "Reports",
+    //   icon: <HiChartBar className="h-5 w-5" />,
+    //   path: "/reports",
+    //   submenu: [
+    //     { title: "Franchise wise", path: "/reports/franchise-wise" },
+    //     { title: "Total orders", path: "/reports/total-orders" },
+    //     { title: "Total Revenue", path: "/reports/total-revenue" },
+    //     // { title: "Delivery Performance", path: "/reports/delivery-performance" },
+    //   ],
+    // },
     {
       title: "Tracking",
       icon: <HiLocationMarker className="h-5 w-5" />,
