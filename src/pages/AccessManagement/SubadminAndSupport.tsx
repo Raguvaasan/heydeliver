@@ -302,6 +302,7 @@ const UserPage: FC = function () {
         roles={roles}
         agencies={agencies}
         hubs={hubs}
+        activeTab={activeTab}
       />
 
       {/* Edit Staff Modal */}
@@ -337,18 +338,38 @@ const AddStaffModal: FC<{
   roles: any[]
   agencies: any[]
   hubs: any[]
-}> = ({ isOpen, onClose, onSubmit, roles, agencies, hubs }) => {
+  activeTab: "headquarters" | "franchise" | "hub"
+}> = ({ isOpen, onClose, onSubmit, roles, agencies, hubs, activeTab }) => {
+  const getTypeFromTab = (tab: string) => {
+    if (tab === "franchise") return "franchise"
+    if (tab === "hub") return "hub"
+    return "head_quarter"
+  }
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    type: "head_quarter",
+    type: getTypeFromTab(activeTab),
     roleId: "",
     franchiseId: "",
     hubId: "",
     status: "Active",
   })
-  const [modalTab, setModalTab] = useState<"headquarters" | "franchise" | "hub">("headquarters")
+  const [modalTab, setModalTab] = useState<"headquarters" | "franchise" | "hub">(activeTab)
+
+  useEffect(() => {
+    if (isOpen) {
+      setModalTab(activeTab)
+      setFormData((prev) => ({
+        ...prev,
+        type: getTypeFromTab(activeTab),
+        roleId: "",
+        franchiseId: "",
+        hubId: "",
+      }))
+    }
+  }, [isOpen, activeTab])
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
