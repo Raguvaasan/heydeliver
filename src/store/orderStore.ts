@@ -679,17 +679,28 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const authToken = sessionStorage.getItem("authToken")
-      const response = await axios.put(
-        `/api/hub/staff/booking/${encodeURIComponent(orderId)}/edit`,
-        data,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-          },
-          timeout: 10000,
-        }
-      )
+      const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
+      const isHub = loginType === "hub"
+      const isFranchise = loginType === "franchise" || loginType === "staff"
+
+      let response
+      if (isHub) {
+        response = await axios.put(
+          `/api/hub/staff/booking/${encodeURIComponent(orderId)}/edit`,
+          data,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            },
+            timeout: 10000,
+          }
+        )
+      } else if (isFranchise) {
+        response = await http.put(`/admin/franchise/orders/${orderId}`, data)
+      } else {
+        response = await http.put(`/admin/orders/${orderId}`, data)
+      }
 
       set({ loading: false })
       toast.success("Order updated successfully!")
