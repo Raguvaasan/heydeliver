@@ -382,8 +382,8 @@ const Sidebar: FC<SidebarProps> = ({
               <div className="flex items-center">
                 {isExpanded ? (
                   <>
-                    <span className="text-orange-500 font-bold text-xl">TRUE</span>
-                    <span className="text-white font-bold text-xl">CARGO</span>
+                    <span className="text-yellow-300 font-bold text-xl">TRUE</span>
+                    <span className="text-red-700 font-bold text-xl">CARGO</span>
                   </>
                 ) : (
                   <span className="text-orange-500 font-bold text-lg">TC</span>
