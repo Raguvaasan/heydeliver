@@ -283,11 +283,12 @@ const Sidebar: FC<SidebarProps> = ({
       if (item.title === "Staffs") {
         const canStaff = hasStaffModuleAccess(["staff", "user"])
         const canRole = hasStaffModuleAccess(["role", "permission"])
-        if (!canStaff && !canRole) return null
+        const canAccess = hasStaffModuleAccess(["access"])
+        if (!canStaff && !canRole && !canAccess) return null
 
         const filteredSubmenu = (item.submenu || []).filter((sub) => {
-          if (sub.path === "/franchise-staff") return canStaff
-          if (sub.path === "/franchise-role") return canRole
+          if (sub.path === "/franchise-staff") return canStaff || canAccess
+          if (sub.path === "/franchise-role") return canRole || canAccess
           return false
         })
 

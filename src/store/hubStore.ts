@@ -78,7 +78,14 @@ export const useHubStore = create<HubState>((set, get) => ({
   addHub: async (hub) => {
     set({ loading: true, error: null })
     try {
-      await http.post("/admin/hub", hub)
+      const res = await http.post("/admin/hub", hub)
+      const nested = res.data?.data
+      if (nested && nested.success === false) {
+        const message = nested.message || "Failed to add hub"
+        set({ loading: false, error: message })
+        toast.error(message)
+        return
+      }
       toast.success("Hub added successfully")
       await get().fetchHubs()
     } catch (error: any) {
@@ -92,7 +99,14 @@ export const useHubStore = create<HubState>((set, get) => ({
   updateHub: async (id, hub) => {
     set({ loading: true, error: null })
     try {
-      await http.put(`/admin/hub/${id}`, hub)
+      const res = await http.put(`/admin/hub/${id}`, hub)
+      const nested = res.data?.data
+      if (nested && nested.success === false) {
+        const message = nested.message || "Failed to update hub"
+        set({ loading: false, error: message })
+        toast.error(message)
+        return
+      }
       toast.success("Hub updated successfully")
       await get().fetchHubs()
     } catch (error: any) {
@@ -106,7 +120,14 @@ export const useHubStore = create<HubState>((set, get) => ({
   deleteHub: async (id) => {
     set({ loading: true, error: null })
     try {
-      await http.delete(`/admin/hub/${id}`)
+      const res = await http.delete(`/admin/hub/${id}`)
+      const nested = res.data?.data
+      if (nested && nested.success === false) {
+        const message = nested.message || "Failed to delete hub"
+        set({ loading: false, error: message })
+        toast.error(message)
+        return
+      }
       toast.success("Hub deleted successfully")
       set((state) => ({
         hubs: state.hubs.filter((h) => h.id !== id),

@@ -1,7 +1,7 @@
-import { FC, useState } from "react"
+import { FC } from "react"
 import { Modal, Button, Label, TextInput, Select, ToggleSwitch } from "flowbite-react"
 import { useAgencyStore } from "../../store/agencyStore"
-import { HiX, HiEye, HiEyeOff } from "react-icons/hi"
+import { HiX } from "react-icons/hi"
 
 interface AddAgencyModalProps {
   isOpen: boolean
@@ -20,12 +20,9 @@ const AddAgencyModal: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
     city: "",
     state: "",
     pincode: "",
-    username: "",
-    password: "",
     status: true,
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -54,8 +51,6 @@ const AddAgencyModal: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
         city: "",
         state: "",
         pincode: "",
-        username: "",
-        password: "",
         status: true,
       })
       setImageFile(null)
@@ -257,60 +252,6 @@ const AddAgencyModal: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                   required
                   sizing="sm"
                 />
-              </div>
-            </div>
-          </div>
-
-          {/* Login Credentials Section */}
-          <div className="mb-6">
-            <h4 className="text-sm font-semibold text-gray-900 mb-4">Login Credentials</h4>
-            
-            <div className="grid grid-cols-2 gap-4">
-              {/* Username */}
-              <div>
-                <Label className="block text-xs font-medium text-gray-700 mb-1">
-                  Username<span className="text-red-500">*</span>
-                </Label>
-                <TextInput
-                  name="username"
-                  type="text"
-                  placeholder="Enter username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  required
-                  sizing="sm"
-                />
-              </div>
-
-              {/* Set Password */}
-              <div>
-                <Label className="block text-xs font-medium text-gray-700 mb-1">
-                  Set Password<span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <TextInput
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    sizing="sm"
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? (
-                      <HiEyeOff className="h-5 w-5" />
-                    ) : (
-                      <HiEye className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
               </div>
             </div>
           </div>
