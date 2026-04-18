@@ -140,13 +140,17 @@ export const useStaffStore = create<StaffState>((set, get) => ({
   addStaff: async (data) => {
     set({ loading: true, error: null })
     try {
+      // Auto-generate username from email and a random password (OTP-based login, backend still requires these fields)
+      const autoUsername = data.username || data.email
+      const autoPassword = data.password || Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10).toUpperCase() + "!1"
+
       const payload: any = {
         name: data.name,
         email: data.email,
         phone: data.phone || data.mobile,
-        type: data.type || "head_quarter", // Default to head_quarter if not specified
-        username: data.username,
-        password: data.password,
+        type: data.type || "head_quarter",
+        username: autoUsername,
+        password: autoPassword,
       }
       if (data.type !== "hub") {
         payload.status = typeof data.status === 'boolean' ? (data.status ? 'Active' : 'Inactive') : data.status
