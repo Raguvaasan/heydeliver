@@ -23,7 +23,15 @@ export const checkModulePermission = ({
     if (!permission) return false
 
     if (action) {
-      return !!permission.permission?.[action]
+      // Map UI action names to API permission field names
+      const actionMap: Record<string, string[]> = {
+        view: ["view", "read"],
+        add: ["add", "write"],
+        edit: ["edit", "update"],
+        delete: ["delete"],
+      }
+      const keys = actionMap[action] || [action]
+      return keys.some((key) => !!permission.permission?.[key])
     }
 
     // If no specific action is provided, return true if module is present
