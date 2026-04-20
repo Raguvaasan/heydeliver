@@ -5,7 +5,7 @@ import { HiEye, HiEyeOff } from "react-icons/hi"
 import { HiArrowPath } from "react-icons/hi2"
 import { loginAdminUser, loginHubUser, sendFranchiseLoginOtp, verifyFranchiseLoginOtp, sendStaffLoginOtp, verifyStaffLoginOtp } from "../../store/loginStore"
 import toast from "react-hot-toast"
-
+import truckImg from "../../../public/images/Gemini_Generated_Image_fnjmi7fnjmi7fnjm.png"
 interface LoginResponse {
   data?: {
     success?: boolean
@@ -249,7 +249,7 @@ const LoginPage: FC = function () {
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-primary-300/20 to-transparent rounded-full blur-2xl"></div>
                 <div className="relative z-10 w-full aspect-[16/9] overflow-hidden rounded-2xl">
                   <img
-                    src="/images/Gemini_Generated_Image_fnjmi7fnjmi7fnjm.png"
+                    src={truckImg}
                     alt="Delivery Truck"
                     className="h-full w-full object-cover object-center"
                   />
