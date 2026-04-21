@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Spinner, Badge, Button, Card } from "flowbite-react"
 import { useStaffStore } from "../../store/staffStore"
@@ -8,7 +8,6 @@ const StaffDetail = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { getStaffsById, selectedStaff, loading, error } = useStaffStore()
-  const [activeTab, setActiveTab] = useState("franchise")
 
   useEffect(() => {
     if (id) getStaffsById(id)
@@ -34,6 +33,20 @@ const StaffDetail = () => {
   }
 
   const staff = selectedStaff
+  const profileData = (() => {
+    try {
+      return JSON.parse(sessionStorage.getItem("profileData") || "{}")
+    } catch {
+      return {}
+    }
+  })()
+  const assignedType = String(
+    profileData?.type || profileData?.data?.type || staff.type || ""
+  ).toLowerCase()
+  const hideHistory =
+    assignedType === "head_quarter" ||
+    assignedType === "franchise" ||
+    assignedType === "hub"
 
   // Mock history data - replace with actual data from API
   const historyData = [
@@ -145,71 +158,74 @@ const StaffDetail = () => {
         </div>
 
         {/* History Section */}
-        <Card>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            History
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-800 text-white text-xs uppercase">
-                <tr>
-                  <th className="px-4 py-3">BOOKING ID</th>
-                  <th className="px-4 py-3">DATE</th>
-                  <th className="px-4 py-3">CUSTOMER</th>
-                  <th className="px-4 py-3">AMOUNT (₹)</th>
-                  <th className="px-4 py-3">STATUS</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {historyData.length > 0 ? (
-                  historyData.map((item, index) => (
-                    <tr
-                      key={index}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
-                      <td className="px-4 py-3">
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {item.bookingId}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        {item.date}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        {item.customer}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                        {item.amount}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge className="inline-flex w-fit"
-                          color={
-                            item.status === "Delivered"
-                              ? "success"
-                              : item.status === "In Transit"
-                              ? "info"
-                              : "warning"
-                          }
-                        >
-                          {item.status}
-                        </Badge>
+        {!hideHistory && (
+          <Card>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              History
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-800 text-white text-xs uppercase">
+                  <tr>
+                    <th className="px-4 py-3">BOOKING ID</th>
+                    <th className="px-4 py-3">DATE</th>
+                    <th className="px-4 py-3">CUSTOMER</th>
+                    <th className="px-4 py-3">AMOUNT (₹)</th>
+                    <th className="px-4 py-3">STATUS</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {historyData.length > 0 ? (
+                    historyData.map((item, index) => (
+                      <tr
+                        key={index}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                      >
+                        <td className="px-4 py-3">
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {item.bookingId}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                          {item.date}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                          {item.customer}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                          {item.amount}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge
+                            className="inline-flex w-fit"
+                            color={
+                              item.status === "Delivered"
+                                ? "success"
+                                : item.status === "In Transit"
+                                ? "info"
+                                : "warning"
+                            }
+                          >
+                            {item.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-4 py-8 text-center text-gray-500"
+                      >
+                        No history records found
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-4 py-8 text-center text-gray-500"
-                    >
-                      No history records found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
 
         {/* Back Button */}
         <div className="mt-6 flex justify-end">
