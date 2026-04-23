@@ -85,7 +85,7 @@ const EditOrderModal: FC<EditOrderModalProps> = ({ isOpen, onClose, order }) => 
         codAmount: order.shipmentDetails?.cod_amount || order.codAmount || "",
         totalAmount: order.amount || order.totalAmount || order.shipmentDetails?.total_amount || "",
         assignedStaffId: order.assignedStaffId || order.assignedStaff?._id || "",
-        status: order.status?.toLowerCase() || "pending",
+        status: (order.status?.toLowerCase() || "pending").replace(/\s+/g, "_"),
       })
     }
   }, [order])
@@ -236,7 +236,7 @@ const EditOrderModal: FC<EditOrderModalProps> = ({ isOpen, onClose, order }) => 
               >
                 <option value="pending">Pending</option>
                 <option value="active">Active</option>
-                <option value="in transit">In Transit</option>
+                <option value="in_transit">In Transit</option>
                 <option value="delivered">Delivered</option>
                 <option value="cancelled">Cancelled</option>
                 <option value="failed">Failed</option>
