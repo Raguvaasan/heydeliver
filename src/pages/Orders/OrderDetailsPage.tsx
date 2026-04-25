@@ -33,6 +33,17 @@ const OrderDetailsPage: FC = () => {
     return "gray"
   }
 
+  const formatDate = (date) => {
+  return new Date(date).toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
   return (
     <NavbarSidebarLayout isFooter={false}>
       <div className="px-4 pt-4 pb-4">
@@ -68,10 +79,16 @@ const OrderDetailsPage: FC = () => {
                   {selectedOrder.shipmentDetails.order}
                 </span>
               </div>
+               <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Awb</span>
+                <span className="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                  {selectedOrder.waybill}
+                </span>
+              </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500 dark:text-gray-400">Order Date</span>
                 <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  {selectedOrder.bookingDate || new Date(selectedOrder.createdAt).toLocaleString()}
+                  {formatDate(selectedOrder.bookingDate || selectedOrder.createdAt)}
                 </span>
               </div>
               <div className="flex justify-between items-center">
