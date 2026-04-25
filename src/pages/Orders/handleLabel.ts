@@ -105,6 +105,7 @@ export const handleLabel = async (orderId: string): Promise<void> => {
     const receiverCity = consignee?.city
     const receiverState = consignee?.state
     const receiverPin = consignee?.pin
+    const receiverPhone = consignee?.phone
 
     const amount = order?.amount
     const orderDate = order?.createdAt || order?.updatedAt || ""
@@ -174,7 +175,6 @@ export const handleLabel = async (orderId: string): Promise<void> => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     const fullShipAddr = [
-      receiverName,
       receiverAddress,
       `${receiverCity} (${receiverState})`
     ].filter(Boolean).join("\n");
@@ -183,7 +183,8 @@ export const handleLabel = async (orderId: string): Promise<void> => {
 
     const addrHeight = shipLines.length * 0.15;
     doc.setFont("helvetica", "bold");
-    doc.text(`PIN:${receiverPin}`, 0.15, 1.95 + addrHeight);
+    const shipToPinPhone = [`PIN:${receiverPin || "-"}`, `PH:${receiverPhone || "-"}`].join("  ");
+    doc.text(shipToPinPhone, 0.15, 1.95 + addrHeight);
 
     // -- Ship To Right Pane --
     doc.setFontSize(12);

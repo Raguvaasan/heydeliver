@@ -56,13 +56,13 @@ const OrderDetailsPage: FC = () => {
             <Button onClick={() => navigate("/orders")} color="gray" size="sm">
               Back
             </Button>
-            <Button
+            {/* <Button
               onClick={() => navigate(`/orders/edit/${id}`)}
               className="bg-orange-500 hover:bg-orange-600"
               size="sm"
             >
               Edit Order
-            </Button>
+            </Button> */}
           </div>
         </div>
 

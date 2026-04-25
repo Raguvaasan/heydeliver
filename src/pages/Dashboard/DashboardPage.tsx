@@ -764,9 +764,9 @@ const DashboardPage: FC = () => {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-900 dark:bg-gray-800 text-xs uppercase text-white">
                     <tr>
-                      <th className="px-4 py-3">
+                      {/* <th className="px-4 py-3">
                         <input type="checkbox" className="rounded" />
-                      </th>
+                      </th> */}
                       <th className="px-4 py-3">Order ID</th>
                       {/* {loginType === "admin" && <th className="px-4 py-3">Franchise</th>} */}
                       <th className="px-4 py-3">Amount</th>
@@ -783,10 +783,10 @@ const DashboardPage: FC = () => {
                           key={booking._id || booking.bookingId || booking.orderId || idx}
                           className="hover:bg-gray-50 dark:hover:bg-gray-700"
                         >
-                          <td className="px-4 py-3">
+                          {/* <td className="px-4 py-3">
                             <input type="checkbox" className="rounded" />
-                          </td>
-                          <td className="px-4 py-3 font-medium text-orange-600 text-xs">
+                          </td> */}
+                          <td className="px-4 py-3 font-medium text-gray-900 dark:text-white text-xs">
                             {booking.orderId || booking.bookingId || booking._id || "-"}
                           </td>
                           {/* {loginType === "admin" && (
