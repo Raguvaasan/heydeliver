@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
   const delhiveryToken =
     env["DELHIVERY_TOKEN"] ||
     env["DELHIVERY_API_TOKEN"] ||
-    "91aeec33f78a2d21a6348658708de71f31489038"
+    "38ddf1efc8e1669a4bf352376506b7da9d0b3c99"
 
   return {
     plugins: [svgr(), react()],
