@@ -31,6 +31,11 @@ interface MarkupState {
   clearError: () => void
 }
 
+const normalizeMarkupData = (data: any): MarkupData => ({
+  ...data,
+  markup_type: data?.markup_type === "flat" ? "fixed" : data?.markup_type,
+})
+
 export const useMarkupStore = create<MarkupState>((set) => ({
   rateCalculatorMarkup: null,
   rateCardMarkup: null,
@@ -44,7 +49,7 @@ export const useMarkupStore = create<MarkupState>((set) => ({
       
       if (response.data.success) {
         set({
-          rateCalculatorMarkup: response.data.data,
+          rateCalculatorMarkup: normalizeMarkupData(response.data.data),
           loading: false,
           error: null,
         })
@@ -107,7 +112,7 @@ export const useMarkupStore = create<MarkupState>((set) => ({
       
       if (response.data.success) {
         set({
-          rateCardMarkup: response.data.data,
+          rateCardMarkup: normalizeMarkupData(response.data.data),
           loading: false,
           error: null,
         })
@@ -144,7 +149,7 @@ export const useMarkupStore = create<MarkupState>((set) => ({
 
       if (response.data.success) {
         set({
-          rateCardMarkup: response.data.data,
+          rateCardMarkup: normalizeMarkupData(response.data.data),
           loading: false,
           error: null,
         })

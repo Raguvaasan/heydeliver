@@ -8,6 +8,7 @@ import { useMarkupStore } from "../../store/markupStore";
 const RateCardPage: FC = () => {
   const navigate = useNavigate();
   const [showGST, setShowGST] = useState(false);
+  const [showMarkup, setShowMarkup] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   
   const { rateCardMarkup, fetchRateCardMarkup } = useMarkupStore();
@@ -19,7 +20,9 @@ const RateCardPage: FC = () => {
 
   // Apply markup to rate
   const applyMarkup = (rate: number): number => {
-    if (!rateCardMarkup) return Math.round(rate);
+    if (!showMarkup || !rateCardMarkup || rateCardMarkup.markup_value <= 0) {
+      return Math.round(rate);
+    }
     
     let finalRate = rate;
     
@@ -45,12 +48,12 @@ const RateCardPage: FC = () => {
   ];
 
   const surfaceRates = {
-    baseFare: [28.0, 32.0, 33.0, 36.0, 37.0, 38.0, 45.0, 50.0],
-    additional250g: [6.0, 6.0, 9.0, 10.0, 9.0, 10.0, 11.0, 13.0],
-    additional500g: [9.0, 14.0, 19.0, 24.0, 24.0, 27.0, 33.0, 37.0],
-    additional1kg: [26.0, 29.0, 34.0, 36.0, 38.0, 42.0, 44.0, 55.0],
-    returnRTO: [28.0, 32.0, 33.0, 36.0, 37.0, 38.0, 45.0, 50.0],
-    reverseDTO: [34.0, 38.0, 40.0, 43.0, 44.0, 46.0, 54.0, 60.0],
+    baseFare: [26.0, 30.0, 31.0, 32.0, 33.0, 34.0, 41.0, 46.0],
+    additional250g: [5.0, 5.0, 8.0, 9.0, 8.0, 9.0, 10.0, 11.0],
+    additional500g: [8.0, 13.0, 17.0, 22.0, 22.0, 25.0, 31.0, 35.0],
+    additional1kg: [20.0, 22.0, 26.0, 29.0, 31.0, 33.0, 40.0, 47.0],
+    returnRTO: [26.0, 30.0, 31.0, 32.0, 33.0, 34.0, 41.0, 46.0],
+    reverseDTO: [31.0, 36.0, 37.0, 38.0, 40.0, 41.0, 49.0, 55.0],
   };
 
   // Express Rate Data
@@ -198,13 +201,28 @@ const RateCardPage: FC = () => {
               {rateCardMarkup && rateCardMarkup.markup_value > 0 && (
                 <Badge color="success" size="sm">
                   {rateCardMarkup.markup_type === "percentage" 
-                    ? `+${rateCardMarkup.markup_value}% Markup Applied` 
-                    : `+₹${rateCardMarkup.markup_value} Markup Applied`}
+                    ? `Markup Configured: +${rateCardMarkup.markup_value}%` 
+                    : `Markup Configured: +₹${rateCardMarkup.markup_value}`}
                 </Badge>
               )}
             </div>
 
             <div className="flex items-center gap-4">
+              <div className="flex items-center">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showMarkup}
+                    onChange={(e) => setShowMarkup(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Apply Markup
+                  </span>
+                </label>
+              </div>
+
               <div className="flex items-center">
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input

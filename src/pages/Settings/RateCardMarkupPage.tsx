@@ -49,7 +49,7 @@ const RateCardMarkupPage: FC = () => {
   }
 
   const calculateExample = () => {
-    const baseRate = 28
+    const baseRate = 26
     if (markupType === "percentage") {
       return Math.round(baseRate * (1 + globalMarkup / 100))
     } else {
@@ -141,7 +141,7 @@ const RateCardMarkupPage: FC = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-700 dark:text-gray-300">Base Rate (Zone A):</span>
-                      <span className="font-medium">₹28</span>
+                      <span className="font-medium">₹26</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-700 dark:text-gray-300">
@@ -149,7 +149,7 @@ const RateCardMarkupPage: FC = () => {
                       </span>
                       <span className="font-medium text-green-600">
                         {markupType === "percentage"
-                          ? `+₹${Math.round(28 * globalMarkup / 100)}`
+                          ? `+₹${Math.round(26 * globalMarkup / 100)}`
                           : `+₹${Math.round(globalMarkup)}`}
                       </span>
                     </div>
@@ -160,7 +160,7 @@ const RateCardMarkupPage: FC = () => {
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-600 dark:text-gray-400">Your Profit:</span>
                       <span className="font-medium text-green-600">
-                        ₹{calculateExample() - 28}
+                        ₹{calculateExample() - 26}
                       </span>
                     </div>
                   </div>
