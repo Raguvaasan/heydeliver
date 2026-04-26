@@ -112,7 +112,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
-    const data = await response.json();
+    const raw = await response.text();
+    let data: unknown;
+    if (contentType.includes('application/json')) {
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = {
+          error: 'Invalid JSON response from Delhivery',
+          contentType,
+          raw: raw.slice(0, 1500),
+        };
+      }
+    } else {
+      data = {
+        error: 'Non-JSON response from Delhivery',
+        contentType,
+        raw: raw.slice(0, 1500),
+      };
+    }
+
     res.status(response.status).json(data);
 
   } catch (error: any) {

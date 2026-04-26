@@ -595,7 +595,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         res.setHeader('Content-Disposition', 'inline; filename="packing-slip.pdf"')
         return res.status(fetchRes.status).send(buffer)
       }
-      const data = await fetchRes.json()
+      const raw = await fetchRes.text()
+      let data: unknown
+      if (contentType.includes('application/json')) {
+        try {
+          data = raw ? JSON.parse(raw) : {}
+        } catch {
+          data = {
+            error: 'Invalid JSON response from Delhivery',
+            contentType,
+            raw: raw.slice(0, 1500),
+          }
+        }
+      } else {
+        data = {
+          error: 'Non-JSON response from Delhivery',
+          contentType,
+          raw: raw.slice(0, 1500),
+        }
+      }
       return res.status(fetchRes.status).json(data)
     }
 
@@ -615,7 +633,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const qs = queryParams.toString()
       const fullUrl = `https://track.delhivery.com/${apiPath}${qs ? `?${qs}` : ''}`
       const response = await fetch(fullUrl, { method: req.method || 'GET', headers: { Authorization: `Token ${DELHIVERY_TOKEN}`, 'Content-Type': 'application/json' } })
-      const data = await response.json()
+      const raw = await response.text()
+      const responseContentType = response.headers.get('content-type') || ''
+      let data: unknown
+      if (responseContentType.includes('application/json')) {
+        try {
+          data = raw ? JSON.parse(raw) : {}
+        } catch {
+          data = {
+            error: 'Invalid JSON response from Delhivery',
+            contentType: responseContentType,
+            raw: raw.slice(0, 1500),
+          }
+        }
+      } else {
+        data = {
+          error: 'Non-JSON response from Delhivery',
+          contentType: responseContentType,
+          raw: raw.slice(0, 1500),
+        }
+      }
       return res.status(response.status).json(data)
     }
 

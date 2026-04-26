@@ -87,11 +87,30 @@ app.use("/delhivery-api", async (req, res) => {
     }
 
     const response = await fetch(fullUrl, fetchOptions);
+    const contentType = response.headers.get("content-type") || "";
+    const raw = await response.text();
 
-    const data = await response.json();
+    let data;
+    if (contentType.includes("application/json")) {
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = {
+          error: "Invalid JSON response from Delhivery",
+          contentType,
+          raw: raw.slice(0, 1500),
+        };
+      }
+    } else {
+      data = {
+        error: "Non-JSON response from Delhivery",
+        contentType,
+        raw: raw.slice(0, 1500),
+      };
+    }
 
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.json(data);
+    res.status(response.status).json(data);
 
   } catch (error) {
     console.error("Delhivery API error:", error);
