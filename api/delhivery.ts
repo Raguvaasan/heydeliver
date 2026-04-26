@@ -9,7 +9,7 @@ export const config = {
   },
 };
 
-const DELHIVERY_TOKEN = process.env['DELHIVERY_API_TOKEN'] || "38ddf1efc8e1669a4bf352376506b7da9d0b3c99";
+const DELHIVERY_TOKEN = process.env['DELHIVERY_API_TOKEN'] || "91aeec33f78a2d21a6348658708de71f31489038";
 
 function getRawBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {

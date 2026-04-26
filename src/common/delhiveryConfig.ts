@@ -17,7 +17,7 @@
  * 
  * Example cURL:
  * curl --location 'https://track.delhivery.com/c/api/pin-codes/json/?filter_codes=194103' \
- *   --header 'Authorization: Token 38ddf1efc8e1669a4bf352376506b7da9d0b3c99'
+ *   --header 'Authorization: Token 91aeec33f78a2d21a6348658708de71f31489038'
  * 
  * EXPECTED RESPONSE FORMAT:
  * {
