@@ -87,13 +87,17 @@ app.use("/delhivery-api", async (req, res) => {
     }
 
     const response = await fetch(fullUrl, fetchOptions);
-    const contentType = response.headers.get("content-type") || "";
+    const contentType = (response.headers.get("content-type") || "").toLowerCase();
     const raw = await response.text();
+    const trimmed = (raw || "").trim();
+
+    const looksLikeJson = trimmed.startsWith("{") || trimmed.startsWith("[");
+    const shouldParseJson = contentType.includes("application/json") || looksLikeJson;
 
     let data;
-    if (contentType.includes("application/json")) {
+    if (shouldParseJson) {
       try {
-        data = raw ? JSON.parse(raw) : {};
+        data = trimmed ? JSON.parse(trimmed) : {};
       } catch {
         data = {
           error: "Invalid JSON response from Delhivery",

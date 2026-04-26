@@ -104,27 +104,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
     const response = await fetch(fullUrl, fetchOptions);
     const rawResponse = await response.text();
-    const contentType = response.headers.get('content-type') || '';
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
+    const trimmed = (rawResponse || '').trim();
+    const looksLikeJson = trimmed.startsWith('{') || trimmed.startsWith('[');
+    const shouldParseJson = contentType.includes('application/json') || looksLikeJson;
 
     let data: unknown;
-    if (contentType.includes('application/json')) {
+    if (shouldParseJson) {
       try {
-        data = JSON.parse(rawResponse);
+        data = trimmed ? JSON.parse(trimmed) : {};
       } catch {
         data = {
           error: 'Invalid JSON response from Delhivery',
-          raw: rawResponse,
+          contentType,
+          raw: rawResponse.slice(0, 1500),
         };
       }
     } else {
-      try {
-        data = JSON.parse(rawResponse);
-      } catch {
-        data = {
-          error: 'Non-JSON response from Delhivery',
-          raw: rawResponse,
-        };
-      }
+      data = {
+        error: 'Non-JSON response from Delhivery',
+        contentType,
+        raw: rawResponse.slice(0, 1500),
+      };
     }
 
     // Set CORS headers
