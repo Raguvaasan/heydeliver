@@ -365,7 +365,7 @@ const validationSchema = Yup.object({
    
    // File: vite.config.ts (Line 23)
    headers: {
-     'Authorization': 'Token 91aeec33f78a2d21a6348658708de71f31489038'
+     'Authorization': 'Token 38ddf1efc8e1669a4bf352376506b7da9d0b3c99'
    }
    
    // Should be:

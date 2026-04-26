@@ -7,7 +7,7 @@ import { PDFDocument, rgb } from 'pdf-lib'
 
 // Helper constants
 const BACKEND_API_URL = process.env['BACKEND_API_URL'] || 'https://freightrekapi.vercel.app'
-const DELHIVERY_TOKEN = process.env['DELHIVERY_API_TOKEN'] || '91aeec33f78a2d21a6348658708de71f31489038'
+const DELHIVERY_TOKEN = process.env['DELHIVERY_API_TOKEN'] || '38ddf1efc8e1669a4bf352376506b7da9d0b3c99'
 
 // Helpers for response formatting
 function sendCorsHeaders(res: VercelResponse) {

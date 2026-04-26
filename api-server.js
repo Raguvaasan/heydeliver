@@ -44,7 +44,7 @@ app.use("/delhivery-api", async (req, res) => {
     const fetchOptions = {
       method: req.method,
       headers: {
-        Authorization: "Token 91aeec33f78a2d21a6348658708de71f31489038",
+        Authorization: "Token 38ddf1efc8e1669a4bf352376506b7da9d0b3c99",
       }
     };
 
@@ -131,7 +131,7 @@ app.use("/delhivery-api", async (req, res) => {
 Delhivery label proxy — fetches packing slip, strips amounts, returns PDF
 ---------------------------------------------------
 */
-const DELHIVERY_TOKEN = process.env.DELHIVERY_API_TOKEN || "91aeec33f78a2d21a6348658708de71f31489038";
+const DELHIVERY_TOKEN = process.env.DELHIVERY_API_TOKEN || "38ddf1efc8e1669a4bf352376506b7da9d0b3c99";
 
 app.get("/api/delhivery-label", async (req, res) => {
   const waybill = String(req.query.waybill || "").trim();
