@@ -230,10 +230,10 @@ const RevenuePage: FC = () => {
                               {formatAmount(totalValue)}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
-                              {delhiveryCost > 0 ? formatAmount(delhiveryCost) : "-"}
+                              {order.baseAmount}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
-                              {profitMarkup > 0 ? formatAmount(profitMarkup) : "-"}
+                              {order.markupProfit}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap">
                               <Badge color={getStatusColor(order.status)}>
