@@ -524,6 +524,17 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const authToken = sessionStorage.getItem("authToken")
+      const delhiveryBaseAmount = String(
+        payload?.baseAmount ?? payload?.delhiveryTotalAmount ?? "0"
+      )
+      const delhiveryCodAmount =
+        payload?.paymentMode === "COD"
+          ? String(payload?.delhiveryCodAmount ?? payload?.baseAmount ?? "0")
+          : "0"
+      const freightrekTotalAmount = String(
+        payload?.totalAmount ?? payload?.markupAmount ?? payload?.codAmount ?? delhiveryBaseAmount
+      )
+
       const cmuPayload = {
         shipments: [
           {
@@ -544,9 +555,9 @@ export const useOrderStore = create<OrderState>((set, get) => ({
             return_country: payload?.returnCountry || "",
             products_desc: payload?.productsDesc || "",
             hsn_code: payload?.hsnCode || "",
-            cod_amount: payload?.delhiveryCodAmount ? String(payload.delhiveryCodAmount) : (payload?.codAmount ? String(payload.codAmount) : ""),
+            cod_amount: delhiveryCodAmount,
             order_date: payload?.orderDate || null,
-            total_amount: payload?.delhiveryTotalAmount ? String(payload.delhiveryTotalAmount) : (payload?.totalAmount ? String(payload.totalAmount) : ""),
+            total_amount: delhiveryBaseAmount,
             seller_add: payload?.sellerAdd || payload?.fromAdd || "",
             seller_name: payload?.sellerName || payload?.fromName || "",
             seller_inv: payload?.sellerInv || "",
@@ -592,6 +603,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         "/api/hub/orders/create",
         {
           ...payload,
+          totalAmount: freightrekTotalAmount,
           format: "json",
           data: JSON.stringify(cmuPayload),
           ...(waybill ? { waybill } : {}),
