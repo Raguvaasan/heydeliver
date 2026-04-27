@@ -224,8 +224,11 @@ const RevenuePage: FC = () => {
                               {order.shipmentDetails?.order || order.orderId || order.bookingId || "-"}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
-                              {order.franchiseName || order.franchise_name || order.pickupLocation?.name || "-"}
+                              {order.franchiseName == "Unknown" ? order.pickupLocation?.name : order.franchiseName || "-"}
                             </td>
+                            {/* <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
+                              {order.orderType || order.order_type || "-"}
+                            </td> */}
                             <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                               {formatAmount(totalValue)}
                             </td>
