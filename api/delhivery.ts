@@ -70,12 +70,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const formData = new URLSearchParams();
             formData.set('format', String((parsed as any)?.format || 'json'));
             if ((parsed as any)?.data !== undefined) {
+              // Payload already has a "data" key — use it directly
               formData.set(
                 'data',
                 typeof (parsed as any).data === 'string'
                   ? (parsed as any).data
                   : JSON.stringify((parsed as any).data)
               );
+            } else {
+              // Payload is the shipment object itself (e.g. {shipments, pickup_location})
+              // Wrap the entire body as the "data" value for Delhivery
+              formData.set('data', JSON.stringify(parsed));
             }
             fetchOptions.body = formData.toString();
           } catch {

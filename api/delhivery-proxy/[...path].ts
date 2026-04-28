@@ -87,6 +87,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
           const parsed = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
           if (parsed.format && parsed.data) {
             rawBody = `format=${parsed.format}&data=${typeof parsed.data === 'string' ? parsed.data : JSON.stringify(parsed.data)}`;
+          } else {
+            // Payload is the shipment object itself (e.g. {shipments, pickup_location})
+            // Wrap the entire body as the "data" value for Delhivery
+            rawBody = `format=json&data=${JSON.stringify(parsed)}`;
           }
         } catch {
           // leave as is
