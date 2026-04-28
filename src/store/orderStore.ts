@@ -177,17 +177,32 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   fetchOrders: async (page = 1, limit = 10) => {
     set({ loading: true, error: null })
 
+    const authToken = sessionStorage.getItem("authToken")
     const requestParams = { page, limit, _ts: Date.now() }
 
     try {
-      const res = await http.get("/orders", {
+      const res = await axios.get("/api/shipment/orders", {
         params: requestParams,
+        headers: {
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        timeout: 30000,
       })
 
-      const ordersData = Array.isArray(res.data?.data) ? res.data.data : []
+      const raw = res.data?.data ?? res.data ?? []
+      const ordersData = Array.isArray(raw)
+        ? raw.map((item: any) => ({
+            ...item,
+            _id: item?._id || item?.id || item?.orderId,
+            bookingId: item?.bookingId || item?.orderId || item?.order,
+            customer: item?.customer || item?.customerName || item?.consigneeName,
+            customerNumber: item?.customerNumber || item?.phone || item?.consigneeNumber,
+          }))
+        : []
+
       const pagination = res.data?.pagination || null
 
-      // Derive active orders from fetched orders (avoids a separate /orders/active API call)
+      // Derive active orders client-side (avoids a separate API call)
       const activeOrdersData = ordersData.filter((order: any) => {
         const s = (order.status || "").toLowerCase().replace(/[\s_-]/g, "")
         return s === "active" || s === "intransit" || s === "pending"
