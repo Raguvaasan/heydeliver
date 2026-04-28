@@ -73,9 +73,31 @@ app.use("/delhivery-api", async (req, res) => {
           }
         }
 
-        // Safety: ensure format= is present
-        if (!body.includes("format=")) {
+        // Convert to Delhivery's expected format=json&data=<JSON> format
+        if (body.includes("format=") && body.includes("data=")) {
+          // Already properly form-encoded — pass through
+        } else if (body.includes("data=") && !body.includes("format=")) {
+          // Has data= but missing format=
           body = `format=json&${body}`;
+        } else {
+          // Body is raw JSON from frontend (e.g. {shipments:..., pickup_location:...})
+          // Wrap it in format=json&data=<JSON> for Delhivery
+          try {
+            const parsed = JSON.parse(body);
+            if (parsed.format && parsed.data) {
+              // Payload has explicit {format, data} keys
+              const dataStr = typeof parsed.data === "string" ? parsed.data : JSON.stringify(parsed.data);
+              body = `format=${parsed.format}&data=${dataStr}`;
+            } else {
+              // Payload is the shipment object itself — wrap as data value
+              body = `format=json&data=${JSON.stringify(parsed)}`;
+            }
+          } catch {
+            // Not valid JSON, just ensure format= is present
+            if (!body.includes("format=")) {
+              body = `format=json&${body}`;
+            }
+          }
         }
 
         fetchOptions.body = body;
