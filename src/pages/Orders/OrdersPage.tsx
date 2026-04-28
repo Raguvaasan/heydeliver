@@ -58,7 +58,6 @@ const OrdersPage: FC = () => {
 
   useEffect(() => {
     fetchOrders(1, 500)
-    fetchActiveOrders(1, 500)
 
     // Fetch staff list to resolve assignedStaffId -> name
     const fetchStaffMap = async () => {

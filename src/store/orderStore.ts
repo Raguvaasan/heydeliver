@@ -177,76 +177,30 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   fetchOrders: async (page = 1, limit = 10) => {
     set({ loading: true, error: null })
 
-    const authToken = sessionStorage.getItem("authToken")
     const requestParams = { page, limit, _ts: Date.now() }
 
     try {
-      const [primaryRes, freightrekRes] = await Promise.allSettled([
-        http.get("/orders", {
-          params: requestParams,
-          validateStatus: () => true,
-        }),
-        axios.get("/api/shipment/orders", {
-          params: requestParams,
-          headers: {
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-          },
-          timeout: 5000,
-          validateStatus: () => true,
-        }),
-      ])
+      const res = await http.get("/orders", {
+        params: requestParams,
+      })
 
-      const primaryData =
-        primaryRes.status === "fulfilled" &&
-          primaryRes.value.status >= 200 &&
-          primaryRes.value.status < 300 &&
-          Array.isArray(primaryRes.value.data?.data)
-          ? primaryRes.value.data.data
-          : []
+      const ordersData = Array.isArray(res.data?.data) ? res.data.data : []
+      const pagination = res.data?.pagination || null
 
-      const freightrekRaw =
-        freightrekRes.status === "fulfilled" &&
-          freightrekRes.value.status >= 200 &&
-          freightrekRes.value.status < 300
-          ? freightrekRes.value.data?.data ?? freightrekRes.value.data ?? []
-          : []
-
-      const freightrekData = Array.isArray(freightrekRaw)
-        ? freightrekRaw.map((item: any) => ({
-          ...item,
-          _id: item?._id || item?.id || item?.orderId,
-          bookingId: item?.bookingId || item?.orderId || item?.order,
-          customer: item?.customer || item?.customerName || item?.consigneeName,
-          customerNumber: item?.customerNumber || item?.phone || item?.consigneeNumber,
-        }))
-        : []
-
-      const mergedOrders = Array.from(
-        new Map(
-          [...primaryData, ...freightrekData].map((order: any) => [
-            order?._id || order?.id || order?.order || order?.bookingId || JSON.stringify(order),
-            order,
-          ])
-        ).values()
-      )
-
-      const pagination =
-        primaryRes.status === "fulfilled" ? primaryRes.value.data?.pagination :
-          freightrekRes.status === "fulfilled" ? freightrekRes.value.data?.pagination :
-            null
-
-      if (primaryRes.status === "rejected" && freightrekRes.status === "rejected") {
-        throw primaryRes.reason
-      }
+      // Derive active orders from fetched orders (avoids a separate /orders/active API call)
+      const activeOrdersData = ordersData.filter((order: any) => {
+        const s = (order.status || "").toLowerCase().replace(/[\s_-]/g, "")
+        return s === "active" || s === "intransit" || s === "pending"
+      })
 
       set({
-        orders: mergedOrders,
-        pagination: pagination || null,
+        orders: ordersData,
+        activeOrders: activeOrdersData,
+        pagination,
         loading: false,
         error: null,
       })
     } catch (err: any) {
-
       set({
         orders: [],
         loading: false,
@@ -255,26 +209,16 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-  fetchActiveOrders: async (page = 1, limit = 10) => {
-    set({ loading: true, error: null })
-    try {
-      const res = await http.get("/orders/active", {
-        params: { page, limit }
+  fetchActiveOrders: async (_page = 1, _limit = 10) => {
+    // Active orders are derived from the main orders list in fetchOrders.
+    // This is a no-op kept for interface compatibility.
+    const currentOrders = get().orders
+    if (currentOrders.length > 0) {
+      const activeOrdersData = currentOrders.filter((order: any) => {
+        const s = (order.status || "").toLowerCase().replace(/[\s_-]/g, "")
+        return s === "active" || s === "intransit" || s === "pending"
       })
-
-      const ordersData = res.data?.data || []
-      const ordersArray = Array.isArray(ordersData) ? ordersData : []
-
-      set({
-        activeOrders: ordersArray,
-        loading: false
-      })
-    } catch (err: any) {
-      set({
-        activeOrders: [],
-        loading: false,
-        error: err?.response?.data?.message || err?.message || "Failed to fetch active orders"
-      })
+      set({ activeOrders: activeOrdersData })
     }
   },
 
