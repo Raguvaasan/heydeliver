@@ -748,7 +748,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // needing an explicit handler for each one.
     if (segments.length > 0) {
       const authHeader = req.headers.authorization
-      const backendUrl = `${BACKEND_API_URL}/${path}`
+      const backendUrl = `${BACKEND_API_URL}/api/${path}`
       const axiosConfig: any = {
         headers: { 'Content-Type': 'application/json' },
         timeout: 30000,
