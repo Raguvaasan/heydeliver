@@ -88,6 +88,8 @@ interface FreightrekShipmentRequest {
   weight?: string
   shippingMode?: string
   addressType?: string
+  baseAmount?: string
+  markupAmount?: string
   pickupLocation: {
     name: string
   }
@@ -431,7 +433,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         sellerAdd: shipmentData.seller_add,
         sellerInv: shipmentData.seller_inv,
         quantity: shipmentData.quantity,
-
+baseAmount: freightrekExtras.baseAmount,
+markupAmount: freightrekExtras.markupAmount,
         // Dimensions — all three axes now included
         shipmentLength: shipmentData.shipment_length,
         shipmentWidth: shipmentData.shipment_width,

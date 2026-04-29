@@ -230,7 +230,7 @@ const RevenuePage: FC = () => {
                               {order.orderType || order.order_type || "-"}
                             </td> */}
                             <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
-                              {formatAmount(totalValue)}
+                              {order.markupAmount !== undefined ? Math.round(Number(order.markupAmount)) : "-"}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">
                               {order.baseAmount !== undefined ? Math.round(Number(order.baseAmount)) : "-"}

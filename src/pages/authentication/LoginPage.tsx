@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 import { Label } from "flowbite-react"
-import { useEffect, useState, type FC, FormEvent } from "react"
+import { useEffect, useRef, useState, type FC, FormEvent } from "react"
 import { HiEye, HiEyeOff } from "react-icons/hi"
 import { HiArrowPath } from "react-icons/hi2"
 import { loginAdminUser, loginHubUser, sendFranchiseLoginOtp, verifyFranchiseLoginOtp, sendStaffLoginOtp, verifyStaffLoginOtp } from "../../store/loginStore"
@@ -23,6 +23,9 @@ const LoginPage: FC = function () {
   const [countryCode, setCountryCode] = useState("+91")
   const [otp, setOtp] = useState("")
   const [otpSent, setOtpSent] = useState(false)
+  const [mobileOtpStep, setMobileOtpStep] = useState<"phone" | "verify">("phone")
+  const [resendTimer, setResendTimer] = useState(17)
+  const otpInputRefs = useRef<Array<HTMLInputElement | null>>([])
   const [isSendingOtp, setIsSendingOtp] = useState(false)
   const [staffType, setStaffType] = useState<"franchise" | "hub" | "head_quarter">("head_quarter")
   const [showPassword, setShowPassword] = useState(false)
@@ -82,6 +85,8 @@ const LoginPage: FC = function () {
       }
 
       setOtpSent(true)
+      setMobileOtpStep("verify")
+      setResendTimer(17)
       toast.success(response?.data?.message || "OTP sent successfully")
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || "Failed to send OTP"
@@ -182,8 +187,44 @@ const LoginPage: FC = function () {
       setCountryCode("+91")
       setOtp("")
       setOtpSent(false)
+      setMobileOtpStep("phone")
     }
   }, [loginType])
+
+  useEffect(() => {
+    if ((loginType !== "staff" && loginType !== "franchise") || mobileOtpStep !== "verify" || resendTimer <= 0) return
+    const id = setInterval(() => {
+      setResendTimer((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [loginType, mobileOtpStep, resendTimer])
+
+  const formatResendTimer = (seconds: number): string => {
+    const s = Math.max(0, seconds)
+    return `00:${String(s).padStart(2, "0")}`
+  }
+
+  const handleOtpDigitChange = (index: number, rawValue: string) => {
+    const digit = rawValue.replace(/\D/g, "").slice(-1)
+    const next = otp.padEnd(6, " ").split("")
+    next[index] = digit || " "
+    const joined = next.join("").replace(/\s/g, "")
+    setOtp(joined)
+    if (digit && index < 5) otpInputRefs.current[index + 1]?.focus()
+  }
+
+  const handleOtpBackspace = (index: number, key: string) => {
+    if (key !== "Backspace") return
+    const padded = otp.padEnd(6, " ").split("")
+    if (padded[index]?.trim()) {
+      padded[index] = " "
+      setOtp(padded.join("").replace(/\s/g, ""))
+      return
+    }
+    if (index > 0) {
+      otpInputRefs.current[index - 1]?.focus()
+    }
+  }
 
   useEffect(() => {
     if (loginType !== "staff") {
@@ -278,180 +319,244 @@ const LoginPage: FC = function () {
               <div className="relative bg-white/95 backdrop-blur-2xl rounded-2xl sm:rounded-[1.75rem] p-6 sm:p-8 lg:p-12 border border-primary-200 shadow-[0_20px_48px_rgba(255,204,0,0.20)] hover:shadow-[0_24px_56px_rgba(255,204,0,0.28)] transition-shadow duration-300">
 
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 text-center">
-                  Sign In
+                  {((loginType === "staff" || loginType === "franchise") && mobileOtpStep === "verify") ? "Verify OTP" : "Sign In"}
                 </h2>
                 <p className="text-gray-600 text-center mb-5 text-sm">
-                  Enter your credentials to access your account
+                  {(loginType === "staff" || loginType === "franchise")
+                    ? (mobileOtpStep === "verify" ? `A one time password was sent to ${countryCode}${phone}` : "Enter mobile number to receive OTP")
+                    : "Enter your credentials to access your account"}
                 </p>
 
                 {/* Login Type Selector */}
-                <div className="flex mb-6 justify-center gap-2 sm:gap-4 flex-wrap">
-                  {(["admin", "franchise", "hub", "staff"] as const).map((type) => (
-                    <label key={type} className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="loginType"
-                        value={type}
-                        checked={loginType === type}
-                        onChange={() => setLoginType(type)}
-                        className="sr-only peer"
-                      />
-                      <div
-                        className={`px-3 sm:px-5 py-2.5 rounded-xl border-2 transition-all duration-200 cursor-pointer select-none ${loginType === type
-                            ? "border-primary-400 bg-primary-50"
-                            : "border-gray-200 hover:border-primary-300"
-                          }`}
-                        onClick={() => setLoginType(type)}
-                      >
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                          <div
-                            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${loginType === type ? "border-primary-400" : "border-gray-300"
-                              }`}
-                          >
-                            {loginType === type && (
-                              <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-                            )}
+                {!((loginType === "staff" || loginType === "franchise") && mobileOtpStep === "verify") && (
+                  <div className="flex mb-6 justify-center gap-2 sm:gap-4 flex-wrap">
+                    {(["admin", "franchise", "hub", "staff"] as const).map((type) => (
+                      <label key={type} className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="loginType"
+                          value={type}
+                          checked={loginType === type}
+                          onChange={() => setLoginType(type)}
+                          className="sr-only peer"
+                        />
+                        <div
+                          className={`px-3 sm:px-5 py-2.5 rounded-xl border-2 transition-all duration-200 cursor-pointer select-none ${loginType === type
+                              ? "border-primary-400 bg-primary-50"
+                              : "border-gray-200 hover:border-primary-300"
+                            }`}
+                          onClick={() => setLoginType(type)}
+                        >
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <div
+                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${loginType === type ? "border-primary-400" : "border-gray-300"
+                                }`}
+                            >
+                              {loginType === type && (
+                                <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
+                              )}
+                            </div>
+                            <span className="text-xs sm:text-sm font-semibold text-gray-700 capitalize whitespace-nowrap">
+                              {type}
+                            </span>
                           </div>
-                          <span className="text-xs sm:text-sm font-semibold text-gray-700 capitalize whitespace-nowrap">
-                            {type}
-                          </span>
                         </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {/* Staff OTP Layout */}
                   {loginType === "staff" ? (
                     <>
-                      <div className="space-y-1">
-                        <Label htmlFor="staffPhone" className="block text-sm font-semibold text-gray-700">
-                          Phone Number
-                        </Label>
-                        <div className="grid grid-cols-1 sm:grid-cols-[96px_1fr] gap-2">
-                          <input
-                            id="countryCode"
-                            type="text"
-                            value={countryCode}
-                            onChange={(e) => setCountryCode(e.target.value)}
-                            required
-                            className="w-full text-base px-3 py-3 rounded-xl border border-gray-300 text-gray-700 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
-                          />
-                          <input
-                            id="staffPhone"
-                            type="tel"
-                            placeholder="Enter phone number"
-                            value={phone}
-                            onChange={(e) => {
-                              const nextPhone = e.target.value.replace(/\D/g, "")
-                              setPhone(nextPhone)
-                              setOtpSent(false)
-                            }}
-                            required
-                            className="w-full text-base px-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label htmlFor="staffType" className="block text-sm font-semibold text-gray-700">
-                          Type
-                        </Label>
-                        <select
-                          id="staffType"
-                          value={staffType}
-                          onChange={(e) => {
-                            setStaffType(e.target.value as "franchise" | "hub" | "head_quarter")
-                            setOtpSent(false)
-                          }}
-                          className="w-full text-base pl-4 pr-10 py-3 rounded-xl border border-gray-300 text-gray-700 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                      {mobileOtpStep === "verify" && (
+                        <button
+                          type="button"
+                          onClick={() => setMobileOtpStep("phone")}
+                          className="text-sm text-gray-600 hover:text-gray-900 mb-1"
                         >
-                          <option value="franchise">Franchise</option>
-                          <option value="hub">Hub</option>
-                          <option value="head_quarter">Head Quarter</option>
-                        </select>
-                      </div>
+                          ← Back
+                        </button>
+                      )}
+                      {mobileOtpStep === "phone" && (
+                        <>
+                          <div className="space-y-1">
+                            <Label htmlFor="staffPhone" className="block text-sm font-semibold text-gray-700">
+                              Phone Number
+                            </Label>
+                            <div className="grid grid-cols-1 sm:grid-cols-[96px_1fr] gap-2">
+                              <input
+                                id="countryCode"
+                                type="text"
+                                value={countryCode}
+                                onChange={(e) => setCountryCode(e.target.value)}
+                                required
+                                className="w-full text-base px-3 py-3 rounded-xl border border-gray-300 text-gray-700 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                              />
+                              <input
+                                id="staffPhone"
+                                type="tel"
+                                placeholder="Enter phone number"
+                                value={phone}
+                                onChange={(e) => {
+                                  const nextPhone = e.target.value.replace(/\D/g, "")
+                                  setPhone(nextPhone)
+                                  setOtpSent(false)
+                                  if (mobileOtpStep === "verify") setMobileOtpStep("phone")
+                                }}
+                                required
+                                className="w-full text-base px-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                              />
+                            </div>
+                          </div>
 
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        disabled={isSendingOtp || !phone.trim()}
-                        className="w-full py-3 rounded-xl border border-primary-300 text-sm font-semibold hover:bg-primary-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {isSendingOtp ? "Sending..." : otpSent ? "Resend OTP" : "Send OTP"}
-                      </button>
+                          <div className="space-y-1">
+                            <Label htmlFor="staffType" className="block text-sm font-semibold text-gray-700">
+                              Type
+                            </Label>
+                            <select
+                              id="staffType"
+                              value={staffType}
+                              onChange={(e) => {
+                                setStaffType(e.target.value as "franchise" | "hub" | "head_quarter")
+                                setOtpSent(false)
+                              }}
+                              className="w-full text-base pl-4 pr-10 py-3 rounded-xl border border-gray-300 text-gray-700 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                            >
+                              <option value="franchise">Franchise</option>
+                              <option value="hub">Hub</option>
+                              <option value="head_quarter">Head Quarter</option>
+                            </select>
+                          </div>
+                        </>
+                      )}
 
-                      <div className="space-y-1">
-                        <Label htmlFor="otp" className="block text-sm font-semibold text-gray-700">
-                          OTP
-                        </Label>
-                        <input
-                          id="otp"
-                          type="text"
-                          placeholder="Enter OTP"
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          required
-                          className="w-full text-base px-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
-                        />
-                      </div>
+                      {mobileOtpStep === "phone" ? (
+                        <button
+                          type="button"
+                          onClick={handleSendOtp}
+                          disabled={isSendingOtp || !phone.trim()}
+                          className="w-full py-3 rounded-xl border border-primary-300 text-sm font-semibold hover:bg-primary-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {isSendingOtp ? "Sending..." : "Continue"}
+                        </button>
+                      ) : (
+                        <>
+                          <div className="space-y-1">
+                            <div className="flex gap-4 mt-2">
+                              {[0, 1, 2, 3, 4, 5].map((i) => (
+                                <input
+                                  key={i}
+                                  ref={(el) => { otpInputRefs.current[i] = el }}
+                                  type="text"
+                                  inputMode="numeric"
+                                  maxLength={1}
+                                  value={otp[i] || ""}
+                                  onChange={(e) => handleOtpDigitChange(i, e.target.value)}
+                                  onKeyDown={(e) => handleOtpBackspace(i, e.key)}
+                                  className="h-12 w-12 rounded-md border border-gray-300 text-center text-lg font-semibold text-gray-800 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none"
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Didn&apos;t receive OTP?{" "}
+                            {resendTimer > 0 ? (
+                              <span>Resend in <span className="font-semibold">{formatResendTimer(resendTimer)}</span> Sec</span>
+                            ) : (
+                              <button type="button" onClick={handleSendOtp} disabled={isSendingOtp} className="font-semibold text-gray-800 hover:text-black">
+                                {isSendingOtp ? "Sending..." : "Resend"}
+                              </button>
+                            )}
+                          </p>
+                        </>
+                      )}
                     </>
                   ) : loginType === "franchise" ? (
                     <>
+                      {mobileOtpStep === "verify" && (
+                        <button
+                          type="button"
+                          onClick={() => setMobileOtpStep("phone")}
+                          className="text-sm text-gray-600 hover:text-gray-900 mb-1"
+                        >
+                          ← Back
+                        </button>
+                      )}
                       {/* Franchise OTP Layout */}
-                      <div className="space-y-1">
-                        <Label htmlFor="franchisePhone" className="block text-sm font-semibold text-gray-700">
-                          Phone Number
-                        </Label>
-                        <div className="grid grid-cols-1 sm:grid-cols-[96px_1fr] gap-2">
-                          <input
-                            id="countryCode"
-                            type="text"
-                            value={countryCode}
-                            onChange={(e) => setCountryCode(e.target.value)}
-                            required
-                            className="w-full text-base px-3 py-3 rounded-xl border border-gray-300 text-gray-700 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
-                          />
-                          <input
-                            id="franchisePhone"
-                            type="tel"
-                            placeholder="Enter phone number"
-                            value={phone}
-                            onChange={(e) => {
-                              const nextPhone = e.target.value.replace(/\D/g, "")
-                              setPhone(nextPhone)
-                              setOtpSent(false)
-                            }}
-                            required
-                            className="w-full text-base px-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
-                          />
+                      {mobileOtpStep === "phone" && (
+                        <div className="space-y-1">
+                          <Label htmlFor="franchisePhone" className="block text-sm font-semibold text-gray-700">
+                            Phone Number
+                          </Label>
+                          <div className="grid grid-cols-1 sm:grid-cols-[96px_1fr] gap-2">
+                            <input
+                              id="countryCode"
+                              type="text"
+                              value={countryCode}
+                              onChange={(e) => setCountryCode(e.target.value)}
+                              required
+                              className="w-full text-base px-3 py-3 rounded-xl border border-gray-300 text-gray-700 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                            />
+                            <input
+                              id="franchisePhone"
+                              type="tel"
+                              placeholder="Enter phone number"
+                              value={phone}
+                              onChange={(e) => {
+                                const nextPhone = e.target.value.replace(/\D/g, "")
+                                setPhone(nextPhone)
+                                setOtpSent(false)
+                                if (mobileOtpStep === "verify") setMobileOtpStep("phone")
+                              }}
+                              required
+                              className="w-full text-base px-4 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
+                            />
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        disabled={isSendingOtp || !phone.trim()}
-                        className="w-full py-3 rounded-xl border border-primary-300 text-sm font-semibold hover:bg-primary-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {isSendingOtp ? "Sending..." : otpSent ? "Resend OTP" : "Send OTP"}
-                      </button>
-
-                      <div className="space-y-1">
-                        <Label htmlFor="otp" className="block text-sm font-semibold text-gray-700">
-                          OTP
-                        </Label>
-                        <input
-                          id="otp"
-                          type="text"
-                          placeholder="Enter OTP"
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          required
-                          className="w-full text-base pl-4 pr-12 py-3 rounded-xl border border-gray-300 text-gray-700 placeholder:text-gray-400 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
-                        />
-                      </div>
+                      {mobileOtpStep === "phone" ? (
+                        <button
+                          type="button"
+                          onClick={handleSendOtp}
+                          disabled={isSendingOtp || !phone.trim()}
+                          className="w-full py-3 rounded-xl border border-primary-300 text-sm font-semibold hover:bg-primary-50 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {isSendingOtp ? "Sending..." : "Continue"}
+                        </button>
+                      ) : (
+                        <>
+                          <div className="space-y-1">
+                            <div className="flex gap-4 mt-2">
+                              {[0, 1, 2, 3, 4, 5].map((i) => (
+                                <input
+                                  key={i}
+                                  ref={(el) => { otpInputRefs.current[i] = el }}
+                                  type="text"
+                                  inputMode="numeric"
+                                  maxLength={1}
+                                  value={otp[i] || ""}
+                                  onChange={(e) => handleOtpDigitChange(i, e.target.value)}
+                                  onKeyDown={(e) => handleOtpBackspace(i, e.key)}
+                                  className="h-12 w-12 rounded-md border border-gray-300 text-center text-lg font-semibold text-gray-800 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none"
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Didn&apos;t receive OTP?{" "}
+                            {resendTimer > 0 ? (
+                              <span>Resend in <span className="font-semibold">{formatResendTimer(resendTimer)}</span> Sec</span>
+                            ) : (
+                              <button type="button" onClick={handleSendOtp} disabled={isSendingOtp} className="font-semibold text-gray-800 hover:text-black">
+                                {isSendingOtp ? "Sending..." : "Resend"}
+                              </button>
+                            )}
+                          </p>
+                        </>
+                      )}
                     </>
                   ) : (
                     <>
@@ -539,7 +644,7 @@ const LoginPage: FC = function () {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    disabled={isLoading}
+                    disabled={isLoading || ((loginType === "staff" || loginType === "franchise") && mobileOtpStep !== "verify")}
                     className="w-full h-13 sm:h-14 mt-6 sm:mt-8 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white font-bold text-base sm:text-lg rounded-xl shadow-[0_10px_24px_rgba(255,204,0,0.28)] hover:shadow-[0_14px_32px_rgba(255,204,0,0.38)] transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                     style={{ minHeight: "52px" }}
                   >
@@ -565,7 +670,7 @@ const LoginPage: FC = function () {
                       </>
                     ) : (
                       <>
-                        <span>Sign In</span>
+                        <span>{(loginType === "staff" || loginType === "franchise") ? "Login" : "Sign In"}</span>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path
                             strokeLinecap="round"

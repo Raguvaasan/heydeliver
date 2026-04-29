@@ -560,6 +560,8 @@ const NewOrderPage: FC = () => {
         await createDelhiveryShipment(shipmentData, formData.pickupLocation, {
           freightrekCodAmount: formData.paymentMode === "COD" ? payableAmount : "",
           freightrekTotalAmount: payableAmount,
+          baseAmount: delhiveryAmount,
+          markupAmount: payableAmount,
           fromName: formData.fromName,
           fromAdd: formData.fromAdd,
           fromPin: formData.fromPin,
