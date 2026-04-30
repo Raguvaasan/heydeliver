@@ -94,6 +94,7 @@ const RateCardPage = lazy(() => import("./pages/Settings/RateCardPage"))
 const PincodeServiceabilityPage = lazy(() => import("./pages/Settings/PincodeServiceabilityPage"))
 const RateMarkupPage = lazy(() => import("./pages/Settings/RateMarkupPage"))
 const RateCardMarkupPage = lazy(() => import("./pages/Settings/RateCardMarkupPage"))
+const SettingsRateCalculatorPage = lazy(() => import("./pages/Settings/RateCalculatorPage"))
 
 // Profile
 const ProfilePage = lazy(() => import("./pages/Profile/ProfilePageModern"))
@@ -498,6 +499,15 @@ root.render(
             element={
               <ProtectedRoute>
                 <RevenuePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings/rate-calculator"
+            element={
+              <ProtectedRoute>
+                <SettingsRateCalculatorPage />
               </ProtectedRoute>
             }
           />

@@ -181,6 +181,7 @@ const Sidebar: FC<SidebarProps> = ({
       icon: <HiCog className="h-5 w-5" />,
       path: "/settings",
       submenu: [
+        { title: "Rate Calculator", path: "/settings/rate-calculator" },
         { title: "Rate Calculator Setup", path: "/rate-calculator" },
         { title: "Pincode Serviceability", path: "/settings/pincode-serviceability" },
         { title: "Rate Card", path: "/settings/rate-card" },
