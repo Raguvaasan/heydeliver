@@ -198,9 +198,18 @@ const NewOrderPage: FC = () => {
   const profileDataStr = sessionStorage.getItem("profileData")
   const profileData = profileDataStr ? JSON.parse(profileDataStr) : null
   const isHubLogin = loginType === "hub"
+  const franchiseData = profileData?.franchiseId || profileData?.data?.franchiseId || {}
+  const franchiseAddress = franchiseData?.address || profileData?.address || profileData?.data?.address || ""
+  const franchisePincode = franchiseData?.pincode || profileData?.pincode || profileData?.data?.pincode || ""
+  const franchiseCity = franchiseData?.city || profileData?.city || profileData?.data?.city || ""
+  const franchiseState = franchiseData?.state || profileData?.state || profileData?.data?.state || ""
+  const franchisePhone = franchiseData?.phone || profileData?.phone || profileData?.data?.phone || ""
+  const franchiseName = franchiseData?.agencyName || profileData?.agencyName || profileData?.data?.agencyName || ""
+  const franchiseOwner = franchiseData?.agencyOwner || profileData?.agencyOwner || profileData?.data?.agencyOwner || ""
+  const franchiseGst = franchiseData?.gstNumber || profileData?.gstNumber || profileData?.data?.gstNumber || ""
   const channelDisplayName = isHubLogin
     ? (profileData?.hubId?.hubName || profileData.hubName || "offline")
-    : (profileData?.agencyName || "Offline")
+    : (franchiseName || "Offline")
   // ── Form state ──────────────────────────────────────────────────────────────
   const [formData, setFormData] = useState({
     customerName: "",
@@ -264,7 +273,7 @@ const NewOrderPage: FC = () => {
     const p = JSON.parse(profileDataStr)
     const name = loginType === "hub"
       ? (p?.hubId?.hubName || p?.data?.hubId?.hubName || "")
-      : (p?.agencyName || p?.name || "")
+      : (p?.franchiseId?.agencyName || p?.data?.franchiseId?.agencyName || p?.agencyName || p?.name || "")
     if (name) setFormData((prev) => ({ ...prev, pickupLocation: name }))
   }, [loginType, profileDataStr])
 
@@ -419,12 +428,12 @@ const NewOrderPage: FC = () => {
       ...prev,
       channelName: value,
       sellerName: value
-        ? (isHubLogin
+          ? (isHubLogin
           ? (profileData?.hubId?.hubName || profileData?.data?.hubId?.hubName || prev.sellerName)
-          : (profileData?.agencyName || profileData?.data?.agencyName || prev.sellerName))
+          : (franchiseName || prev.sellerName))
         : prev.sellerName,
-      sellerAddress: value ? (profileData?.address || prev.sellerAddress) : prev.sellerAddress,
-      sellerInvoice: value ? (profileData?.gstNumber || prev.sellerInvoice) : prev.sellerInvoice,
+      sellerAddress: value ? (franchiseAddress || prev.sellerAddress) : prev.sellerAddress,
+      sellerInvoice: value ? (franchiseGst || prev.sellerInvoice) : prev.sellerInvoice,
     }))
     if (value) setShowSellerDetails(true)
   }
@@ -496,19 +505,19 @@ const NewOrderPage: FC = () => {
         phone: formData.customerPhone,
         order: formData.orderId,
         payment_mode: formData.paymentMode,
-        return_pin: profileData?.pincode || "",
-        return_city: profileData?.city || "",
-        return_phone: profileData?.phone || "",
-        return_add: profileData?.address || "",
-        return_state: profileData?.state || "",
+        return_pin: franchisePincode || "",
+        return_city: franchiseCity || "",
+        return_phone: franchisePhone || "",
+        return_add: franchiseAddress || "",
+        return_state: franchiseState || "",
         return_country: formData.returnCountry || "",
         products_desc: formData.productsDesc || "",
         hsn_code: formData.hsnCode || "",
         cod_amount: formData.paymentMode === "COD" ? delhiveryAmount : "",
         order_date: new Date().toISOString(),
         total_amount: delhiveryAmount,
-        seller_add: profileData?.address || "",
-        seller_name: profileData?.agencyOwner || "",
+        seller_add: franchiseAddress || "",
+        seller_name: franchiseOwner || "",
         seller_inv: formData.sellerInvoice || "",
         quantity: formData.quantity || "",
         waybill: "",
