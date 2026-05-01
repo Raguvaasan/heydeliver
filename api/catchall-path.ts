@@ -562,20 +562,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const headers: any = { Authorization: `Token ${DELHIVERY_TOKEN}`, 'Content-Type': 'application/json', Accept: '*/*' }
       let body: any = undefined
       if (method === 'POST' || method === 'PUT') {
-        if (req.body) {
-          if (typeof req.body === 'string') {
-            headers['Content-Type'] = 'application/x-www-form-urlencoded'
-            body = req.body
+        if (delhiveryPath.includes('create.json')) {
+          headers['Content-Type'] = 'application/x-www-form-urlencoded'
+
+          const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body || {})
+
+          if (rawBody.includes('format=')) {
+            body = rawBody
+          } else if (rawBody.includes('data=')) {
+            body = `format=json&${rawBody}`
           } else {
-            if (delhiveryPath.includes('create.json')) {
-              headers['Content-Type'] = 'application/x-www-form-urlencoded'
+            try {
+              const parsed = rawBody ? JSON.parse(rawBody) : {}
               const formData = new URLSearchParams()
-              Object.entries(req.body).forEach(([k, v]) => formData.append(k, String(v)))
+              formData.set('format', String((parsed as any)?.format || 'json'))
+              if ((parsed as any)?.data !== undefined) {
+                formData.set(
+                  'data',
+                  typeof (parsed as any).data === 'string'
+                    ? (parsed as any).data
+                    : JSON.stringify((parsed as any).data)
+                )
+              } else {
+                formData.set('data', JSON.stringify(parsed))
+              }
               body = formData.toString()
-            } else {
-              body = JSON.stringify(req.body)
+            } catch {
+              body = 'format=json'
             }
           }
+        } else if (req.body) {
+          body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body)
         }
         delhiveryUrl = `https://track.delhivery.com/${delhiveryPath}`
       } else {
