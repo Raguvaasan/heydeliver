@@ -76,7 +76,7 @@ export const getRoutePermission = (pathname: string): RoutePermission | null => 
 
   for (const routePath of sortedPaths) {
     if (pathname === routePath || pathname.startsWith(routePath + "/")) {
-      return routePermissionMap[routePath]
+      return routePermissionMap[routePath] ?? null
     }
   }
 
@@ -89,12 +89,8 @@ export const getRoutePermission = (pathname: string): RoutePermission | null => 
  * Staff users are checked against their assigned permissions.
  */
 export const hasRouteAccess = (pathname: string): boolean => {
-  // Staff users are identified by the isStaffLogin flag
-  // (loginType may be remapped to franchise/hub/admin for API endpoint selection)
-  const isStaffUser = sessionStorage.getItem("isStaffLogin") === "true"
-
-  // Non-staff users get full access based on their role type
-  if (!isStaffUser) return true
+  // Detect staff users: check the isStaffLogin flag OR detect from profile data
+  let isStaffUser = sessionStorage.getItem("isStaffLogin") === "true"
 
   // Get staff profile data
   let profileData: any = null
@@ -105,17 +101,47 @@ export const hasRouteAccess = (pathname: string): boolean => {
     return false
   }
 
+  // Fallback staff detection from profile data
+  if (!isStaffUser && profileData) {
+    const staffType = String(
+      profileData?.type || profileData?.data?.type || ""
+    ).toLowerCase()
+    if (staffType === "franchise" || staffType === "hub" || staffType === "head_quarter") {
+      isStaffUser = true
+    }
+  }
+
+  // Non-staff users get full access based on their role type
+  if (!isStaffUser) return true
+
   if (!profileData) return false
 
   // Root users have all permissions
-  if (profileData?.role?.isRoot) return true
+  if (
+    profileData?.role?.isRoot ||
+    profileData?.data?.role?.isRoot ||
+    profileData?.roleinfo?.isRoot ||
+    profileData?.data?.roleinfo?.isRoot
+  ) return true
 
-  const permissions: any[] =
-    profileData?.role?.permissions ||
-    profileData?.data?.role?.permissions ||
-    profileData?.roleinfo?.permissions ||
-    profileData?.data?.roleinfo?.permissions ||
-    []
+  // Extract permissions from all known paths
+  const permissionCandidates = [
+    profileData?.role?.permissions,
+    profileData?.data?.role?.permissions,
+    profileData?.roleinfo?.permissions,
+    profileData?.data?.roleinfo?.permissions,
+    profileData?.roleInfo?.permissions,
+    profileData?.data?.roleInfo?.permissions,
+    profileData?.permissions,
+    profileData?.data?.permissions,
+  ]
+  let permissions: any[] = []
+  for (const perms of permissionCandidates) {
+    if (Array.isArray(perms) && perms.length > 0) {
+      permissions = perms
+      break
+    }
+  }
 
   // Dashboard and Profile are always accessible
   if (pathname === "/dashboard" || pathname === "/profile") return true

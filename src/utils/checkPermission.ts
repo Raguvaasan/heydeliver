@@ -14,14 +14,31 @@ export const checkModulePermission = ({
     const profile = JSON.parse(profileData)
 
     // Root user has all permissions
-    if (profile?.role?.isRoot) return true
+    if (
+      profile?.role?.isRoot ||
+      profile?.data?.role?.isRoot ||
+      profile?.roleinfo?.isRoot ||
+      profile?.data?.roleinfo?.isRoot
+    ) return true
 
-    const permissions: any[] =
-      profile?.role?.permissions ||
-      profile?.data?.role?.permissions ||
-      profile?.roleinfo?.permissions ||
-      profile?.data?.roleinfo?.permissions ||
-      []
+    // Extract permissions from all known paths
+    const permissionCandidates = [
+      profile?.role?.permissions,
+      profile?.data?.role?.permissions,
+      profile?.roleinfo?.permissions,
+      profile?.data?.roleinfo?.permissions,
+      profile?.roleInfo?.permissions,
+      profile?.data?.roleInfo?.permissions,
+      profile?.permissions,
+      profile?.data?.permissions,
+    ]
+    let permissions: any[] = []
+    for (const perms of permissionCandidates) {
+      if (Array.isArray(perms) && perms.length > 0) {
+        permissions = perms
+        break
+      }
+    }
 
     // Find the module — API uses "module", some formats use "moduleName"
     const permission = permissions.find(

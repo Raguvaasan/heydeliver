@@ -64,15 +64,75 @@ const Sidebar: FC<SidebarProps> = ({
   ).toLowerCase()
   // loginType is already the effective type (franchise staff → "franchise", hub staff → "hub", HQ staff → "admin")
   const effectiveLoginType = loginType
-  // Detect staff users via the isStaffLogin flag (loginType may be remapped to franchise/hub/admin)
-  const isStaffUser = sessionStorage.getItem("isStaffLogin") === "true"
-  const staffPermissions: any[] =
-    profileData?.role?.permissions ||
-    profileData?.data?.role?.permissions ||
-    profileData?.roleinfo?.permissions ||
-    profileData?.data?.roleinfo?.permissions ||
-    []
-  const isRootUser = profileData?.role?.isRoot === true
+  // Detect staff users: check the isStaffLogin flag OR detect from profile data
+  // (profileData.type indicates staff assigned to franchise/hub/head_quarter)
+  const isStaffUser = (() => {
+    if (sessionStorage.getItem("isStaffLogin") === "true") return true
+    // Fallback: if profileData has a "type" field (franchise/hub/head_quarter), it's a staff user
+    // Regular franchise/hub logins don't have a "type" field
+    const staffType = String(
+      profileData?.type || profileData?.data?.type || ""
+    ).toLowerCase()
+    if (staffType === "franchise" || staffType === "hub" || staffType === "head_quarter") {
+      return true
+    }
+    return false
+  })()
+
+  /**
+   * Extract permissions array from profile data.
+   * The staff login API may return permissions at various paths depending on
+   * whether the role is populated or just an ID. We check all known locations.
+   */
+  const extractPermissions = (profile: any): any[] => {
+    if (!profile) return []
+
+    // Try all known paths where permissions might exist
+    const candidates = [
+      // Populated role object
+      profile?.role?.permissions,
+      profile?.data?.role?.permissions,
+      // Separate roleinfo field (when role is just an ID)
+      profile?.roleinfo?.permissions,
+      profile?.data?.roleinfo?.permissions,
+      // roleInfo with capital I
+      profile?.roleInfo?.permissions,
+      profile?.data?.roleInfo?.permissions,
+      // Permissions directly on profile
+      profile?.permissions,
+      profile?.data?.permissions,
+    ]
+
+    for (const perms of candidates) {
+      if (Array.isArray(perms) && perms.length > 0) {
+        return perms
+      }
+    }
+
+    return []
+  }
+
+  const staffPermissions = extractPermissions(profileData)
+  const isRootUser =
+    profileData?.role?.isRoot === true ||
+    profileData?.data?.role?.isRoot === true ||
+    profileData?.roleinfo?.isRoot === true ||
+    profileData?.data?.roleinfo?.isRoot === true
+
+  // Debug: log permissions data to help diagnose issues (remove after confirmed working)
+  if (isStaffUser && staffPermissions.length === 0) {
+    console.warn(
+      "[Sidebar] Staff user has 0 permissions. profileData keys:",
+      profileData ? Object.keys(profileData) : "null",
+      "| role type:", typeof profileData?.role,
+      "| role:", profileData?.role,
+      "| roleinfo:", profileData?.roleinfo,
+      "| data keys:", profileData?.data ? Object.keys(profileData.data) : "N/A"
+    )
+  }
+  if (isStaffUser) {
+    console.log("[Sidebar] Staff permissions:", staffPermissions)
+  }
 
   /**
    * Check if staff has access to a module by exact module name.
