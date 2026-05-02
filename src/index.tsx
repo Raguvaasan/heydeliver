@@ -8,6 +8,7 @@ import { Flowbite } from "flowbite-react"
 import { Routes, Route } from "react-router"
 import { BrowserRouter } from "react-router-dom"
 import ProtectedRoute from "./protectedRoutes/ProtectedRoute"
+import PermissionRoute from "./protectedRoutes/PermissionRoute"
 import ProtectedLogin from "./protectedRoutes/ProtectedLogin"
 import { ThemeProvider } from "./context/ThemeContext"
 import { Toaster } from "react-hot-toast"
@@ -103,6 +104,9 @@ const ProfilePage = lazy(() => import("./pages/Profile/ProfilePageModern"))
 const CareersPage = lazy(() => import("./pages/Careers/CareersPage"))
 const ApplicationsPage = lazy(() => import("./pages/Careers/ApplicationsPage"))
 
+// Access Denied
+const AccessDeniedPage = lazy(() => import("./pages/AccessDenied"))
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -154,442 +158,451 @@ root.render(
             />
 
           <Route
-            path="/agencies"
+            path="/access-denied"
             element={
               <ProtectedRoute>
-                <AgencyManagementPage />
+                <AccessDeniedPage />
               </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/agencies"
+            element={
+              <PermissionRoute>
+                <AgencyManagementPage />
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/hubs"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <HubManagementPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/customers"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <CustomersPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/role"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <RoleAndPermissionPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/role/roleform"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <AddRolePage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
           <Route
             path="/role/editrole/:id"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <EditRolePage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/franchise-role"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <FranchiseRolePage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/franchise-role/roleform"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <FranchiseAddRolePage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/franchise-role/editrole/:id"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <FranchiseEditRolePage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/staff"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <SubadminAndSupport />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/franchise-staff"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <FranchiseStaffListPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/franchise-staff/add"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <FranchiseAddEditStaffPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/franchise-staff/edit/:id"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <FranchiseAddEditStaffPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/franchise-staff/:id"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <FranchiseStaffDetailPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/staff/:id"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <StaffPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/orders"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <OrdersPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/orders/new"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <NewOrderPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/orders/bulk"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <BulkOrderPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/orders/:id"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <OrderDetailsPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/orders/completed"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <CompletedOrdersPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/orders/forward"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <ForwardOrdersPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/orders/forward/:id"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <ForwardOrderDetailPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/rate-calculator"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <RateCalculatorPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/service-availability"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <ServiceAvailabilityPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/wallet"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <WalletPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/wallet/add"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <AddMoneyPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/wallet/payment-callback"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <PaymentCallbackPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/wallet/transactions"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <TransactionsPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/wallet/recharges"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <RechargesPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/invoice"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <InvoicePage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/reports"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <ReportsPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/reports/franchise-wise"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <FranchiseWiseReportPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/reports/total-orders"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <TotalOrdersReportPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/reports/total-revenue"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <TotalRevenueReportPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/reports/delivery-performance"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <DeliveryPerformanceReportPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/tracking"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <TrackingPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/payments"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <PaymentsPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/payments/wallet"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <WalletPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/payments/revenue"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <RevenuePage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/settings/rate-calculator"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <SettingsRateCalculatorPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/settings/rate-card"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <RateCardPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/settings/pincode-serviceability"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <PincodeServiceabilityPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/settings/rate-card-markup"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <RateCardMarkupPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/orders/pickup"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <PickupRequestsPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/orders/pickup/create"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <CreatePickupRequestPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/pickup-requests/create"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <CreatePickupRequestPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/reports/staff-performance"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <StaffPerformanceReportPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/reports/orders"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <OrdersReportPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/reports/revenue"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <RevenueReportPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
@@ -605,18 +618,18 @@ root.render(
           <Route
             path="/careers"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <CareersPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 
           <Route
             path="/careers/applications"
             element={
-              <ProtectedRoute>
+              <PermissionRoute>
                 <ApplicationsPage />
-              </ProtectedRoute>
+              </PermissionRoute>
             }
           />
 

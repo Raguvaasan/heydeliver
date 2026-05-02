@@ -62,21 +62,26 @@ const Sidebar: FC<SidebarProps> = ({
     profileData?.data?.type ||
     ""
   ).toLowerCase()
+  // Determine which menu set to base filtering on
   const effectiveLoginType =
     loginType === "staff" && (staffAssignedType === "hub" || staffAssignedType === "franchise" || staffAssignedType === "head_quarter")
       ? staffAssignedType === "head_quarter"
         ? "admin"
         : staffAssignedType
       : loginType
+  // Staff always uses permission-based filtering regardless of assigned type
+  const isStaffUser = loginType === "staff"
   const staffPermissions: any[] =
     profileData?.role?.permissions ||
     profileData?.data?.role?.permissions ||
     profileData?.roleinfo?.permissions ||
     profileData?.data?.roleinfo?.permissions ||
     []
+  const isRootUser = profileData?.role?.isRoot === true
 
   const hasStaffModuleAccess = (moduleKeys: string[]) => {
-    if (loginType !== "staff") return true
+    if (!isStaffUser) return true
+    if (isRootUser) return true
     if (!Array.isArray(staffPermissions) || staffPermissions.length === 0) {
       return false
     }
@@ -272,7 +277,7 @@ const Sidebar: FC<SidebarProps> = ({
     },
   ]
 
-  // Staff menu items (filtered by role permissions)
+  // Staff menu items (filtered by role permissions) for franchise/hub staff
   const staffMenuItems: MenuItem[] = franchiseMenuItems
     .map((item) => {
       if (item.title === "Dashboard" || item.title === "Profile") return item
@@ -282,7 +287,7 @@ const Sidebar: FC<SidebarProps> = ({
       }
 
       if (item.title === "Staffs") {
-        const canStaff = hasStaffModuleAccess(["staff", "user"])
+        const canStaff = hasStaffModuleAccess(["staff", "user", "manage staffs"])
         const canRole = hasStaffModuleAccess(["role", "permission"])
         const canAccess = hasStaffModuleAccess(["access"])
         if (!canStaff && !canRole && !canAccess) return null
@@ -321,17 +326,76 @@ const Sidebar: FC<SidebarProps> = ({
     })
     .filter(Boolean) as MenuItem[]
 
+  // Admin staff menu items (filtered by role permissions for head_quarter staff)
+  const adminStaffMenuItems: MenuItem[] = adminMenuItems
+    .map((item) => {
+      if (item.title === "Dashboard") return item
+
+      if (item.title === "Franchise") {
+        return hasStaffModuleAccess(["franchise"]) ? item : null
+      }
+
+      if (item.title === "Hub") {
+        return hasStaffModuleAccess(["hub"]) ? item : null
+      }
+
+      if (item.title === "Customers") {
+        return hasStaffModuleAccess(["customer"]) ? item : null
+      }
+
+      if (item.title === "Access Management") {
+        return hasStaffModuleAccess(["access", "staff", "role", "permission"]) ? item : null
+      }
+
+      if (item.title === "Orders") {
+        return hasStaffModuleAccess(["order", "booking", "shipment"]) ? item : null
+      }
+
+      if (item.title === "Payments") {
+        return hasStaffModuleAccess(["payment", "wallet", "transaction"]) ? item : null
+      }
+
+      if (item.title === "Tracking") {
+        return hasStaffModuleAccess(["tracking"]) ? item : null
+      }
+
+      if (item.title === "Settings") {
+        return hasStaffModuleAccess(["setting", "rate"]) ? item : null
+      }
+
+      if (item.title === "Careers") {
+        return hasStaffModuleAccess(["career"]) ? item : null
+      }
+
+      return item
+    })
+    .filter(Boolean) as MenuItem[]
+
   // Hub menu items (franchise items without Wallet)
   const hubMenuItems: MenuItem[] = franchiseMenuItems
     .filter(item => item.title !== "Wallet" && item.title !== "Reports")
 
   // Select menu items based on login type
-  const menuItems = effectiveLoginType === "franchise"
+  const menuItems = isStaffUser && !isRootUser
+    ? effectiveLoginType === "admin"
+      ? adminStaffMenuItems
+      : effectiveLoginType === "hub"
+      ? hubMenuItems.map((item) => {
+          if (item.title === "Dashboard" || item.title === "Profile") return item
+          if (item.title === "Orders") return hasStaffModuleAccess(["order", "booking", "shipment"]) ? item : null
+          if (item.title === "Staffs") return hasStaffModuleAccess(["staff", "user", "manage staffs", "access"]) ? item : null
+          if (item.title === "Rate Calculator") return hasStaffModuleAccess(["rate"]) ? item : null
+          if (item.title === "Service Availability Check") return hasStaffModuleAccess(["service", "pincode"]) ? item : null
+          if (item.title === "Tracking") return hasStaffModuleAccess(["tracking"]) ? item : null
+          return item
+        }).filter(Boolean) as MenuItem[]
+      : staffMenuItems
+    : effectiveLoginType === "franchise"
     ? franchiseMenuItems
     : effectiveLoginType === "hub"
     ? hubMenuItems
-    : effectiveLoginType === "staff"
-    ? staffMenuItems
+    : effectiveLoginType === "admin"
+    ? adminMenuItems
     : adminMenuItems
 
   const isActive = (path: string) => {
