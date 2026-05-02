@@ -130,20 +130,22 @@ export const hasRouteAccess = (pathname: string): boolean => {
 
   // Check if the staff has the required module permission
   const hasModule = permissions.some((perm: any) => {
+    // API format uses "module", some formats use "moduleName"
     const moduleName = String(
-      perm?.moduleName || perm?.module || perm?.name || ""
-    ).toLowerCase()
+      perm?.module || perm?.moduleName || perm?.name || ""
+    ).trim().toLowerCase()
 
     if (!moduleName) return false
 
     const requiredModule = routePermission.module.toLowerCase()
-    if (moduleName !== requiredModule && !moduleName.includes(requiredModule) && !requiredModule.includes(moduleName)) {
+    if (moduleName !== requiredModule) {
       return false
     }
 
     // If a specific action is required, check that too
+    // API format: read/write/update/delete are flat on the perm object
+    // UI format: nested under perm.permission
     if (routePermission.action) {
-      const permission = perm?.permission || {}
       const actionMap: Record<string, string[]> = {
         view: ["view", "read"],
         add: ["add", "write"],
@@ -151,7 +153,8 @@ export const hasRouteAccess = (pathname: string): boolean => {
         delete: ["delete"],
       }
       const keys = actionMap[routePermission.action] || [routePermission.action]
-      return keys.some((key) => permission[key] === true)
+      // Check both flat (API) and nested (UI) formats
+      return keys.some((key) => perm?.[key] === true || perm?.permission?.[key] === true)
     }
 
     return true

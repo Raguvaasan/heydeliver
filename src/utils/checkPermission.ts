@@ -16,8 +16,19 @@ export const checkModulePermission = ({
     // Root user has all permissions
     if (profile?.role?.isRoot) return true
 
-    const permission = profile?.role?.permissions?.find(
-      (perm: any) => perm.moduleName?.toLowerCase() === moduleName.toLowerCase()
+    const permissions: any[] =
+      profile?.role?.permissions ||
+      profile?.data?.role?.permissions ||
+      profile?.roleinfo?.permissions ||
+      profile?.data?.roleinfo?.permissions ||
+      []
+
+    // Find the module — API uses "module", some formats use "moduleName"
+    const permission = permissions.find(
+      (perm: any) => {
+        const name = String(perm?.module || perm?.moduleName || perm?.name || "").trim().toLowerCase()
+        return name === moduleName.toLowerCase()
+      }
     )
 
     if (!permission) return false
@@ -31,7 +42,8 @@ export const checkModulePermission = ({
         delete: ["delete"],
       }
       const keys = actionMap[action] || [action]
-      return keys.some((key) => !!permission.permission?.[key])
+      // Check both flat (API format) and nested (UI format)
+      return keys.some((key) => permission?.[key] === true || permission?.permission?.[key] === true)
     }
 
     // If no specific action is provided, return true if module is present

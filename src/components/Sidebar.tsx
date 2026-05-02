@@ -74,7 +74,12 @@ const Sidebar: FC<SidebarProps> = ({
     []
   const isRootUser = profileData?.role?.isRoot === true
 
-  const hasStaffModuleAccess = (moduleKeys: string[]) => {
+  /**
+   * Check if staff has access to a module by exact module name.
+   * The API stores permissions as: { module: "Orders", read: true, write: false, update: true, delete: false }
+   * We match against the exact module names from franchiseRoleModules / adminRoleModules.
+   */
+  const hasStaffModuleAccess = (exactModuleNames: string[]) => {
     if (!isStaffUser) return true
     if (isRootUser) return true
     if (!Array.isArray(staffPermissions) || staffPermissions.length === 0) {
@@ -82,30 +87,33 @@ const Sidebar: FC<SidebarProps> = ({
     }
 
     return staffPermissions.some((perm: any) => {
+      // Get the module name — API format uses "module", UI format uses "moduleName"
       const moduleName = String(
-        perm?.moduleName || perm?.module || perm?.name || ""
-      ).toLowerCase()
+        perm?.module || perm?.moduleName || perm?.name || ""
+      ).trim().toLowerCase()
       if (!moduleName) return false
 
-      const matchesModule = moduleKeys.some((key) => moduleName.includes(key))
+      // Match against exact module names (case-insensitive)
+      const matchesModule = exactModuleNames.some(
+        (name) => name.toLowerCase() === moduleName
+      )
       if (!matchesModule) return false
 
-      const permission = perm?.permission || {}
-      const canRead =
-        permission?.view === true ||
-        permission?.read === true ||
-        perm?.view === true ||
-        perm?.read === true
+      // Check if any CRUD action is granted
+      // API format: read/write/update/delete (flat on perm)
+      // UI format: permission.view/add/edit/delete (nested)
       const hasAnyAccess =
-        canRead ||
-        permission?.add === true ||
-        permission?.write === true ||
-        permission?.edit === true ||
-        permission?.update === true ||
-        permission?.delete === true ||
+        perm?.read === true ||
         perm?.write === true ||
         perm?.update === true ||
-        perm?.delete === true
+        perm?.delete === true ||
+        perm?.permission?.view === true ||
+        perm?.permission?.read === true ||
+        perm?.permission?.add === true ||
+        perm?.permission?.write === true ||
+        perm?.permission?.edit === true ||
+        perm?.permission?.update === true ||
+        perm?.permission?.delete === true
 
       return hasAnyAccess
     })
@@ -273,23 +281,23 @@ const Sidebar: FC<SidebarProps> = ({
   ]
 
   // Staff menu items (filtered by role permissions) for franchise/hub staff
+  // Module names must EXACTLY match what's in franchiseRoleModules (roleModules.ts) / the role permission API
   const staffMenuItems: MenuItem[] = franchiseMenuItems
     .map((item) => {
       if (item.title === "Dashboard" || item.title === "Profile") return item
 
       if (item.title === "Orders") {
-        return hasStaffModuleAccess(["order", "booking", "shipment"]) ? item : null
+        return hasStaffModuleAccess(["Orders"]) ? item : null
       }
 
       if (item.title === "Staffs") {
-        const canStaff = hasStaffModuleAccess(["staff", "user", "manage staffs"])
-        const canRole = hasStaffModuleAccess(["role", "permission"])
-        const canAccess = hasStaffModuleAccess(["access"])
-        if (!canStaff && !canRole && !canAccess) return null
+        const canStaff = hasStaffModuleAccess(["Manage Staffs"])
+        const canRole = hasStaffModuleAccess(["Role & Permissions"])
+        if (!canStaff && !canRole) return null
 
         const filteredSubmenu = (item.submenu || []).filter((sub) => {
-          if (sub.path === "/franchise-staff") return canStaff || canAccess
-          if (sub.path === "/franchise-role") return canRole || canAccess
+          if (sub.path === "/franchise-staff") return canStaff
+          if (sub.path === "/franchise-role") return canRole
           return false
         })
 
@@ -298,23 +306,23 @@ const Sidebar: FC<SidebarProps> = ({
       }
 
       if (item.title === "Rate Calculator") {
-        return hasStaffModuleAccess(["rate"]) ? item : null
+        return hasStaffModuleAccess(["Rate Calculator"]) ? item : null
       }
 
       if (item.title === "Service Availability Check") {
-        return hasStaffModuleAccess(["service", "pincode"]) ? item : null
+        return hasStaffModuleAccess(["Service Availability Check"]) ? item : null
       }
 
       if (item.title === "Tracking") {
-        return hasStaffModuleAccess(["tracking"]) ? item : null
+        return hasStaffModuleAccess(["Tracking"]) ? item : null
       }
 
       if (item.title === "Wallet") {
-        return hasStaffModuleAccess(["wallet", "payment", "transaction"]) ? item : null
+        return hasStaffModuleAccess(["Wallet"]) ? item : null
       }
 
       if (item.title === "Reports") {
-        return hasStaffModuleAccess(["report"]) ? item : null
+        return hasStaffModuleAccess(["Reports"]) ? item : null
       }
 
       return item
@@ -322,44 +330,45 @@ const Sidebar: FC<SidebarProps> = ({
     .filter(Boolean) as MenuItem[]
 
   // Admin staff menu items (filtered by role permissions for head_quarter staff)
+  // Module names must EXACTLY match what's in adminRoleModules (roleModules.ts)
   const adminStaffMenuItems: MenuItem[] = adminMenuItems
     .map((item) => {
       if (item.title === "Dashboard") return item
 
       if (item.title === "Franchise") {
-        return hasStaffModuleAccess(["franchise"]) ? item : null
+        return hasStaffModuleAccess(["Franchise"]) ? item : null
       }
 
       if (item.title === "Hub") {
-        return hasStaffModuleAccess(["hub"]) ? item : null
+        return hasStaffModuleAccess(["Hub"]) ? item : null
       }
 
       if (item.title === "Customers") {
-        return hasStaffModuleAccess(["customer"]) ? item : null
+        return hasStaffModuleAccess(["Customers"]) ? item : null
       }
 
       if (item.title === "Access Management") {
-        return hasStaffModuleAccess(["access", "staff", "role", "permission"]) ? item : null
+        return hasStaffModuleAccess(["Access Management"]) ? item : null
       }
 
       if (item.title === "Orders") {
-        return hasStaffModuleAccess(["order", "booking", "shipment"]) ? item : null
+        return hasStaffModuleAccess(["Orders"]) ? item : null
       }
 
       if (item.title === "Payments") {
-        return hasStaffModuleAccess(["payment", "wallet", "transaction"]) ? item : null
+        return hasStaffModuleAccess(["Payments"]) ? item : null
       }
 
       if (item.title === "Tracking") {
-        return hasStaffModuleAccess(["tracking"]) ? item : null
+        return hasStaffModuleAccess(["Tracking"]) ? item : null
       }
 
       if (item.title === "Settings") {
-        return hasStaffModuleAccess(["setting", "rate"]) ? item : null
+        return hasStaffModuleAccess(["Settings"]) ? item : null
       }
 
       if (item.title === "Careers") {
-        return hasStaffModuleAccess(["career"]) ? item : null
+        return hasStaffModuleAccess(["Careers"]) ? item : null
       }
 
       return item
@@ -377,11 +386,22 @@ const Sidebar: FC<SidebarProps> = ({
       : effectiveLoginType === "hub"
       ? hubMenuItems.map((item) => {
           if (item.title === "Dashboard" || item.title === "Profile") return item
-          if (item.title === "Orders") return hasStaffModuleAccess(["order", "booking", "shipment"]) ? item : null
-          if (item.title === "Staffs") return hasStaffModuleAccess(["staff", "user", "manage staffs", "access"]) ? item : null
-          if (item.title === "Rate Calculator") return hasStaffModuleAccess(["rate"]) ? item : null
-          if (item.title === "Service Availability Check") return hasStaffModuleAccess(["service", "pincode"]) ? item : null
-          if (item.title === "Tracking") return hasStaffModuleAccess(["tracking"]) ? item : null
+          if (item.title === "Orders") return hasStaffModuleAccess(["Orders"]) ? item : null
+          if (item.title === "Staffs") {
+            const canStaff = hasStaffModuleAccess(["Manage Staffs"])
+            const canRole = hasStaffModuleAccess(["Role & Permissions"])
+            if (!canStaff && !canRole) return null
+            const filteredSubmenu = (item.submenu || []).filter((sub) => {
+              if (sub.path === "/franchise-staff") return canStaff
+              if (sub.path === "/franchise-role") return canRole
+              return false
+            })
+            if (filteredSubmenu.length === 0) return null
+            return { ...item, submenu: filteredSubmenu }
+          }
+          if (item.title === "Rate Calculator") return hasStaffModuleAccess(["Rate Calculator"]) ? item : null
+          if (item.title === "Service Availability Check") return hasStaffModuleAccess(["Service Availability Check"]) ? item : null
+          if (item.title === "Tracking") return hasStaffModuleAccess(["Tracking"]) ? item : null
           return item
         }).filter(Boolean) as MenuItem[]
       : staffMenuItems
