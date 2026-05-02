@@ -15,6 +15,8 @@ export const checkModulePermission = ({
 
     // Root user has all permissions
     if (
+      profile?.roleId?.isRoot ||
+      profile?.data?.roleId?.isRoot ||
       profile?.role?.isRoot ||
       profile?.data?.role?.isRoot ||
       profile?.roleinfo?.isRoot ||
@@ -23,6 +25,8 @@ export const checkModulePermission = ({
 
     // Extract permissions from all known paths
     const permissionCandidates = [
+      profile?.roleId?.permissions,
+      profile?.data?.roleId?.permissions,
       profile?.role?.permissions,
       profile?.data?.role?.permissions,
       profile?.roleinfo?.permissions,

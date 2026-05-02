@@ -118,6 +118,8 @@ export const hasRouteAccess = (pathname: string): boolean => {
 
   // Root users have all permissions
   if (
+    profileData?.roleId?.isRoot ||
+    profileData?.data?.roleId?.isRoot ||
     profileData?.role?.isRoot ||
     profileData?.data?.role?.isRoot ||
     profileData?.roleinfo?.isRoot ||
@@ -126,6 +128,8 @@ export const hasRouteAccess = (pathname: string): boolean => {
 
   // Extract permissions from all known paths
   const permissionCandidates = [
+    profileData?.roleId?.permissions,
+    profileData?.data?.roleId?.permissions,
     profileData?.role?.permissions,
     profileData?.data?.role?.permissions,
     profileData?.roleinfo?.permissions,

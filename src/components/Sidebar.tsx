@@ -89,10 +89,13 @@ const Sidebar: FC<SidebarProps> = ({
 
     // Try all known paths where permissions might exist
     const candidates = [
+      // Populated roleId object (backend populates roleId with full role data)
+      profile?.roleId?.permissions,
+      profile?.data?.roleId?.permissions,
       // Populated role object
       profile?.role?.permissions,
       profile?.data?.role?.permissions,
-      // Separate roleinfo field (when role is just an ID)
+      // Separate roleinfo field
       profile?.roleinfo?.permissions,
       profile?.data?.roleinfo?.permissions,
       // roleInfo with capital I
@@ -114,6 +117,8 @@ const Sidebar: FC<SidebarProps> = ({
 
   const staffPermissions = extractPermissions(profileData)
   const isRootUser =
+    profileData?.roleId?.isRoot === true ||
+    profileData?.data?.roleId?.isRoot === true ||
     profileData?.role?.isRoot === true ||
     profileData?.data?.role?.isRoot === true ||
     profileData?.roleinfo?.isRoot === true ||
