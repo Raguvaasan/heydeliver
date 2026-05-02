@@ -62,15 +62,10 @@ const Sidebar: FC<SidebarProps> = ({
     profileData?.data?.type ||
     ""
   ).toLowerCase()
-  // Determine which menu set to base filtering on
-  const effectiveLoginType =
-    loginType === "staff" && (staffAssignedType === "hub" || staffAssignedType === "franchise" || staffAssignedType === "head_quarter")
-      ? staffAssignedType === "head_quarter"
-        ? "admin"
-        : staffAssignedType
-      : loginType
-  // Staff always uses permission-based filtering regardless of assigned type
-  const isStaffUser = loginType === "staff"
+  // loginType is already the effective type (franchise staff → "franchise", hub staff → "hub", HQ staff → "admin")
+  const effectiveLoginType = loginType
+  // Detect staff users via the isStaffLogin flag (loginType may be remapped to franchise/hub/admin)
+  const isStaffUser = sessionStorage.getItem("isStaffLogin") === "true"
   const staffPermissions: any[] =
     profileData?.role?.permissions ||
     profileData?.data?.role?.permissions ||
@@ -422,6 +417,8 @@ const Sidebar: FC<SidebarProps> = ({
   const handleLogout = () => {
     sessionStorage.removeItem("authToken")
     sessionStorage.removeItem("profileData")
+    sessionStorage.removeItem("isStaffLogin")
+    sessionStorage.removeItem("loginType")
     navigate("/", { replace: true })
   }
 

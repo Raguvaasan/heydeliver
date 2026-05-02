@@ -161,6 +161,10 @@ const LoginPage: FC = function () {
 
         sessionStorage.setItem("profileData", JSON.stringify(userData))
         sessionStorage.setItem("loginType", effectiveLoginType)
+        // Track if the user originally logged in as staff (for permission filtering)
+        if (loginType === "staff") {
+          sessionStorage.setItem("isStaffLogin", "true")
+        }
 
         toast.success("Login successful! Redirecting...")
         setTimeout(() => {

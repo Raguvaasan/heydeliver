@@ -89,10 +89,12 @@ export const getRoutePermission = (pathname: string): RoutePermission | null => 
  * Staff users are checked against their assigned permissions.
  */
 export const hasRouteAccess = (pathname: string): boolean => {
-  const loginType = sessionStorage.getItem("loginType") || "admin"
+  // Staff users are identified by the isStaffLogin flag
+  // (loginType may be remapped to franchise/hub/admin for API endpoint selection)
+  const isStaffUser = sessionStorage.getItem("isStaffLogin") === "true"
 
   // Non-staff users get full access based on their role type
-  if (loginType !== "staff") return true
+  if (!isStaffUser) return true
 
   // Get staff profile data
   let profileData: any = null
