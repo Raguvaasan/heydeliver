@@ -183,6 +183,31 @@ const Sidebar: FC<SidebarProps> = ({
       return hasAnyAccess
     })
   }
+
+  /**
+   * Check if staff has a specific action permission on a module.
+   * action: "read" | "write" | "update" | "delete"
+   */
+  const hasStaffActionAccess = (moduleName: string, action: "read" | "write" | "update" | "delete") => {
+    if (!isStaffUser) return true
+    if (isRootUser) return true
+    if (!Array.isArray(staffPermissions) || staffPermissions.length === 0) return false
+
+    return staffPermissions.some((perm: any) => {
+      const name = String(perm?.module || perm?.moduleName || "").trim().toLowerCase()
+      if (name !== moduleName.toLowerCase()) return false
+
+      // Check flat API format and nested UI format
+      const actionMap: Record<string, string[]> = {
+        read: ["read", "view"],
+        write: ["write", "add"],
+        update: ["update", "edit"],
+        delete: ["delete"],
+      }
+      const keys = actionMap[action] || [action]
+      return keys.some((k) => perm?.[k] === true || perm?.permission?.[k] === true)
+    })
+  }
   
   // Admin menu items
   const adminMenuItems: MenuItem[] = [
@@ -352,20 +377,25 @@ const Sidebar: FC<SidebarProps> = ({
       if (item.title === "Dashboard" || item.title === "Profile") return item
 
       if (item.title === "Orders") {
-        return hasStaffModuleAccess(["Orders"]) ? item : null
+        if (!hasStaffModuleAccess(["Orders"])) return null
+        const filteredSubmenu = (item.submenu || []).filter((sub) => {
+          if (sub.path === "/orders/new") return hasStaffActionAccess("Orders", "write")
+          if (sub.path === "/orders") return hasStaffActionAccess("Orders", "read")
+          return true
+        })
+        if (filteredSubmenu.length === 0) return null
+        return { ...item, submenu: filteredSubmenu }
       }
 
       if (item.title === "Staffs") {
         const canStaff = hasStaffModuleAccess(["Manage Staffs"])
         const canRole = hasStaffModuleAccess(["Role & Permissions"])
         if (!canStaff && !canRole) return null
-
         const filteredSubmenu = (item.submenu || []).filter((sub) => {
           if (sub.path === "/franchise-staff") return canStaff
           if (sub.path === "/franchise-role") return canRole
           return false
         })
-
         if (filteredSubmenu.length === 0) return null
         return { ...item, submenu: filteredSubmenu }
       }
@@ -383,7 +413,14 @@ const Sidebar: FC<SidebarProps> = ({
       }
 
       if (item.title === "Wallet") {
-        return hasStaffModuleAccess(["Wallet"]) ? item : null
+        if (!hasStaffModuleAccess(["Wallet"])) return null
+        const filteredSubmenu = (item.submenu || []).filter((sub) => {
+          if (sub.path === "/wallet/add") return hasStaffActionAccess("Wallet", "write")
+          if (sub.path === "/wallet") return hasStaffActionAccess("Wallet", "read")
+          return true
+        })
+        if (filteredSubmenu.length === 0) return null
+        return { ...item, submenu: filteredSubmenu }
       }
 
       if (item.title === "Reports") {
@@ -413,7 +450,14 @@ const Sidebar: FC<SidebarProps> = ({
       }
 
       if (item.title === "Access Management") {
-        return hasStaffModuleAccess(["Access Management"]) ? item : null
+        if (!hasStaffModuleAccess(["Access Management"])) return null
+        const filteredSubmenu = (item.submenu || []).filter((sub) => {
+          if (sub.path === "/staff") return hasStaffActionAccess("Access Management", "read")
+          if (sub.path === "/role") return hasStaffActionAccess("Access Management", "read")
+          return true
+        })
+        if (filteredSubmenu.length === 0) return null
+        return { ...item, submenu: filteredSubmenu }
       }
 
       if (item.title === "Orders") {
@@ -421,7 +465,14 @@ const Sidebar: FC<SidebarProps> = ({
       }
 
       if (item.title === "Payments") {
-        return hasStaffModuleAccess(["Payments"]) ? item : null
+        if (!hasStaffModuleAccess(["Payments"])) return null
+        const filteredSubmenu = (item.submenu || []).filter((sub) => {
+          if (sub.path === "/wallet/transactions") return hasStaffActionAccess("Payments", "read")
+          if (sub.path === "/payments/revenue") return hasStaffActionAccess("Payments", "read")
+          return true
+        })
+        if (filteredSubmenu.length === 0) return null
+        return { ...item, submenu: filteredSubmenu }
       }
 
       if (item.title === "Tracking") {
@@ -429,11 +480,24 @@ const Sidebar: FC<SidebarProps> = ({
       }
 
       if (item.title === "Settings") {
-        return hasStaffModuleAccess(["Settings"]) ? item : null
+        if (!hasStaffModuleAccess(["Settings"])) return null
+        const filteredSubmenu = (item.submenu || []).filter((sub) => {
+          if (sub.path === "/rate-calculator") return hasStaffActionAccess("Settings", "write")
+          return hasStaffActionAccess("Settings", "read")
+        })
+        if (filteredSubmenu.length === 0) return null
+        return { ...item, submenu: filteredSubmenu }
       }
 
       if (item.title === "Careers") {
-        return hasStaffModuleAccess(["Careers"]) ? item : null
+        if (!hasStaffModuleAccess(["Careers"])) return null
+        const filteredSubmenu = (item.submenu || []).filter((sub) => {
+          if (sub.path === "/careers/applications") return hasStaffActionAccess("Careers", "read")
+          if (sub.path === "/careers") return hasStaffActionAccess("Careers", "read")
+          return true
+        })
+        if (filteredSubmenu.length === 0) return null
+        return { ...item, submenu: filteredSubmenu }
       }
 
       return item
@@ -451,7 +515,18 @@ const Sidebar: FC<SidebarProps> = ({
       : effectiveLoginType === "hub"
       ? hubMenuItems.map((item) => {
           if (item.title === "Dashboard" || item.title === "Profile") return item
-          if (item.title === "Orders") return hasStaffModuleAccess(["Orders"]) ? item : null
+
+          if (item.title === "Orders") {
+            if (!hasStaffModuleAccess(["Orders"])) return null
+            const filteredSubmenu = (item.submenu || []).filter((sub) => {
+              if (sub.path === "/orders/new") return hasStaffActionAccess("Orders", "write")
+              if (sub.path === "/orders") return hasStaffActionAccess("Orders", "read")
+              return true
+            })
+            if (filteredSubmenu.length === 0) return null
+            return { ...item, submenu: filteredSubmenu }
+          }
+
           if (item.title === "Staffs") {
             const canStaff = hasStaffModuleAccess(["Manage Staffs"])
             const canRole = hasStaffModuleAccess(["Role & Permissions"])
@@ -464,6 +539,7 @@ const Sidebar: FC<SidebarProps> = ({
             if (filteredSubmenu.length === 0) return null
             return { ...item, submenu: filteredSubmenu }
           }
+
           if (item.title === "Rate Calculator") return hasStaffModuleAccess(["Rate Calculator"]) ? item : null
           if (item.title === "Service Availability Check") return hasStaffModuleAccess(["Service Availability Check"]) ? item : null
           if (item.title === "Tracking") return hasStaffModuleAccess(["Tracking"]) ? item : null

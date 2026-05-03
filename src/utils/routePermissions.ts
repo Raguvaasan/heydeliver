@@ -20,6 +20,7 @@ export const routePermissionMap: Record<string, RoutePermission> = {
   // Orders
   "/orders/new": { module: "Orders", action: "add" },
   "/orders/bulk": { module: "Orders", action: "add" },
+  "/orders/pickup/create": { module: "Orders", action: "add" },
   "/orders": { module: "Orders", action: "view" },
 
   // Franchise/Agency Management
@@ -31,13 +32,22 @@ export const routePermissionMap: Record<string, RoutePermission> = {
   // Customers
   "/customers": { module: "Customers", action: "view" },
 
-  // Access Management (Staff & Roles)
+  // Access Management (Staff & Roles) — admin side
+  "/role/roleform": { module: "Access Management", action: "add" },
+  "/role/editrole": { module: "Access Management", action: "edit" },
   "/staff": { module: "Access Management", action: "view" },
   "/role": { module: "Access Management", action: "view" },
+
+  // Franchise Staff & Roles — franchise/hub side
+  "/franchise-staff/add": { module: "Manage Staffs", action: "add" },
+  "/franchise-staff/edit": { module: "Manage Staffs", action: "edit" },
+  "/franchise-role/roleform": { module: "Role & Permissions", action: "add" },
+  "/franchise-role/editrole": { module: "Role & Permissions", action: "edit" },
   "/franchise-staff": { module: "Manage Staffs", action: "view" },
   "/franchise-role": { module: "Role & Permissions", action: "view" },
 
   // Wallet & Payments
+  "/wallet/add": { module: "Wallet", action: "add" },
   "/wallet": { module: "Wallet", action: "view" },
   "/payments": { module: "Payments", action: "view" },
 
