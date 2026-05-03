@@ -5,7 +5,7 @@ import { HiEye, HiEyeOff } from "react-icons/hi"
 import { HiArrowPath } from "react-icons/hi2"
 import { loginAdminUser, loginHubUser, sendFranchiseLoginOtp, verifyFranchiseLoginOtp, sendStaffLoginOtp, verifyStaffLoginOtp } from "../../store/loginStore"
 import toast from "react-hot-toast"
-import truckImg from "../../../public/images/Gemini_Generated_Image_fnjmi7fnjmi7fnjm.png"
+import truckImg from "../../../public/images/truck.jpeg"
 interface LoginResponse {
   data?: {
     success?: boolean
