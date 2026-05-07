@@ -759,6 +759,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(backendResponse.status).json(backendResponse.data)
     }
 
+    // ── Hub proxy ────────────────────────────────────────────────────────────
+    // Hub endpoints use /hub/* on the backend (no /api/ prefix).
+    // The Vite dev proxy strips /api/hub and forwards to BACKEND/hub/*.
+    // Replicate that behaviour here for production (Vercel).
+    if (segments[0] === 'hub') {
+      const hubPath = segments.slice(1).join('/')
+      const authHeader = req.headers.authorization
+      const qs = parsedUrl.search || ''
+      const backendUrl = `${BACKEND_API_URL}/hub/${hubPath}`
+      const axiosConfig: any = {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000,
+        validateStatus: (status: number) => status < 600,
+      }
+      if (authHeader) axiosConfig.headers.Authorization = authHeader
+
+      const backendResponse = await axios({
+        method: req.method || 'GET',
+        url: `${backendUrl}${qs}`,
+        data: req.method !== 'GET' && req.method !== 'DELETE' ? req.body : undefined,
+        ...axiosConfig,
+      })
+      return res.status(backendResponse.status).json(backendResponse.data)
+    }
+
     // ── Generic catch-all proxy ─────────────────────────────────────────────
     // Forward any unmatched /api/* request to the backend so routes like
     // /api/careers, /api/applications, etc. work without
