@@ -121,6 +121,7 @@ const Navbar: FC<NavbarProps> = ({
       { keywords: ["hubs", "hub"], path: "/hubs" },
       { keywords: ["franchise", "agencies"], path: "/agencies" },
       { keywords: ["customers", "customer"], path: "/customers" },
+      { keywords: ["b2b customer", "b2b customers"], path: "/b2b-customers" },
       { keywords: ["invoice", "invoices"], path: "/invoice" },
       { keywords: ["tracking", "track"], path: "/tracking" },
       { keywords: ["pickup", "pickup requests"], path: "/pickup-requests" },
@@ -267,3 +268,4 @@ const Navbar: FC<NavbarProps> = ({
 }
 
 export default Navbar
+

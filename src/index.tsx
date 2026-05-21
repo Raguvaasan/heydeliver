@@ -41,6 +41,7 @@ const HubManagementPage = lazy(() => import("./pages/HubManagement/HubManagement
 
 // Customer Management
 const CustomersPage = lazy(() => import("./pages/Customers/CustomersPage"))
+const B2BCustomersPage = lazy(() => import("./pages/B2BCustomers/B2BCustomersPage"))
 
 // Staff Management
 const FranchiseStaffPage = lazy(() => import("./pages/Staff/FranchiseStaffPage"))
@@ -189,6 +190,15 @@ root.render(
             element={
               <PermissionRoute>
                 <CustomersPage />
+              </PermissionRoute>
+            }
+          />
+
+          <Route
+            path="/b2b-customers"
+            element={
+              <PermissionRoute>
+                <B2BCustomersPage />
               </PermissionRoute>
             }
           />
@@ -639,3 +649,4 @@ root.render(
     </Flowbite>
   </ThemeProvider>
 )
+

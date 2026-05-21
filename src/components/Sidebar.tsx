@@ -232,6 +232,11 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/customers",
     },
     {
+      title: "B2B Customer",
+      icon: <HiUserGroup className="h-5 w-5" />,
+      path: "/b2b-customers",
+    },
+    {
       title: "Access Management",
       icon: <HiUserGroup className="h-5 w-5" />,
       path: "/access",
@@ -446,6 +451,10 @@ const Sidebar: FC<SidebarProps> = ({
       }
 
       if (item.title === "Customers") {
+        return hasStaffModuleAccess(["Customers"]) ? item : null
+      }
+
+      if (item.title === "B2B Customer") {
         return hasStaffModuleAccess(["Customers"]) ? item : null
       }
 
@@ -750,3 +759,4 @@ const Sidebar: FC<SidebarProps> = ({
 }
 
 export default Sidebar
+

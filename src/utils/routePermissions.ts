@@ -202,3 +202,4 @@ export const hasRouteAccess = (pathname: string): boolean => {
 
   return hasModule
 }
+

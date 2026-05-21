@@ -1,14 +1,14 @@
-import { FC, useEffect, useState, useCallback } from "react"
+import { FC, useEffect, useState, useCallback, useMemo } from "react"
 import { Card, Button, Badge, TextInput, Spinner, Select } from "flowbite-react"
 import { HiSearch, HiPlus, HiEye, HiPencil, HiTrash, HiChevronLeft, HiChevronRight } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
-import { useCustomerStore, Customer } from "../../store/customerStore"
-import AddCustomerModal from "./AddCustomerModal"
-import EditCustomerModal from "./EditCustomerModal"
-import ViewCustomerModal from "./ViewCustomerModal"
+import { useB2BCustomerStore, B2BCustomer } from "../../store/b2bCustomerStore"
+import AddB2BCustomerModal from "./AddB2BCustomerModal"
+import EditB2BCustomerModal from "./EditB2BCustomerModal"
+import ViewB2BCustomerModal from "./ViewB2BCustomerModal"
 import DeleteConfirmModal from "../AgencyManagement/DeleteConfirmModal"
 
-const CustomersPage: FC = () => {
+const B2BCustomersPage: FC = () => {
   const {
     customers,
     loading,
@@ -16,7 +16,7 @@ const CustomersPage: FC = () => {
     fetchCustomers,
     deleteCustomer,
     setSelectedCustomer,
-  } = useCustomerStore()
+  } = useB2BCustomerStore()
 
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
@@ -28,8 +28,8 @@ const CustomersPage: FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const loadCustomers = useCallback(() => {
-    fetchCustomers(currentPage, 10, searchTerm || undefined, statusFilter || undefined)
-  }, [fetchCustomers, currentPage, searchTerm, statusFilter])
+    fetchCustomers(1, 1000)
+  }, [fetchCustomers])
 
   useEffect(() => {
     loadCustomers()
@@ -40,12 +40,12 @@ const CustomersPage: FC = () => {
     setCurrentPage(1)
   }, [searchTerm, statusFilter])
 
-  const handleView = (customer: Customer) => {
+  const handleView = (customer: B2BCustomer) => {
     setSelectedCustomer(customer)
     setIsViewModalOpen(true)
   }
 
-  const handleEdit = (customer: Customer) => {
+  const handleEdit = (customer: B2BCustomer) => {
     setSelectedCustomer(customer)
     setIsEditModalOpen(true)
   }
@@ -77,7 +77,23 @@ const CustomersPage: FC = () => {
     loadCustomers()
   }
 
-  const totalPages = pagination?.totalPages || 1
+  const filteredCustomers = useMemo(() => {
+    return customers.filter((customer) => {
+      const fullName = `${customer.firstName} ${customer.lastName}`.trim().toLowerCase()
+      const matchesSearch =
+        !searchTerm ||
+        fullName.includes(searchTerm.toLowerCase()) ||
+        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.mobileNumber.toLowerCase().includes(searchTerm.toLowerCase())
+      const normalizedStatus = String(customer.status || "").toLowerCase()
+      const matchesStatus =
+        !statusFilter || normalizedStatus === statusFilter.toLowerCase()
+      return matchesSearch && matchesStatus
+    })
+  }, [customers, searchTerm, statusFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / 10))
+  const paginatedCustomers = filteredCustomers.slice((currentPage - 1) * 10, currentPage * 10)
 
   return (
     <NavbarSidebarLayout>
@@ -85,10 +101,10 @@ const CustomersPage: FC = () => {
         {/* Page Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Customer Management
+            B2B Customer Management
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Manage all customers and their information
+            Manage all B2B customers and their information
           </p>
         </div>
 
@@ -98,7 +114,7 @@ const CustomersPage: FC = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                List of Customers
+                List of B2B Customers
               </h2>
               <div className="flex flex-col sm:flex-row gap-3">
                 <div className="relative max-w-md flex-1">
@@ -107,7 +123,7 @@ const CustomersPage: FC = () => {
                   </div>
                   <TextInput
                     type="search"
-                    placeholder="Search customers..."
+                    placeholder="Search B2B customers..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -120,7 +136,7 @@ const CustomersPage: FC = () => {
                 >
                   <option value="">All Status</option>
                   <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
+                  <option value="Pending">Pending</option>
                 </Select>
               </div>
             </div>
@@ -131,7 +147,7 @@ const CustomersPage: FC = () => {
                 className="bg-orange-500 hover:bg-orange-600"
               >
                 <HiPlus className="mr-2 h-5 w-5" />
-                ADD CUSTOMER
+                ADD B2B CUSTOMER
               </Button>
             </div>
           </div>
@@ -157,8 +173,8 @@ const CustomersPage: FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {customers.length > 0 ? (
-                    customers.map((customer, index) => (
+                  {paginatedCustomers.length > 0 ? (
+                    paginatedCustomers.map((customer, index) => (
                       <tr
                         key={customer.id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -168,14 +184,14 @@ const CustomersPage: FC = () => {
                         </td>
                         <td className="px-4 py-3">
                           <span className="font-medium text-gray-900 dark:text-white">
-                            {customer.name}
+                            {`${customer.firstName} ${customer.lastName}`.trim()}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           {customer.email}
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                          {customer.phone}
+                          {customer.mobileNumber}
                         </td>
                         {/* <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           {customer.city || "-"}
@@ -186,7 +202,7 @@ const CustomersPage: FC = () => {
                         <td className="px-4 py-3">
                           <Badge
                             color={
-                              customer.status === "Active" ? "success" : "failure"
+                              customer.status === "Active" ? "success" : "purple"
                             }
                           >
                             {customer.status}
@@ -225,7 +241,7 @@ const CustomersPage: FC = () => {
                         colSpan={8}
                         className="px-4 py-8 text-center text-gray-500"
                       >
-                        No customers found
+                        No B2B customers found
                       </td>
                     </tr>
                   )}
@@ -239,8 +255,8 @@ const CustomersPage: FC = () => {
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <p className="text-sm text-gray-700 dark:text-gray-400">
                 Page {currentPage} of {totalPages}
-                {pagination?.total && (
-                  <span> ({pagination.total} total customers)</span>
+                {filteredCustomers.length > 0 && (
+                  <span> ({filteredCustomers.length} total B2B customers)</span>
                 )}
               </p>
               <div className="flex items-center gap-2">
@@ -289,15 +305,15 @@ const CustomersPage: FC = () => {
       </div>
 
       {/* Modals */}
-      <AddCustomerModal
+      <AddB2BCustomerModal
         isOpen={isAddModalOpen}
         onClose={handleAddSuccess}
       />
-      <EditCustomerModal
+      <EditB2BCustomerModal
         isOpen={isEditModalOpen}
         onClose={handleEditSuccess}
       />
-      <ViewCustomerModal
+      <ViewB2BCustomerModal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
       />
@@ -305,11 +321,13 @@ const CustomersPage: FC = () => {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDeleteConfirm}
-        title="Delete Customer"
-        message="Are you sure you want to delete this customer? This action cannot be undone."
+        title="Delete B2B Customer"
+        message="Are you sure you want to delete this B2B customer? This action cannot be undone."
       />
     </NavbarSidebarLayout>
   )
 }
 
-export default CustomersPage
+export default B2BCustomersPage
+
+
