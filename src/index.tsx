@@ -36,6 +36,9 @@ const FranchiseEditRolePage = lazy(() => import("./pages/Role/FranchiseEditRoleP
 // Agency Management
 const AgencyManagementPage = lazy(() => import("./pages/AgencyManagement/AgencyManagementPage"))
 
+// Collection Agency Management
+const CollectionAgencyManagementPage = lazy(() => import("./pages/CollectionAgencyManagement/CollectionAgencyManagementPage"))
+
 // Hub Management
 const HubManagementPage = lazy(() => import("./pages/HubManagement/HubManagementPage"))
 
@@ -172,6 +175,15 @@ root.render(
             element={
               <PermissionRoute>
                 <AgencyManagementPage />
+              </PermissionRoute>
+            }
+          />
+
+          <Route
+            path="/collection-agencies"
+            element={
+              <PermissionRoute>
+                <CollectionAgencyManagementPage />
               </PermissionRoute>
             }
           />

@@ -222,6 +222,11 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/agencies",
     },
     {
+      title: "Collection Agency",
+      icon: <HiOfficeBuilding className="h-5 w-5" />,
+      path: "/collection-agencies",
+    },
+    {
       title: "Hub",
       icon: <HiOfficeBuilding className="h-5 w-5" />,
       path: "/hubs",
@@ -444,6 +449,10 @@ const Sidebar: FC<SidebarProps> = ({
 
       if (item.title === "Franchise") {
         return hasStaffModuleAccess(["Franchise"]) ? item : null
+      }
+
+      if (item.title === "Collection Agency") {
+        return hasStaffModuleAccess(["Collection Agency"]) ? item : null
       }
 
       if (item.title === "Hub") {

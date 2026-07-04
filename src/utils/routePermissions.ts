@@ -25,6 +25,7 @@ export const routePermissionMap: Record<string, RoutePermission> = {
 
   // Franchise/Agency Management
   "/agencies": { module: "Franchise", action: "view" },
+  "/collection-agencies": { module: "Collection Agency", action: "view" },
 
   // Hub Management
   "/hubs": { module: "Hub", action: "view" },

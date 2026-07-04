@@ -1,6 +1,7 @@
 const adminRoleModules = [
   "Dashboard",
   "Franchise",
+  "Collection Agency",
   "Hub",
   "Customers",
   "Access Management",
