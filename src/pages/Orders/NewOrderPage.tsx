@@ -137,6 +137,7 @@ function deepGet(obj: unknown, keys: string[]): number | string | undefined {
 interface BoxDetails {
   id: number
   packageType: string
+  boxCount: string
   length: string
   breadth: string
   height: string
@@ -166,20 +167,32 @@ const volGrams = (l: number, b: number, h: number): number =>
 const volKgDisplay = (l: number, b: number, h: number): string =>
   (volGrams(l, b, h) / 1000).toFixed(3)
 
-const boxChargeableGrams = (box: BoxDetails): number => {
-  const actual = Math.round(parseFloat(box.weight) || 0)
+const boxCountValue = (box: BoxDetails): number => Math.max(1, Math.floor(Number(box.boxCount) || 1))
+
+const boxActualGrams = (box: BoxDetails): number =>
+  Math.round(parseFloat(box.weight) || 0) * boxCountValue(box)
+
+const boxVolumetricGrams = (box: BoxDetails): number => {
   const pType = box.packageType.toLowerCase()
   const supportsDimensions = pType === "box" || pType === "envelope" // "envelope" is the value for Plastic/Flyer
-
-  if (!supportsDimensions) return actual
+  if (!supportsDimensions) return 0
   const l = parseFloat(box.length) || 0
   const b = parseFloat(box.breadth) || 0
   const h = parseFloat(box.height) || 0
-  return Math.max(actual, volGrams(l, b, h))
+  return volGrams(l, b, h) * boxCountValue(box)
+}
+
+const boxChargeableGrams = (box: BoxDetails): number => {
+  const actual = boxActualGrams(box)
+  const volumetric = boxVolumetricGrams(box)
+  return Math.max(actual, volumetric)
 }
 
 const totalChargeableGrams = (boxes: BoxDetails[]): number =>
   boxes.reduce((sum, box) => sum + boxChargeableGrams(box), 0)
+
+const totalActualGrams = (boxes: BoxDetails[]): number =>
+  boxes.reduce((sum, box) => sum + boxActualGrams(box), 0)
 
 // ─── Spinner icon (inline so no extra dep) ────────────────────────────────────
 const Spinner = () => (
@@ -245,10 +258,10 @@ const NewOrderPage: FC = () => {
     weight: "",
   })
 
-  console.log("formData",formData)
+  console.log("formData", formData)
 
   const [boxes, setBoxes] = useState<BoxDetails[]>([
-    { id: 1, packageType: "Box", length: "", breadth: "", height: "", weight: "" },
+    { id: 1, packageType: "Box", boxCount: "1", length: "", breadth: "", height: "", weight: "" },
   ])
 
   const [showSellerDetails, setShowSellerDetails] = useState(false)
@@ -428,7 +441,7 @@ const NewOrderPage: FC = () => {
       ...prev,
       channelName: value,
       sellerName: value
-          ? (isHubLogin
+        ? (isHubLogin
           ? (profileData?.hubId?.hubName || profileData?.data?.hubId?.hubName || prev.sellerName)
           : (franchiseName || prev.sellerName))
         : prev.sellerName,
@@ -439,7 +452,7 @@ const NewOrderPage: FC = () => {
   }
 
   const handleBoxChange = (id: number, field: keyof BoxDetails, value: string) => {
-    const numericFields: Array<keyof BoxDetails> = ["length", "breadth", "height", "weight"]
+    const numericFields: Array<keyof BoxDetails> = ["boxCount", "length", "breadth", "height", "weight"]
     if (numericFields.includes(field)) {
       if (!/^\d*$/.test(value)) return
       if (value !== "" && Number(value) <= 0) return
@@ -455,7 +468,7 @@ const NewOrderPage: FC = () => {
 
   const addBox = () => {
     const newId = boxes.length ? Math.max(...boxes.map((b) => b.id)) + 1 : 1
-    setBoxes([...boxes, { id: newId, packageType: "", length: "", breadth: "", height: "", weight: "" }])
+    setBoxes([...boxes, { id: newId, packageType: "", boxCount: "1", length: "", breadth: "", height: "", weight: "" }])
 
   }
 
@@ -487,7 +500,7 @@ const NewOrderPage: FC = () => {
     }
 
     try {
-      const totalWeight = boxes.reduce((s, b) => s + (parseFloat(b.weight) || 0), 0)
+      const totalWeight = totalActualGrams(boxes)
 
       const firstBox = boxes[0]
       const payableAmount = selectedRate?.toString() || formData.totalAmount || formData.codAmount
@@ -663,8 +676,6 @@ const NewOrderPage: FC = () => {
                     Channels are online (Shopify) or custom channel for offline (physical store) orders.
                   </p>
                 </div>
-
-
                 <div>
                   <Label htmlFor="orderId">
                     Order ID <span className="text-gray-400">ⓘ</span>
@@ -684,27 +695,6 @@ const NewOrderPage: FC = () => {
                     Auto-generated unique order ID. Click refresh to generate a new one.
                   </p>
                 </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
               </div>
             </Card>
 
@@ -726,8 +716,8 @@ const NewOrderPage: FC = () => {
                     {showSellerDetails && (
                       <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg grid grid-cols-1 md:grid-cols-3 gap-4">
                         {[
-                          { id: "sellerName",    label: "Seller Name",       ph: "Enter seller name" },
-                          { id: "sellerAddress", label: "Seller Address",    ph: "Enter seller address" },
+                          { id: "sellerName", label: "Seller Name", ph: "Enter seller name" },
+                          { id: "sellerAddress", label: "Seller Address", ph: "Enter seller address" },
                           { id: "sellerInvoice", label: "Seller GST Number", ph: "Enter GST number" },
                         ].map(({ id, label, ph }) => (
                           <div key={id}>
@@ -754,9 +744,9 @@ const NewOrderPage: FC = () => {
 
                     {/* Manual fields */}
                     {[
-                      { id: "customerName",    label: "Customer Name *",        ph: "Enter customer name",             type: "text" },
-                      { id: "customerPhone",   label: "Customer Phone *",        ph: "10 digit mobile number",          type: "tel",  max: 10 },
-                      { id: "deliveryAddress", label: "Delivery Address *",      ph: "Enter complete delivery address", type: "text" },
+                      { id: "customerName", label: "Customer Name *", ph: "Enter customer name", type: "text" },
+                      { id: "customerPhone", label: "Customer Phone *", ph: "10 digit mobile number", type: "tel", max: 10 },
+                      { id: "deliveryAddress", label: "Delivery Address *", ph: "Enter complete delivery address", type: "text" },
                     ].map(({ id, label, ph, type, max }) => (
                       <div key={id}>
                         <Label htmlFor={id}>{label}</Label>
@@ -782,8 +772,8 @@ const NewOrderPage: FC = () => {
                     </div>
 
                     {/* Autofilled fields */}
-                    <AutofilledInput id="deliveryCity"    label="City"    isLoading={deliveryPinLoading} value={formData.deliveryCity}    onChange={handleChange} />
-                    <AutofilledInput id="deliveryState"   label="State"   isLoading={deliveryPinLoading} value={formData.deliveryState}   onChange={handleChange} />
+                    <AutofilledInput id="deliveryCity" label="City" isLoading={deliveryPinLoading} value={formData.deliveryCity} onChange={handleChange} />
+                    <AutofilledInput id="deliveryState" label="State" isLoading={deliveryPinLoading} value={formData.deliveryState} onChange={handleChange} />
 
                   </div>
                 )}
@@ -799,47 +789,14 @@ const NewOrderPage: FC = () => {
 
                     {/* Manual fields */}
                     {[
-                      { id: "fromName",  label: "From Name",  ph: "Enter sender/store name", type: "text" },
-                      { id: "fromPhone", label: "From Phone", ph: "10 digit mobile number",  type: "tel", max: 10 },
+                      { id: "fromName", label: "From Name", ph: "Enter sender/store name", type: "text" },
+                      { id: "fromPhone", label: "From Phone", ph: "10 digit mobile number", type: "tel", max: 10 },
                     ].map(({ id, label, ph, type, max }) => (
                       <div key={id}>
                         <Label htmlFor={id}>{label}</Label>
                         <TextInput id={id} name={id} type={type}
                           value={(formData as any)[id]} onChange={handleChange}
                           placeholder={ph} maxLength={max} />
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                       </div>
                     ))}
 
@@ -867,8 +824,8 @@ const NewOrderPage: FC = () => {
                     </div>
 
                     {/* Autofilled fields */}
-                    <AutofilledInput id="fromCity"    label="From City"    isLoading={fromPinLoading} value={formData.fromCity}    onChange={handleChange} />
-                    <AutofilledInput id="fromState"   label="From State"   isLoading={fromPinLoading} value={formData.fromState}   onChange={handleChange} />
+                    <AutofilledInput id="fromCity" label="From City" isLoading={fromPinLoading} value={formData.fromCity} onChange={handleChange} />
+                    <AutofilledInput id="fromState" label="From State" isLoading={fromPinLoading} value={formData.fromState} onChange={handleChange} />
 
                   </div>
                 )}
@@ -902,17 +859,27 @@ const NewOrderPage: FC = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <div>
-                      <Label>Package Type</Label>
-                      <Select value={box.packageType}
-                        onChange={(e) => handleBoxChange(box.id, "packageType", e.target.value)}
-                        required>
-                        <option value="">Select Package</option>
-                        <option value="Box">Box</option>
-                        <option value="Envelope">Plastic cover / Flyer</option>
-                      </Select>
-                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <Label>Package Type</Label>
+                        <Select value={box.packageType}
+                          onChange={(e) => handleBoxChange(box.id, "packageType", e.target.value)}
+                          required>
+                          <option value="">Select Package</option>
+                          <option value="Box">Box</option>
+                          <option value="Envelope">Plastic cover / Flyer</option>
+                        </Select>
+                      </div>
 
+                      <div>
+                        <Label>Number of Boxes</Label>
+                        <TextInput type="number"
+                          placeholder="Enter number of boxes"
+                          value={box.boxCount}
+                          onChange={(e) => handleBoxChange(box.id, "boxCount", e.target.value)}
+                          onKeyDown={preventInvalidKeys} min={1} />
+                      </div>
+                    </div>
                     <div>
                       <Label>
                         Dimensions (cm)
@@ -944,6 +911,7 @@ const NewOrderPage: FC = () => {
                             {box.length} × {box.breadth} × {box.height} ÷ 5000 × 1000
                             = <strong>{volGrams(+box.length, +box.breadth, +box.height)} gm</strong>
                             &nbsp;({volKgDisplay(+box.length, +box.breadth, +box.height)} kg) — ceil
+                            × {boxCountValue(box)}
                             &nbsp;|&nbsp; Chargeable: <strong>{boxChargeableGrams(box)} gm</strong>
                           </p>
                         )}
@@ -964,7 +932,7 @@ const NewOrderPage: FC = () => {
                     {cgmDisplay ? `${cgmDisplay} gm` : "— gm"}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    = sum of max(actual, volumetric) across all boxes
+                    = sum of max(actual, volumetric) across all boxes, multiplied by the number of boxes
                   </p>
                 </div>
               </div>
@@ -985,7 +953,7 @@ const NewOrderPage: FC = () => {
                 className={`p-6 rounded-lg border-2 text-left transition-colors ${formData.shippingMode === "Surface"
                   ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
                   : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
-                }`}>
+                  }`}>
                 <div className="text-4xl mb-2">🚚</div>
                 <h4 className="font-semibold text-gray-900 dark:text-white">SURFACE</h4>
                 <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
@@ -1003,7 +971,7 @@ const NewOrderPage: FC = () => {
                 className={`p-6 rounded-lg border-2 text-left transition-colors ${formData.shippingMode === "Express"
                   ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
                   : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
-                }`}>
+                  }`}>
                 <div className="text-4xl mb-2">✈️</div>
                 <h4 className="font-semibold text-gray-900 dark:text-white">EXPRESS</h4>
                 <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">

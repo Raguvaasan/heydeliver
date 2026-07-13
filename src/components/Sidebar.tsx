@@ -231,16 +231,16 @@ const Sidebar: FC<SidebarProps> = ({
       icon: <HiOfficeBuilding className="h-5 w-5" />,
       path: "/hubs",
     },
-    {
-      title: "Customers",
-      icon: <HiUserGroup className="h-5 w-5" />,
-      path: "/customers",
-    },
-    {
-      title: "B2B Customer",
-      icon: <HiUserGroup className="h-5 w-5" />,
-      path: "/b2b-customers",
-    },
+    // {
+    //   title: "Customers",
+    //   icon: <HiUserGroup className="h-5 w-5" />,
+    //   path: "/customers",
+    // },
+    // {
+    //   title: "B2B Customer",
+    //   icon: <HiUserGroup className="h-5 w-5" />,
+    //   path: "/b2b-customers",
+    // },
     {
       title: "Access Management",
       icon: <HiUserGroup className="h-5 w-5" />,
