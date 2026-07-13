@@ -84,7 +84,7 @@ interface FreightrekShipmentRequest {
   quantity?: string
   shipmentWidth?: string
   shipmentHeight?: string
-    shipmentLength?: string
+  shipmentLength?: string
   weight?: string
   shippingMode?: string
   addressType?: string
@@ -94,25 +94,6 @@ interface FreightrekShipmentRequest {
     name: string
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 interface DelhiveryResponse {
   success: boolean
   packages: Array<{
@@ -194,12 +175,12 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       const raw = res.data?.data ?? res.data ?? []
       const ordersData = Array.isArray(raw)
         ? raw.map((item: any) => ({
-            ...item,
-            _id: item?._id || item?.id || item?.orderId,
-            bookingId: item?.bookingId || item?.orderId || item?.order,
-            customer: item?.customer || item?.customerName || item?.consigneeName,
-            customerNumber: item?.customerNumber || item?.phone || item?.consigneeNumber,
-          }))
+          ...item,
+          _id: item?._id || item?.id || item?.orderId,
+          bookingId: item?.bookingId || item?.orderId || item?.order,
+          customer: item?.customer || item?.customerName || item?.consigneeName,
+          customerNumber: item?.customerNumber || item?.phone || item?.consigneeNumber,
+        }))
         : []
 
       const pagination = res.data?.pagination || null
@@ -333,7 +314,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
   },
 
-  createDelhiveryShipment: async (
+ createDelhiveryShipment: async (
     shipmentData: DelhiveryShipment,
     pickupLocation: string,
     freightrekExtras?
@@ -360,42 +341,41 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         }
       }
 
-      // ── 2. Build Delhivery B2C payload ─────────────────────────────────────
-      // Send JSON to our proxy; the proxy constructs the form-urlencoded body
-      // that Delhivery expects (format=json&data=<JSON>).
-      const payload = {
-        shipments: [shipmentData],
-        pickup_location: { name: pickupLocation },
-      }
-
       const authToken = sessionStorage.getItem("authToken")
 
-      const delhiveryResponse = await axios.post<DelhiveryResponse>(
-        '/delhivery-api/api/cmu/create.json',
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-          },
-          timeout: 10000,
-        }
-      )
+      // ── 2. Build Delhivery B2C payload ─────────────────────────────────────
+      // DISABLED: Delhivery call is switched off — we only hit our own API for now.
+      // Kept here so it's a one-line uncomment to bring back.
+      //
+      // const payload = {
+      //   shipments: [shipmentData],
+      //   pickup_location: { name: pickupLocation },
+      // }
+      //
+      // const delhiveryResponse = await axios.post<DelhiveryResponse>(
+      //   '/delhivery-api/api/cmu/create.json',
+      //   payload,
+      //   {
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //       "Accept": "application/json",
+      //       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      //     },
+      //     timeout: 10000,
+      //   }
+      // )
+      //
+      // const delhiveryData = delhiveryResponse.data
+      //
+      // // Delhivery returns success:true on a valid creation
+      // if (!delhiveryData?.success) {
+      //   throw new Error(delhiveryData?.rmk || "Delhivery shipment creation failed")
+      // }
+      //
+      // const waybill = delhiveryData?.packages?.[0]?.waybill ?? ""
 
-      const delhiveryData = delhiveryResponse.data
-
-      // Delhivery returns success:true on a valid creation
-      if (!delhiveryData?.success) {
-        throw new Error(delhiveryData?.rmk || "Delhivery shipment creation failed")
-      }
-
-      // ── 3. Mirror to our backend (/api/shipment/create) ────────────────────
-      // Only called after Delhivery confirms success
-      const waybill = delhiveryData?.packages?.[0]?.waybill ?? ""
-
+      // ── 3. Call our backend directly (/api/shipment/create) ────────────────
       const freightrekPayload: FreightrekShipmentRequest = {
-        // Consignee / destination
         name: shipmentData.name,
         add: shipmentData.add,
         pin: shipmentData.pin,
@@ -405,8 +385,6 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         phone: shipmentData.phone,
         order: shipmentData.order,
         paymentMode: shipmentData.payment_mode,
-
-        // Sender / from address (optional, passed via freightrekExtras)
         fromName: freightrekExtras?.fromName,
         fromAdd: freightrekExtras?.fromAdd,
         fromPin: freightrekExtras?.fromPin,
@@ -414,16 +392,12 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         fromState: freightrekExtras?.fromState,
         fromCountry: freightrekExtras?.fromCountry,
         fromPhone: freightrekExtras?.fromPhone,
-
-        // Return address
         returnPin: shipmentData.return_pin,
         returnCity: shipmentData.return_city,
         returnPhone: shipmentData.return_phone,
         returnAdd: shipmentData.return_add,
         returnState: shipmentData.return_state,
         returnCountry: shipmentData.return_country,
-
-        // Shipment meta
         productsDesc: shipmentData.products_desc,
         hsnCode: shipmentData.hsn_code || "",
         codAmount: freightrekExtras?.freightrekCodAmount || shipmentData.cod_amount || "0",
@@ -433,43 +407,27 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         sellerAdd: shipmentData.seller_add,
         sellerInv: shipmentData.seller_inv,
         quantity: shipmentData.quantity,
-baseAmount: freightrekExtras.baseAmount,
-markupAmount: freightrekExtras.markupAmount,
-        // Dimensions — all three axes now included
+        baseAmount: freightrekExtras.baseAmount,
+        markupAmount: freightrekExtras.markupAmount,
         shipmentLength: shipmentData.shipment_length,
         shipmentWidth: shipmentData.shipment_width,
         shipmentHeight: shipmentData.shipment_height,
-
         weight: shipmentData.weight,
         shippingMode: shipmentData.shipping_mode,
         addressType: shipmentData.address_type,
-
-        // Waybill returned by Delhivery (useful for our records)
-        ...(waybill ? { waybill } : {}),
-
         pickupLocation: { name: pickupLocation },
       }
-
-      try {
-        await axios.post("/api/shipment/create", freightrekPayload, {
-          headers: {
-            "Content-Type": "application/json",
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-          },
-          timeout: 8000,
-        })
-      } catch (freightrekErr: any) {
-        // Our backend sync failure is non-fatal — Delhivery already accepted the shipment.
-        // Log for debugging but don't surface to the user.
-        console.warn(
-          "[orderStore] /api/shipment/create failed (non-fatal):",
-          freightrekErr?.response?.data || freightrekErr?.message
-        )
-      }
+      const freightrekResponse = await axios.post("/api/shipment/create", freightrekPayload, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        timeout: 8000,
+      })
 
       set({ loading: false })
       toast.success("Shipment created successfully!")
-      return delhiveryData
+      return freightrekResponse.data
     } catch (err: any) {
       const errorMessage =
         err?.response?.data?.rmk ||
@@ -482,7 +440,7 @@ markupAmount: freightrekExtras.markupAmount,
     }
   },
 
-  createHubOrder: async (payload) => {
+ createHubOrder: async (payload) => {
     set({ loading: true, error: null })
     try {
       const authToken = sessionStorage.getItem("authToken")
@@ -538,29 +496,35 @@ markupAmount: freightrekExtras.markupAmount,
         },
       }
 
-      const formBody = new URLSearchParams()
-      formBody.append("format", "json")
-      formBody.append("data", JSON.stringify(cmuPayload))
+      // ── Delhivery call ───────────────────────────────────────────────────
+      // DISABLED: we only hit our own API for now. Kept here so it's a
+      // one-line uncomment to bring back.
+      //
+      // const formBody = new URLSearchParams()
+      // formBody.append("format", "json")
+      // formBody.append("data", JSON.stringify(cmuPayload))
+      //
+      // const delhiveryResponse = await axios.post<DelhiveryResponse>(
+      //   "/delhivery-api/api/cmu/create.json",
+      //   formBody.toString(),
+      //   {
+      //     headers: {
+      //       "Content-Type": "application/x-www-form-urlencoded",
+      //       Accept: "application/json",
+      //       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      //     },
+      //     timeout: 15000,
+      //   }
+      // )
+      //
+      // const delhiveryData = delhiveryResponse.data
+      // if (!delhiveryData?.success) {
+      //   throw new Error(delhiveryData?.rmk || "Delhivery shipment creation failed")
+      // }
+      //
+      // const waybill = delhiveryData?.packages?.[0]?.waybill ?? ""
 
-      const delhiveryResponse = await axios.post<DelhiveryResponse>(
-        "/delhivery-api/api/cmu/create.json",
-        formBody.toString(),
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            Accept: "application/json",
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-          },
-          timeout: 15000,
-        }
-      )
-
-      const delhiveryData = delhiveryResponse.data
-      if (!delhiveryData?.success) {
-        throw new Error(delhiveryData?.rmk || "Delhivery shipment creation failed")
-      }
-
-      const waybill = delhiveryData?.packages?.[0]?.waybill ?? ""
+      // ── Call our backend directly (/api/hub/orders/create) ────────────────
       const response = await axios.post(
         "/api/hub/orders/create",
         {
@@ -568,7 +532,6 @@ markupAmount: freightrekExtras.markupAmount,
           totalAmount: freightrekTotalAmount,
           format: "json",
           data: JSON.stringify(cmuPayload),
-          ...(waybill ? { waybill } : {}),
         },
         {
           headers: {
