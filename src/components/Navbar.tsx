@@ -119,6 +119,7 @@ const Navbar: FC<NavbarProps> = ({
       { keywords: ["wallet", "balance"], path: "/wallet" },
       { keywords: ["profile", "account"], path: "/profile" },
       { keywords: ["hubs", "hub"], path: "/hubs" },
+      { keywords: ["route", "routes", "shipment route"], path: "/routes" },
       { keywords: ["franchise", "agencies"], path: "/agencies" },
       { keywords: ["customers", "customer"], path: "/customers" },
       { keywords: ["b2b customer", "b2b customers"], path: "/b2b-customers" },

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom"
 import {
   HiHome,
   HiOfficeBuilding,
+  HiMap,
   HiShoppingCart,
   HiCreditCard,
   HiChartBar,
@@ -231,6 +232,11 @@ const Sidebar: FC<SidebarProps> = ({
       icon: <HiOfficeBuilding className="h-5 w-5" />,
       path: "/hubs",
     },
+    {
+      title: "Route",
+      icon: <HiMap className="h-5 w-5" />,
+      path: "/routes",
+    },
     // {
     //   title: "Customers",
     //   icon: <HiUserGroup className="h-5 w-5" />,
@@ -457,6 +463,10 @@ const Sidebar: FC<SidebarProps> = ({
 
       if (item.title === "Hub") {
         return hasStaffModuleAccess(["Hub"]) ? item : null
+      }
+
+      if (item.title === "Route") {
+        return hasStaffModuleAccess(["Route"]) ? item : null
       }
 
       if (item.title === "Customers") {

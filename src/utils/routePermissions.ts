@@ -30,6 +30,9 @@ export const routePermissionMap: Record<string, RoutePermission> = {
   // Hub Management
   "/hubs": { module: "Hub", action: "view" },
 
+  // Route Management
+  "/routes": { module: "Route", action: "view" },
+
   // Customers
   "/customers": { module: "Customers", action: "view" },
 

@@ -3,6 +3,7 @@ const adminRoleModules = [
   "Franchise",
   "Collection Agency",
   "Hub",
+  "Route",
   "Customers",
   "Access Management",
   "Orders",

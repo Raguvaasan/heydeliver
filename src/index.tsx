@@ -41,6 +41,7 @@ const CollectionAgencyManagementPage = lazy(() => import("./pages/CollectionAgen
 
 // Hub Management
 const HubManagementPage = lazy(() => import("./pages/HubManagement/HubManagementPage"))
+const RouteManagementPage = lazy(() => import("./pages/RouteManagement/RouteManagementPage"))
 
 // Customer Management
 const CustomersPage = lazy(() => import("./pages/Customers/CustomersPage"))
@@ -193,6 +194,15 @@ root.render(
             element={
               <PermissionRoute>
                 <HubManagementPage />
+              </PermissionRoute>
+            }
+          />
+
+          <Route
+            path="/routes"
+            element={
+              <PermissionRoute>
+                <RouteManagementPage />
               </PermissionRoute>
             }
           />
