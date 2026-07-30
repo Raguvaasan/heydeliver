@@ -12,6 +12,9 @@ import PermissionRoute from "./protectedRoutes/PermissionRoute"
 import ProtectedLogin from "./protectedRoutes/ProtectedLogin"
 import { ThemeProvider } from "./context/ThemeContext"
 import { Toaster } from "react-hot-toast"
+import VehicleManagementPage from "./pages/vehicleManagement/vehicleManagementPage"
+import DriverManagementPage from "./pages/driverManagement/driverManagementPage"
+import ParcelManagementPage from "./pages/parcelBooking/parcelBooking"
 
 // Lazy load all page components for better performance
 // Authentication
@@ -203,6 +206,33 @@ root.render(
             element={
               <PermissionRoute>
                 <RouteManagementPage />
+              </PermissionRoute>
+            }
+          />
+
+           <Route
+            path="/parcel-booking"
+            element={
+              <PermissionRoute>
+                <ParcelManagementPage />
+              </PermissionRoute>
+            }
+          />
+
+           <Route
+            path="/vehicle"
+            element={
+              <PermissionRoute>
+                <VehicleManagementPage />
+              </PermissionRoute>
+            }
+          />
+
+            <Route
+            path="/driver"
+            element={
+              <PermissionRoute>
+                <DriverManagementPage />
               </PermissionRoute>
             }
           />

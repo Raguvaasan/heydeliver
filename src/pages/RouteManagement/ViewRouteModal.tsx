@@ -25,9 +25,11 @@ const ViewRouteModal: FC<Props> = ({ isOpen, onClose }) => {
       </Modal.Header>
       <Modal.Body>
         <div className="space-y-1">
+          <InfoRow label="Route Name" value={selectedRoute.routeName} />
           <InfoRow label="From" value={selectedRoute.from} />
           <InfoRow label="To" value={selectedRoute.to} />
-          <InfoRow label="Branches" value={selectedRoute.branches?.join(", ")} />
+          <InfoRow label="Branches" value={selectedRoute.branches?.length ? selectedRoute.branches.join(", ") : undefined} />
+
           <div className="flex flex-col md:flex-row md:items-center py-3 border-b border-gray-200 dark:border-gray-700">
             <div className="w-full md:w-1/3 font-medium text-gray-700 dark:text-gray-300 mb-1 md:mb-0">Status</div>
             <div className="w-full md:w-2/3">
@@ -36,6 +38,7 @@ const ViewRouteModal: FC<Props> = ({ isOpen, onClose }) => {
               </Badge>
             </div>
           </div>
+
           {selectedRoute.createdAt && (
             <InfoRow label="Created At" value={new Date(selectedRoute.createdAt).toLocaleDateString()} />
           )}

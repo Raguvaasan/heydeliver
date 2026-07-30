@@ -15,6 +15,9 @@ import {
   HiCurrencyRupee,
   HiUser,
   HiDocumentText,
+  HiTruck,
+  HiUserCircle,
+  HiCube,
 } from "react-icons/hi"
 
 interface SidebarProps {
@@ -57,7 +60,16 @@ const Sidebar: FC<SidebarProps> = ({
 
   const profileData = getProfileData()
   const userRole = profileData?.role?.name?.toLowerCase() || ""
+  const roleName = profileData?.role?.roleName?.toLowerCase() || ""
   const isAdmin = userRole === "admin" || userRole === "super admin"
+  const isCollectionAgencyUser =
+    loginType === "agency" ||
+    loginType === "collection-agency" ||
+    loginType === "collectionagency" ||
+    userRole === "collection agency" ||
+    userRole === "collection-agency" ||
+    roleName === "collection agency" ||
+    roleName === "collection-agency"
   const staffAssignedType = String(
     profileData?.type ||
     profileData?.data?.type ||
@@ -237,6 +249,16 @@ const Sidebar: FC<SidebarProps> = ({
       icon: <HiMap className="h-5 w-5" />,
       path: "/routes",
     },
+    {
+      title: "Vehicle",
+      icon: <HiTruck className="h-5 w-5" />,
+      path: "/vehicle",
+    },
+     {
+      title: "Driver",
+      icon: <HiUser className="h-5 w-5" />,
+      path: "/driver",
+    },
     // {
     //   title: "Customers",
     //   icon: <HiUserGroup className="h-5 w-5" />,
@@ -354,6 +376,11 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/tracking",
     },
     {
+      title: "Parcel Booking",
+      icon: <HiCube className="h-5 w-5" />,
+      path: "/parcel-booking",
+    },
+    {
       title: "Wallet",
       icon: <HiCurrencyRupee className="h-5 w-5" />,
       path: "/wallet",
@@ -469,6 +496,18 @@ const Sidebar: FC<SidebarProps> = ({
         return hasStaffModuleAccess(["Route"]) ? item : null
       }
 
+      if (item.title === "Parcel Booking") {
+        return hasStaffModuleAccess(["Parcel Booking"]) ? item : null
+      }
+
+      if (item.title === "Vehicle") {
+        return hasStaffModuleAccess(["Vehicle"]) ? item : null
+      }
+
+      if (item.title === "Driver") {
+        return hasStaffModuleAccess(["Driver"]) ? item : null
+      }
+
       if (item.title === "Customers") {
         return hasStaffModuleAccess(["Customers"]) ? item : null
       }
@@ -575,6 +614,8 @@ const Sidebar: FC<SidebarProps> = ({
         }).filter(Boolean) as MenuItem[]
       : staffMenuItems
     : effectiveLoginType === "franchise"
+    ? franchiseMenuItems
+    : isCollectionAgencyUser
     ? franchiseMenuItems
     : effectiveLoginType === "hub"
     ? hubMenuItems

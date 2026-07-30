@@ -3,20 +3,32 @@ import { Badge, Button, Card, Select, Spinner, TextInput } from "flowbite-react"
 import { HiEye, HiPencil, HiPlus, HiSearch, HiTrash } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useRouteStore } from "../../store/routeStore"
-import AddRouteModal from "./AddRouteModal"
-import EditRouteModal from "./EditRouteModal"
 import ViewRouteModal from "./ViewRouteModal"
 import DeleteConfirmModal from "../AgencyManagement/DeleteConfirmModal"
+import BranchSelector from "./branchSelector"
+import AddEditRouteModal from "./AddEditRoute"
 
 const PAGE_SIZE = 10
 
 const RouteManagementPage: FC = () => {
-  const { routes, loading, pagination, fetchRoutes, setSelectedRoute, deleteRoute, updateRouteStatus } = useRouteStore()
+  const {
+    routes,
+    loading,
+    pagination,
+    fetchRoutes,
+    setSelectedRoute,
+    selectedRoute,
+    deleteRoute,
+    updateRoute,
+  } = useRouteStore()
+
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalMode, setModalMode] = useState<"add" | "edit">("add")
+
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -25,14 +37,21 @@ const RouteManagementPage: FC = () => {
     fetchRoutes({ page: currentPage, limit: PAGE_SIZE, search: searchTerm || undefined, status: statusFilter || undefined })
   }, [fetchRoutes, currentPage, searchTerm, statusFilter])
 
-  const handleView = (route: any) => {
-    setSelectedRoute(route)
-    setIsViewModalOpen(true)
+  const handleAdd = () => {
+    setModalMode("add")
+    setSelectedRoute(null)
+    setIsModalOpen(true)
   }
 
   const handleEdit = (route: any) => {
+    setModalMode("edit")
     setSelectedRoute(route)
-    setIsEditModalOpen(true)
+    setIsModalOpen(true)
+  }
+
+  const handleView = (route: any) => {
+    setSelectedRoute(route)
+    setIsViewModalOpen(true)
   }
 
   const handleDeleteClick = (id: string) => {
@@ -45,6 +64,12 @@ const RouteManagementPage: FC = () => {
     await deleteRoute(selectedId)
     setIsDeleteModalOpen(false)
     setSelectedId(null)
+  }
+
+  const handleBranchesSave = async (routeId: string, branches: string[]) => {
+    await updateRoute(routeId, { branches })
+    // refetch so the row reflects the saved branches
+    fetchRoutes({ page: currentPage, limit: PAGE_SIZE, search: searchTerm || undefined, status: statusFilter || undefined })
   }
 
   const totalPages = pagination?.totalPages || 1
@@ -76,7 +101,7 @@ const RouteManagementPage: FC = () => {
                 </Select>
               </div>
             </div>
-            <Button color="warning" onClick={() => setIsAddModalOpen(true)} className="bg-orange-500 hover:bg-orange-600">
+            <Button color="warning" onClick={handleAdd} className="bg-orange-500 hover:bg-orange-600">
               <HiPlus className="mr-2 h-5 w-5" />
               ADD
             </Button>
@@ -89,23 +114,29 @@ const RouteManagementPage: FC = () => {
               <table className="w-full text-left text-sm">
                 <thead className="bg-gray-800 text-white text-xs uppercase">
                   <tr>
-                    <th className="px-4 py-3 w-16">S.No</th>
+                    <th className="px-4 py-3">Route Name</th>
                     <th className="px-4 py-3">From</th>
                     <th className="px-4 py-3">To</th>
-                    <th className="px-4 py-3">Branches</th>
                     <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Branches</th>
                     <th className="px-4 py-3 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedRoutes.length > 0 ? paginatedRoutes.map((route, index) => (
+                  {paginatedRoutes.length > 0 ? paginatedRoutes.map((route) => (
                     <tr key={route.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">{route.routeName || "-"}</td>
                       <td className="px-4 py-3 text-gray-900 dark:text-white">{route.from}</td>
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{route.to}</td>
-                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{route.branches?.length ? route.branches.join(", ") : "-"}</td>
                       <td className="px-4 py-3 inline-block">
                         <Badge color={route.status === "Active" ? "success" : "failure"}>{route.status}</Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <BranchSelector
+                          routeId={route.id}
+                          selectedBranches={route.branches || []}
+                          onSave={handleBranchesSave}
+                        />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
@@ -115,7 +146,6 @@ const RouteManagementPage: FC = () => {
                           <button onClick={() => handleEdit(route)} className="p-1.5 text-gray-600 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400" title="Edit">
                             <HiPencil className="h-5 w-5" />
                           </button>
-                          
                           <button onClick={() => handleDeleteClick(route.id)} className="p-1.5 text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400" title="Delete">
                             <HiTrash className="h-5 w-5" />
                           </button>
@@ -144,8 +174,7 @@ const RouteManagementPage: FC = () => {
         </Card>
       </div>
 
-      <AddRouteModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
-      <EditRouteModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} />
+      <AddEditRouteModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} mode={modalMode} />
       <ViewRouteModal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} />
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}

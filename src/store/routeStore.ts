@@ -4,6 +4,7 @@ import http from "../common/httpRequest"
 
 export interface RouteItem {
   id: string
+  routeName: string
   from: string
   to: string
   branches: string[]
@@ -12,7 +13,13 @@ export interface RouteItem {
   updatedAt?: string
 }
 
-type RoutePayload = Omit<RouteItem, "id" | "createdAt" | "updatedAt">
+type RoutePayload = {
+  routeName: string
+  from: string
+  to: string
+  status: "Active" | "Inactive"
+  branches?: string[]
+}
 
 interface Pagination {
   total: number
@@ -47,6 +54,7 @@ const normalizeRoutes = (rawData: any): RouteItem[] => {
 
   return list.map((item: any) => ({
     id: item._id || item.id,
+    routeName: item.routeName || "",
     from: item.from || "",
     to: item.to || "",
     branches: Array.isArray(item.branches)
