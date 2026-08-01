@@ -208,7 +208,7 @@ const FranchiseAddEditStaffPage: FC = () => {
     const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
     const isHub = loginType === "hub"
     if (!isHub && !franchiseId) {
-      toast.error("Franchise is required")
+      toast.error("Branch is required")
       return
     }
 
@@ -274,7 +274,7 @@ const FranchiseAddEditStaffPage: FC = () => {
       <div className="px-4 pt-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            {isEditMode ? "Edit Staff" : "Add New Staff"} {sessionStorage.getItem("loginType") === "hub" ? "" : "(Franchise)"}
+            {isEditMode ? "Edit Staff" : "Add New Staff"} {sessionStorage.getItem("loginType") === "hub" ? "" : "(Branch)"}
           </h1>
         </div>
 
@@ -349,13 +349,13 @@ const FranchiseAddEditStaffPage: FC = () => {
                   {(sessionStorage.getItem("loginType") || "").toLowerCase() !== "hub" && (
                     <>
                       <Label htmlFor="franchiseId">
-                        Franchise<span className="text-red-500">*</span>
+                        Branch<span className="text-red-500">*</span>
                       </Label>
                       {(sessionStorage.getItem("loginType") || "").toLowerCase() === "franchise" || (sessionStorage.getItem("loginType") || "").toLowerCase() === "staff" ? (
                         <TextInput
                           id="franchiseId"
                           name="franchiseId"
-                          value="Current Franchise (Auto-selected)"
+                          value="Current Branch (Auto-selected)"
                           disabled
                           className="bg-gray-100"
                         />
@@ -367,7 +367,7 @@ const FranchiseAddEditStaffPage: FC = () => {
                           onChange={handleChange}
                           required
                         >
-                          <option value="">Select Franchise</option>
+                          <option value="">Select Branch</option>
                           {agencies.map((agency) => (
                             <option key={agency._id} value={agency._id}>
                               {agency.agencyName || agency.franchiseName}

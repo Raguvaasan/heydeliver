@@ -143,7 +143,7 @@ const ForwardOrderDetailPage: FC = () => {
               
               {order.franchiseName && (
                 <div className="flex justify-between py-2">
-                  <span className="text-gray-600 dark:text-gray-400">Franchise:</span>
+                  <span className="text-gray-600 dark:text-gray-400">Branch:</span>
                   <span className="font-medium text-gray-900 dark:text-white">
                     {order.franchiseName}
                   </span>

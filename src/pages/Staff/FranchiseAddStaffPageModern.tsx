@@ -130,7 +130,7 @@ const FranchiseAddStaffPageModern: FC = () => {
             Add New Staff Member
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Add a new franchise staff member to the system
+            Add a new branch staff member to the system
           </p>
         </div>
 
@@ -212,7 +212,7 @@ const FranchiseAddStaffPageModern: FC = () => {
                 {/* Assignment Details */}
                 <FormSection
                   title="Assignment Details"
-                  description="Assign role and franchise"
+                  description="Assign role and branch"
                   icon={<HiOfficeBuilding className="w-5 h-5" />}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -237,16 +237,16 @@ const FranchiseAddStaffPageModern: FC = () => {
                       <div className="flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <Spinner size="sm" />
                         <span className="text-sm text-gray-600 dark:text-gray-400">
-                          Loading franchises...
+                          Loading branches...
                         </span>
                       </div>
                     ) : (
                       <FormSelect
                         name="franchiseId"
-                        label="Franchise"
+                        label="Branch"
                         options={franchiseOptions}
                         required
-                        helperText="Assign to franchise"
+                        helperText="Assign to branch"
                       />
                     )}
 

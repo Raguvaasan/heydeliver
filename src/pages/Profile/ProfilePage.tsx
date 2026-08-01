@@ -315,14 +315,14 @@ const ProfilePage: FC = () => {
                 </div>
               </Card>
 
-              {/* Franchise Information */}
+              {/* Branch Information */}
               <Card>
                 <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-                  Franchise Information
+                  Branch Information
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="franchiseName">Franchise Name</Label>
+                    <Label htmlFor="franchiseName">Branch Name</Label>
                     <TextInput
                       id="franchiseName"
                       icon={HiOfficeBuilding}
@@ -331,7 +331,7 @@ const ProfilePage: FC = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="franchiseCode">Franchise Code</Label>
+                    <Label htmlFor="franchiseCode">Branch Code</Label>
                     <TextInput
                       id="franchiseCode"
                       value={profileData.franchiseCode || "N/A"}

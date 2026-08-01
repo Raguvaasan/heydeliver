@@ -230,7 +230,7 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/dashboard",
     },
     {
-      title: "Franchise",
+      title: "Branch",
       icon: <HiOfficeBuilding className="h-5 w-5" />,
       path: "/agencies",
     },
@@ -248,6 +248,11 @@ const Sidebar: FC<SidebarProps> = ({
       title: "Route",
       icon: <HiMap className="h-5 w-5" />,
       path: "/routes",
+    },
+    {
+      title: "Parcel Booking",
+      icon: <HiCube className="h-5 w-5" />,
+      path: "/parcel-booking",
     },
     {
       title: "Vehicle",
@@ -480,7 +485,7 @@ const Sidebar: FC<SidebarProps> = ({
     .map((item) => {
       if (item.title === "Dashboard") return item
 
-      if (item.title === "Franchise") {
+      if (item.title === "Branch") {
         return hasStaffModuleAccess(["Franchise"]) ? item : null
       }
 
@@ -798,7 +803,9 @@ const Sidebar: FC<SidebarProps> = ({
                     })()}
                   </p>
                   <p className="text-[10px] text-gray-600 dark:text-gray-400 capitalize">
-                    {loginType}
+                     {loginType.toLowerCase() === "franchise"
+    ? "Branch"
+    : loginType.charAt(0).toUpperCase() + loginType.slice(1)}
                   </p>
                 </div>
               )}

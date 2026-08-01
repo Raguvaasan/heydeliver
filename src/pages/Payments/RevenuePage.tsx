@@ -188,7 +188,7 @@ const RevenuePage: FC = () => {
                       <th className="px-4 py-3 whitespace-nowrap">Sl.No</th>
                       <th className="px-4 py-3 whitespace-nowrap">AWB Number</th>
                       <th className="px-4 py-3 whitespace-nowrap">Order Number</th>
-                      <th className="px-4 py-3 whitespace-nowrap">Franchise / Hub</th>
+                      <th className="px-4 py-3 whitespace-nowrap">Branch / Hub</th>
                       <th className="px-4 py-3 whitespace-nowrap">Total Value</th>
                       <th className="px-4 py-3 whitespace-nowrap">Delhivery Cost</th>
                       <th className="px-4 py-3 whitespace-nowrap">Profit Markup</th>

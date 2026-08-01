@@ -80,10 +80,10 @@ const AddAgencyModal: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
             <h4 className="text-sm font-semibold text-gray-900 mb-4">Basic Details</h4>
             
             <div className="grid grid-cols-2 gap-4 mb-4">
-              {/* Franchise Name */}
+              {/* Branch Name */}
               <div>
                 <Label className="block text-xs font-medium text-gray-700 mb-1">
-                  Franchise Name<span className="text-red-500">*</span>
+                  Branch Name<span className="text-red-500">*</span>
                 </Label>
                 <TextInput
                   name="agencyName"
@@ -96,10 +96,10 @@ const AddAgencyModal: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                 />
               </div>
 
-              {/* Franchise Owner Name */}
+              {/* Branch Owner Name */}
               <div>
                 <Label className="block text-xs font-medium text-gray-700 mb-1">
-                  Franchise Owner Name<span className="text-red-500">*</span>
+                  Branch Owner Name<span className="text-red-500">*</span>
                 </Label>
                 <TextInput
                   name="agencyOwner"

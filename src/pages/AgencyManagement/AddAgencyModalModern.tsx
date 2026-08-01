@@ -68,7 +68,7 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-500 to-orange-600">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
             <HiOfficeBuilding className="w-6 h-6" />
-            Add New Franchise
+            Add New Branch
           </h3>
           <button
             onClick={onClose}
@@ -107,13 +107,13 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput
                       name="agencyName"
-                      label="Franchise Name"
+                      label="Branch Name"
                       required
                       helperText="Official franchise name"
                     />
                     <FormInput
                       name="agencyOwner"
-                      label="Franchise Owner Name"
+                      label="Branch Owner Name"
                       required
                       helperText="Owner's full name"
                     />
@@ -142,7 +142,7 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                       label="Status"
                       options={statusOptions}
                       required
-                      helperText="Franchise account status"
+                      helperText="Branch account status"
                     />
                   </div>
                 </FormSection>
@@ -194,7 +194,7 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                     Cancel
                   </button>
                   <SaveButton loading={isSubmitting || loading} className="flex-1">
-                    Add Franchise
+                    Add Branch
                   </SaveButton>
                 </div>
               </Form>

@@ -64,7 +64,7 @@ const FranchiseAddStaffPage: FC = () => {
       .min(6, "Password must be at least 6 characters")
       .required("Password is required"),
     roleId: Yup.string().required("Role is required"),
-    franchiseId: Yup.string().required("Franchise is required"),
+    franchiseId: Yup.string().required("Branch is required"),
     status: Yup.string(),
   })
 
@@ -104,7 +104,7 @@ const FranchiseAddStaffPage: FC = () => {
       <div className="px-4 pt-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Add New Staff {sessionStorage.getItem("loginType") === "hub" ? "" : "(Franchise)"}
+            Add New Staff {sessionStorage.getItem("loginType") === "hub" ? "" : "(Branch)"}
           </h1>
         </div>
 
@@ -233,11 +233,11 @@ const FranchiseAddStaffPage: FC = () => {
 
               {/* Franchise */}
               <div>
-                <Label htmlFor="franchiseId" value="Franchise" />
+                <Label htmlFor="franchiseId" value="Branch" />
                 {agenciesLoading ? (
                   <div className="flex items-center gap-2">
                     <Spinner size="sm" />
-                    <span className="text-sm text-gray-500">Loading franchises...</span>
+                    <span className="text-sm text-gray-500">Loading branches...</span>
                   </div>
                 ) : (
                   <Select
@@ -248,7 +248,7 @@ const FranchiseAddStaffPage: FC = () => {
                     onBlur={formik.handleBlur}
                     color={formik.touched.franchiseId && formik.errors.franchiseId ? "failure" : "gray"}
                   >
-                    <option value="">Select Franchise</option>
+                    <option value="">Select Branch</option>
                     {agencies.map((agency) => (
                       <option key={agency._id} value={agency._id}>
                         {agency.franchiseName}

@@ -173,7 +173,7 @@ const TransactionsPage: FC = () => {
                 <tr>
                   <th className="px-4 py-3">Transaction Details</th>
                   <th className="px-4 py-3">Order ID</th>
-                  <th className="px-4 py-3">Franchise Name</th>
+                  <th className="px-4 py-3">Branch Name</th>
                   <th className="px-4 py-3">Description</th>
                   <th className="px-4 py-3">Payment Method</th>
                   <th className="px-4 py-3 text-right">Credit</th>

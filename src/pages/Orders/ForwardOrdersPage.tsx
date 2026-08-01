@@ -353,7 +353,7 @@ const ForwardOrdersPage: FC = () => {
               </colgroup>
               <Table.Head>
                 <Table.HeadCell>Order ID</Table.HeadCell>
-                <Table.HeadCell>Franchise Name</Table.HeadCell>
+                <Table.HeadCell>Branch Name</Table.HeadCell>
                 <Table.HeadCell>AWB Number</Table.HeadCell>
                 <Table.HeadCell>Customer Name</Table.HeadCell>
                 <Table.HeadCell>Origin</Table.HeadCell>
@@ -548,7 +548,7 @@ const ForwardOrdersPage: FC = () => {
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                    <p className="text-gray-500">Franchise</p>
+                      <p className="text-gray-500">Branch</p>
                     <p className="font-medium text-orange-600 text-right">
                       {order.franchiseName || "-"}
                     </p>

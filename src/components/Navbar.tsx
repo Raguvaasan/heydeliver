@@ -31,7 +31,7 @@ const Navbar: FC<NavbarProps> = ({
         ? "admin"
         : staffAssignedType
       : loginType
-  
+
   // Wallet store for franchise users
   const { balance, fetchBalance } = useWalletStore()
 
@@ -59,18 +59,22 @@ const Navbar: FC<NavbarProps> = ({
         setUserName(name)
         setUserInitial(name.charAt(0).toUpperCase())
         setStaffAssignedType(String(profileData?.type || profileData?.data?.type || "").toLowerCase())
-        
+
         // Get user role from loginType in sessionStorage
         const loginTypeValue = sessionStorage.getItem("loginType") || "admin"
         setLoginType(loginTypeValue)
         if (loginTypeValue) {
-          // Capitalize first letter for display
-          const role = loginTypeValue.charAt(0).toUpperCase() + loginTypeValue.slice(1)
-          setUserRole(role)
+          const role =
+            loginTypeValue.toLowerCase() === "franchise"
+              ? "Branch"
+              : loginTypeValue.charAt(0).toUpperCase() + loginTypeValue.slice(1);
+
+          
+          setUserRole(role);
         } else {
-          setUserRole("Admin")
+          setUserRole("Admin");
         }
-        
+
         // Fetch wallet balance for franchise users
         const assignedType = String(profileData?.type || profileData?.data?.type || "").toLowerCase()
         const effectiveType =
@@ -121,8 +125,8 @@ const Navbar: FC<NavbarProps> = ({
       { keywords: ["hubs", "hub"], path: "/hubs" },
       { keywords: ["route", "routes", "shipment route"], path: "/routes" },
       { keywords: ["vehicle", "vehicle management", "vehicles"], path: "/vehicle" },
-       { keywords: ["driver", "driver management"], path: "/driver" },
-       { keywords: ["parcel booking"], path: "/parcel-booking" },
+      { keywords: ["driver", "driver management"], path: "/driver" },
+      { keywords: ["parcel booking"], path: "/parcel-booking" },
       { keywords: ["franchise", "agencies"], path: "/agencies" },
       { keywords: ["customers", "customer"], path: "/customers" },
       { keywords: ["b2b customer", "b2b customers"], path: "/b2b-customers" },
@@ -163,9 +167,8 @@ const Navbar: FC<NavbarProps> = ({
   return (
     <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-white dark:bg-[#2c2c2c] border-b border-gray-200 dark:border-gray-700">
       <div
-        className={`h-full px-4 lg:px-6 flex items-center justify-between transition-all duration-300 ${
-          isSidebarExpanded ? "lg:ml-60" : "lg:ml-16"
-        }`}
+        className={`h-full px-4 lg:px-6 flex items-center justify-between transition-all duration-300 ${isSidebarExpanded ? "lg:ml-60" : "lg:ml-16"
+          }`}
       >
         {/* Left Section */}
         <div className="flex items-center gap-4">
@@ -212,15 +215,28 @@ const Navbar: FC<NavbarProps> = ({
         <div className="flex items-center gap-3">
           {/* Wallet Balance (Franchise) or Notifications (Admin) */}
           {effectiveLoginType === "franchise" || effectiveLoginType === "staff" ? (
-            <div 
+            <><div
               onClick={() => navigate("/wallet")}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
             >
               <HiCurrencyRupee className="h-5 w-5" />
               <span className="font-semibold text-sm">
-                Wallet: ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                To be Paid: ₹
+                {/* {balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} */}
               </span>
             </div>
+              <div
+                onClick={() => navigate("/wallet")}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
+              >
+                <HiCurrencyRupee className="h-5 w-5" />
+                <span className="font-semibold text-sm">
+                  Available Balance: ₹
+                  {/* {balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} */}
+                </span>
+              </div>
+            </>
+
           ) : (
             <button className="relative p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
               <HiBell className="h-6 w-6" />
@@ -230,7 +246,7 @@ const Navbar: FC<NavbarProps> = ({
 
           {/* User Profile */}
           <div className="relative" ref={dropdownRef}>
-            <button 
+            <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center gap-3 px-4 py-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group"
             >
@@ -245,7 +261,7 @@ const Navbar: FC<NavbarProps> = ({
               </div>
               <HiChevronDown className={`h-5 w-5 text-gray-600 dark:text-gray-300 transition-transform duration-200 ml-2 ${isDropdownOpen ? "rotate-180" : ""}`} />
             </button>
-            
+
             {/* Dropdown Menu */}
             {isDropdownOpen && (
               <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
