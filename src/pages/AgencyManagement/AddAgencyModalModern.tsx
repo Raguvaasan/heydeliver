@@ -101,7 +101,7 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                 {/* Basic Details */}
                 <FormSection
                   title="Basic Information"
-                  description="Enter franchise basic details"
+                  description="Enter branch basic details"
                   icon={<HiOfficeBuilding className="w-5 h-5" />}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -109,7 +109,7 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                       name="agencyName"
                       label="Branch Name"
                       required
-                      helperText="Official franchise name"
+                      helperText="Official branch name"
                     />
                     <FormInput
                       name="agencyOwner"
@@ -150,7 +150,7 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                 {/* Location Details */}
                 <FormSection
                   title="Location Information"
-                  description="Enter franchise address details"
+                  description="Enter branch address details"
                   icon={<HiLocationMarker className="w-5 h-5" />}
                 >
                   <FormTextarea

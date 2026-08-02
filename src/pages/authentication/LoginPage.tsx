@@ -334,7 +334,9 @@ const LoginPage: FC = function () {
                 {/* Login Type Selector */}
                 {!((loginType === "staff" || loginType === "franchise") && mobileOtpStep === "verify") && (
                   <div className="flex mb-6 justify-center gap-2 sm:gap-4 flex-wrap">
-                    {(["admin", "franchise", "hub", "staff"] as const).map((type) => (
+                    {(["admin", "franchise", "hub", "staff"] as const).map((type) => {
+                      const label = type === "franchise" ? "Branch" : type
+                      return (
                       <label key={type} className="flex items-center cursor-pointer">
                         <input
                           type="radio"
@@ -361,12 +363,12 @@ const LoginPage: FC = function () {
                               )}
                             </div>
                             <span className="text-xs sm:text-sm font-semibold text-gray-700 capitalize whitespace-nowrap">
-                              {type}
+                              {label}
                             </span>
                           </div>
                         </div>
                       </label>
-                    ))}
+                    )})}
                   </div>
                 )}
 
@@ -428,7 +430,7 @@ const LoginPage: FC = function () {
                               }}
                               className="w-full text-base pl-4 pr-10 py-3 rounded-xl border border-gray-300 text-gray-700 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
                             >
-                              <option value="franchise">Franchise</option>
+                              <option value="franchise">Branch</option>
                               <option value="hub">Hub</option>
                               <option value="head_quarter">Head Quarter</option>
                             </select>

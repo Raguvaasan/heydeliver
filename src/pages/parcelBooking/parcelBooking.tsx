@@ -25,8 +25,8 @@ const dummyParcels: Parcel[] = [
         approximateValue: "5000",
         transportationCharge: "250",
         status: "In Transit",
-        receivedFrom:'Chennai',
-        deliverTo:"Madurai"
+        receivedFrom: 'Chennai',
+        deliverTo: "Madurai"
     },
     {
         id: "2",
@@ -44,8 +44,8 @@ const dummyParcels: Parcel[] = [
         approximateValue: "500",
         transportationCharge: "100",
         status: "Pending",
-         receivedFrom:'Chennai',
-        deliverTo:"Madurai"
+        receivedFrom: 'Chennai',
+        deliverTo: "Madurai"
     },
 ]
 
@@ -55,6 +55,25 @@ const statusColor: Record<string, string> = {
     Delivered: "success",
     Cancelled: "failure",
 }
+
+const DELIVERY_AGENTS = [
+    { id: "hub 1", name: "hub 1" },
+    { id: "hub 2", name: "hub 2" },
+    { id: "hub 3", name: "hub 3" },
+    { id: "hub 4", name: "hub 4" },
+]
+
+const DRIVERS = [
+    { id: "driver 1", name: "driver 1" },
+    { id: "driver 2", name: "driver 2" },
+    { id: "driver 3", name: "driver 3" },
+]
+
+const VEHICLES = [
+    { id: "vehicle 1", name: "vehicle 1" },
+    { id: "vehicle 2", name: "vehicle 2" },
+    { id: "vehicle 3", name: "vehicle 3" },
+]
 
 const ParcelManagementPage: FC = () => {
     const getProfileData = () => {
@@ -76,6 +95,7 @@ const ParcelManagementPage: FC = () => {
         userRole === "super admin" ||
         roleName === "admin" ||
         roleName === "super admin"
+    const isHub = loginType === "hub" || userRole === "hub" || roleName === "hub"
 
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("")
@@ -88,6 +108,9 @@ const ParcelManagementPage: FC = () => {
     const [isViewModalOpen, setIsViewModalOpen] = useState(false)
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
     const [selectedId, setSelectedId] = useState<string | null>(null)
+    const [assignedAgents, setAssignedAgents] = useState<Record<string, string>>({})
+    const [assignedDrivers, setAssignedDrivers] = useState<Record<string, string>>({})
+    const [assignedVehicles, setAssignedVehicles] = useState<Record<string, string>>({})
 
     const filteredParcels = useMemo(() => {
         return dummyParcels.filter((parcel) => {
@@ -141,6 +164,21 @@ const ParcelManagementPage: FC = () => {
         setSelectedId(null)
     }
 
+    const handleAssignChange = (parcelId: string, agentId: string) => {
+        setAssignedAgents((prev) => ({ ...prev, [parcelId]: agentId }))
+
+    }
+
+    const handleDriverChange = (parcelId: string, driverId: string) => {
+        setAssignedDrivers((prev) => ({ ...prev, [parcelId]: driverId }))
+    }
+
+    const handleVehicleChange = (parcelId: string, vehicleId: string) => {
+        setAssignedVehicles((prev) => ({ ...prev, [parcelId]: vehicleId }))
+    }
+
+    const assignmentColumnCount = (isAdmin ? 1 : 0) + (isHub ? 2 : 0)
+
     return (
         <NavbarSidebarLayout>
             <div className="px-4">
@@ -189,7 +227,7 @@ const ParcelManagementPage: FC = () => {
                             </div>
                         </div>
 
-                        {!isAdmin && (
+                        {!isAdmin && !isHub && (
                             <Button color="warning" onClick={() => handleAdd()} className="bg-orange-500 hover:bg-orange-600">
                                 <HiPlus className="mr-2 h-5 w-5" />
                                 ADD
@@ -207,6 +245,9 @@ const ParcelManagementPage: FC = () => {
                                     <th className="px-4 py-3">Payment Type</th>
                                     <th className="px-4 py-3">Amount</th>
                                     <th className="px-4 py-3">Status</th>
+                                    {isAdmin && <th className="px-4 py-3">Assign To</th>}
+                                    {isHub && <th className="px-4 py-3">Assign Driver</th>}
+                                    {isHub && <th className="px-4 py-3">Assign Vehicle</th>}
                                     <th className="px-4 py-3 text-center">Action</th>
                                 </tr>
                             </thead>
@@ -222,7 +263,7 @@ const ParcelManagementPage: FC = () => {
                                             <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{parcel.deliverTo}</td>
 
                                             <td className="px-4 py-3 inline-block">
-                                                <Badge color={parcel.paymentType === "Paid" ? "success" : "warning"}>
+                                                <Badge className="py-2" color={parcel.paymentType === "Paid" ? "success" : "warning"}>
                                                     {parcel.paymentType}
                                                 </Badge>
                                             </td>
@@ -232,8 +273,56 @@ const ParcelManagementPage: FC = () => {
                                             </td>
 
                                             <td className="px-4 py-3 inline-block">
-                                                <Badge color={statusColor[parcel.status] ?? "gray"}>{parcel.status}</Badge>
+                                                <Badge className="py-2" color={statusColor[parcel.status] ?? "gray"}>{parcel.status}</Badge>
                                             </td>
+
+                                            {isAdmin && (
+                                                <td>
+                                                    <Select
+                                                        value={assignedAgents[parcel.id] ?? ""}
+                                                        onChange={(e) => handleAssignChange(parcel.id, e.target.value)}
+                                                    >
+                                                        <option value="">Unassigned</option>
+                                                        {DELIVERY_AGENTS.map((agent) => (
+                                                            <option key={agent.id} value={agent.id}>
+                                                                {agent.name}
+                                                            </option>
+                                                        ))}
+                                                    </Select>
+                                                </td>
+                                            )}
+
+                                            {isHub && (
+                                                <td>
+                                                    <Select
+                                                        value={assignedDrivers[parcel.id] ?? ""}
+                                                        onChange={(e) => handleDriverChange(parcel.id, e.target.value)}
+                                                    >
+                                                        <option value="">Unassigned</option>
+                                                        {DRIVERS.map((driver) => (
+                                                            <option key={driver.id} value={driver.id}>
+                                                                {driver.name}
+                                                            </option>
+                                                        ))}
+                                                    </Select>
+                                                </td>
+                                            )}
+
+                                            {isHub && (
+                                                <td>
+                                                    <Select
+                                                        value={assignedVehicles[parcel.id] ?? ""}
+                                                        onChange={(e) => handleVehicleChange(parcel.id, e.target.value)}
+                                                    >
+                                                        <option value="">Unassigned</option>
+                                                        {VEHICLES.map((vehicle) => (
+                                                            <option key={vehicle.id} value={vehicle.id}>
+                                                                {vehicle.name}
+                                                            </option>
+                                                        ))}
+                                                    </Select>
+                                                </td>
+                                            )}
 
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center justify-center gap-2">
@@ -241,20 +330,24 @@ const ParcelManagementPage: FC = () => {
                                                         <HiEye className="h-5 w-5" />
                                                     </button>
 
-                                                    <button onClick={() => handleEdit(parcel)} className="p-1.5 text-gray-600 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400" title="Edit">
-                                                        <HiPencil className="h-5 w-5" />
-                                                    </button>
+                                                    {!isHub && (
+                                                        <>
+                                                            <button onClick={() => handleEdit(parcel)} className="p-1.5 text-gray-600 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400" title="Edit">
+                                                                <HiPencil className="h-5 w-5" />
+                                                            </button>
 
-                                                    <button onClick={() => handleDeleteClick(parcel.id)} className="p-1.5 text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400" title="Delete">
-                                                        <HiTrash className="h-5 w-5" />
-                                                    </button>
+                                                            <button onClick={() => handleDeleteClick(parcel.id)} className="p-1.5 text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400" title="Delete">
+                                                                <HiTrash className="h-5 w-5" />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                                        <td colSpan={7 + assignmentColumnCount + 1} className="px-4 py-8 text-center text-gray-500">
                                             No bookings found
                                         </td>
                                     </tr>
