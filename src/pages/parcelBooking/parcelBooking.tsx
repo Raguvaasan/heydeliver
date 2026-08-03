@@ -188,11 +188,22 @@ const ParcelManagementPage: FC = () => {
             if (!response.ok) return
 
             const payload = await response.json()
-            const records = Array.isArray(payload) ? payload : payload?.data || []
+            const records = Array.isArray(payload)
+                ? payload
+                : Array.isArray(payload?.data?.hubs)
+                  ? payload.data.hubs
+                  : Array.isArray(payload?.data?.data)
+                    ? payload.data.data
+                    : Array.isArray(payload?.data)
+                      ? payload.data
+                      : Array.isArray(payload?.hubs)
+                        ? payload.hubs
+                        : []
+
             setHubs(
                 records.map((h: any) => ({
-                    id: String(h._id || h.id),
-                    name: String(h.hubName || h.name || h._id),
+                    id: String(h._id || h.id || h.hubId || ""),
+                    name: String(h.hubName || h.name || h.hub || h._id || h.id || ""),
                 }))
             )
         } catch {
@@ -526,12 +537,12 @@ const ParcelManagementPage: FC = () => {
                                                 {isAdmin && (
                                                     <td>
                                                         <Select
-                                                            value={parcel.hubId ?? (parcel.hubName ? hubs.find((hub) => hub.name === parcel.hubName)?.id ?? "" : "")}
+                                                            value={parcel.hubId || (parcel.hubName ? hubs.find((hub) => hub.name === parcel.hubName)?.id ?? "" : "") || ""}
                                                             onChange={(e) => handleAssignHub(parcel.id, e.target.value)}
                                                         >
                                                             <option value="">Unassigned</option>
-                                                            {parcel.hubId && !hubs.some((hub) => hub.id === parcel.hubId) && parcel.hubName && (
-                                                                <option value={parcel.hubId}>{parcel.hubName}</option>
+                                                            {parcel.hubName && (!hubs.some((hub) => hub.id === parcel.hubId) || !parcel.hubId) && (
+                                                                <option value={parcel.hubId || parcel.hubName}>{parcel.hubName}</option>
                                                             )}
                                                             {hubs.map((hub) => (
                                                                 <option key={hub.id} value={hub.id}>
