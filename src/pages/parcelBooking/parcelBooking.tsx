@@ -663,7 +663,7 @@ const ParcelManagementPage: FC = () => {
                                     {showDeliveryBranchColumn && <th className="px-4 py-3">Delivery Branch</th>}
                                     <th className="px-4 py-3">Booking Customer</th>
                                     <th className="px-4 py-3">Payment Type</th>
-                                    {showAmountColumn && <th className="px-4 py-3">Amount</th>}
+                                    {showAmountColumn && <th className="px-4 py-3">Trans Charge</th>}
                                     <th className="px-4 py-3">Status</th>
                                     {isAdmin && <th className="px-4 py-3">Assign Hub</th>}
                                     {isHub && <th className="px-4 py-3">Assign Driver</th>}
@@ -700,7 +700,7 @@ const ParcelManagementPage: FC = () => {
                                                     </Badge>
                                                 </td>
  
-                                                {showAmountColumn && <td className="px-4 py-3 text-gray-900 dark:text-white">-</td>}
+                                                {showAmountColumn && <td className="px-4 py-3 text-gray-900 dark:text-white">{parcel.transportationCharge}</td>}
  
                                                 {/* Status cell: dropdown for branch/hub, read-only badge for admin */}
                                                 <td className="px-4 py-3">
