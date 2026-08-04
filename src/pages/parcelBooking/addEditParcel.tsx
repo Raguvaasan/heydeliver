@@ -1,11 +1,11 @@
 // addEditParcel.tsx
-import { FC, useState } from "react"
+import { FC, useEffect, useState } from "react"
 import { Modal } from "flowbite-react"
 import { Formik, Form, useField } from "formik"
 import * as Yup from "yup"
 import { HiOutlineUser, HiOutlineArchiveBox, HiInformationCircle } from "react-icons/hi2"
 import { HiX, HiExclamationCircle } from "react-icons/hi"
-import { FormInput } from "../../components/FormComponents"
+import { FormInput, FormSelect } from "../../components/FormComponents"
 import { FormSection, SaveButton } from "../../components/FormHelpers"
 
 export interface ParcelFormValues {
@@ -38,10 +38,29 @@ export interface StatusHistoryEntry {
 export interface Parcel extends ParcelFormValues {
     id: string
     orderId: string
+    deliveryBranchId?: string
     branchName?: string
     hubId?: string
     hubName?: string
     statusHistory?: StatusHistoryEntry[]
+    assignedDriverId: string
+    assignedDriverName: string
+    assignedVehicleId: string
+    assignedVehicleLabel: string
+    driver?: {
+        _id?: string
+        driverName?: string
+        phoneNumber?: string
+        licenseNumber?: string
+        status?: string
+    }
+    vehicle?: {
+        _id?: string
+        vehicleType?: string
+        capacity?: string
+        vehicleRegistrationNumber?: string
+        status?: string
+    }
 }
 
 interface Props {
@@ -53,6 +72,11 @@ interface Props {
     // When true (admin editing an existing booking): every field is disabled
     // except Transportation Charge, and submit hits the charge-only endpoint.
     chargeOnly?: boolean
+}
+
+interface DeliveryBranchOption {
+    id: string
+    agencyName: string
 }
 
 const FormRadioGroup: FC<{
@@ -130,13 +154,76 @@ const emptyValues: ParcelFormValues = {
 
 const BRANCH_BASE = "/api/admin/branch/parcel-order"
 const ADMIN_BASE = "/api/admin/parcel-order"
+const DELIVERY_BRANCH_OPTIONS_BASE = "/api/admin/branch/parcel-order/options/delivery-branches"
 
 const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, chargeOnly = false }) => {
     const isEdit = mode === "edit"
     const [apiError, setApiError] = useState<string | null>(null)
+    const [deliveryBranches, setDeliveryBranches] = useState<DeliveryBranchOption[]>([])
+    const [deliveryBranchesLoading, setDeliveryBranchesLoading] = useState(false)
 
-    const initialValues: ParcelFormValues = isEdit && parcel ? parcel : emptyValues
+    const initialValues: ParcelFormValues = isEdit && parcel ? { ...parcel, deliveryBranch: parcel.deliveryBranchId || parcel.deliveryBranch } : emptyValues
     const fieldsDisabled = chargeOnly // everything but transportationCharge is locked
+
+    useEffect(() => {
+        if (!isOpen || chargeOnly) return
+
+        let cancelled = false
+
+        const fetchDeliveryBranches = async () => {
+            setDeliveryBranchesLoading(true)
+
+            try {
+                const authToken = sessionStorage.getItem("authToken")
+                if (!authToken) throw new Error("Authorization token missing")
+
+                const res = await fetch(DELIVERY_BRANCH_OPTIONS_BASE, {
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                })
+
+                if (!res.ok) {
+                    const errBody = await res.json().catch(() => null)
+                    throw new Error(errBody?.message || "Failed to load delivery branches")
+                }
+
+                const payload = await res.json()
+                const records = Array.isArray(payload)
+                    ? payload
+                    : Array.isArray(payload?.data)
+                        ? payload.data
+                        : Array.isArray(payload?.data?.branches)
+                            ? payload.data.branches
+                            : Array.isArray(payload?.branches)
+                                ? payload.branches
+                                : []
+
+                if (cancelled) return
+
+                setDeliveryBranches(
+                    records.map((item: any) => ({
+                        id: String(item._id || item.id || item.branchId || item.agencyName || ""),
+                        agencyName: String(item.agencyName || item.name || item.branchName || ""),
+                    }))
+                )
+            } catch {
+                if (!cancelled) {
+                    setDeliveryBranches([])
+                }
+            } finally {
+                if (!cancelled) {
+                    setDeliveryBranchesLoading(false)
+                }
+            }
+        }
+
+        fetchDeliveryBranches()
+
+        return () => {
+            cancelled = true
+        }
+    }, [isOpen, chargeOnly])
 
     const handleSubmit = async (
         values: ParcelFormValues,
@@ -258,7 +345,17 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormInput name="deliveryCustomerName" label="Name" required disabled={fieldsDisabled} />
                                         <FormInput name="deliveryCustomerMobileNumber" label="Mobile Number" required disabled={fieldsDisabled} />
-                                        <FormInput name="deliveryBranch" label="Delivery Branch" required disabled={fieldsDisabled} />
+                                        <FormSelect
+                                            name="deliveryBranch"
+                                            label="Delivery Branch"
+                                            required
+                                            disabled={fieldsDisabled || deliveryBranchesLoading}
+                                            options={deliveryBranches.map((branch) => ({
+                                                value: branch.id,
+                                                label: branch.agencyName,
+                                            }))}
+                                            helperText={deliveryBranchesLoading ? "Loading delivery branches..." : undefined}
+                                        />
                                     </div>
                                 </FormSection>
 

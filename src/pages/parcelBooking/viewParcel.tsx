@@ -24,9 +24,6 @@ const SectionTitle: FC<{ title: string; }> = ({ title }) => (
   </div>
 )
 
-// Label-over-value card. Stacking (instead of label-left/value-right on one
-// line) is what prevents long labels/values from crowding into each other
-// inside a 2-col grid.
 const Field: FC<{ label: string; value?: string; highlight?: boolean }> = ({ label, value, highlight = false }) => (
   <div className="rounded-lg bg-white px-3 py-2.5 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
     <div className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{label}</div>
@@ -78,6 +75,16 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
   if (!isOpen || !parcel) return null
 
   const amount = Number(parcel.approximateValue || 0) + Number(parcel.transportationCharge || 0)
+  const parcelDetails = parcel as Parcel & {
+    driver?: Record<string, unknown>
+    vehicle?: Record<string, unknown>
+  }
+  const driver = parcelDetails.driver
+  const vehicle = parcelDetails.vehicle
+  const resolveValue = (value?: unknown) => {
+    if (value === undefined || value === null || value === "") return undefined
+    return String(value)
+  }
 
   return (
     <div
@@ -176,6 +183,30 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
                 </div>
               </div>
             </section>
+
+            {(driver || vehicle) && (
+              <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
+                <SectionTitle title="Driver & Vehicle" />
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  {driver && (
+                    <div className="space-y-2 rounded-lg bg-white p-3 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
+                      <Field label="Driver Name" value={resolveValue(driver.driverName)} />
+                      <Field label="Phone Number" value={resolveValue(driver.phoneNumber)} />
+                      <Field label="License Number" value={resolveValue(driver.licenseNumber)} />
+                      {/* <Field label="Status" value={resolveValue(driver.status)} /> */}
+                    </div>
+                  )}
+                  {vehicle && (
+                    <div className="space-y-2 rounded-lg bg-white p-3 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
+                      <Field label="Vehicle Type" value={resolveValue(vehicle.vehicleType)} />
+                      <Field label="Capacity" value={resolveValue(vehicle.capacity)} />
+                      <Field label="Registration Number" value={resolveValue(vehicle.vehicleRegistrationNumber )} />
+                      {/* <Field label="Status" value={resolveValue(vehicle.status)} /> */}
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
 
             <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
               <SectionTitle title="Tracking Timeline" />
