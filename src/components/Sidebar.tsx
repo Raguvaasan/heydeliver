@@ -250,7 +250,7 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/routes",
     },
     {
-      title: "Parcel Booking",
+      title: "Orders",
       icon: <HiCube className="h-5 w-5" />,
       path: "/parcel-booking",
     },
@@ -283,14 +283,14 @@ const Sidebar: FC<SidebarProps> = ({
         { title: "Role & Permissions", path: "/role" },
       ],
     },
-    {
-      title: "Orders",
-      icon: <HiShoppingCart className="h-5 w-5" />,
-      path: "/orders",
-      submenu: [
-        { title: "All Orders", path: "/orders" },
-      ],
-    },
+    // {
+    //   title: "Orders",
+    //   icon: <HiShoppingCart className="h-5 w-5" />,
+    //   path: "/orders",
+    //   submenu: [
+    //     { title: "All Orders", path: "/orders" },
+    //   ],
+    // },
     {
       title: "Payments",
       icon: <HiCreditCard className="h-5 w-5" />,
@@ -347,15 +347,15 @@ const Sidebar: FC<SidebarProps> = ({
       icon: <HiHome className="h-5 w-5" />,
       path: "/dashboard",
     },
-    {
-      title: "Orders",
-      icon: <HiShoppingCart className="h-5 w-5" />,
-      path: "/orders",
-      submenu: [
-        { title: "New Order", path: "/orders/new" },
-        { title: "All Orders", path: "/orders" },
-      ],
-    },
+    // {
+    //   title: "Orders",
+    //   icon: <HiShoppingCart className="h-5 w-5" />,
+    //   path: "/orders",
+    //   submenu: [
+    //     { title: "New Order", path: "/orders/new" },
+    //     { title: "All Orders", path: "/orders" },
+    //   ],
+    // },
     {
       title: "Staffs",
       icon: <HiUserGroup className="h-5 w-5" />,
@@ -381,7 +381,7 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/tracking",
     },
     {
-      title: "Parcel Booking",
+      title: "Orders",
       icon: <HiCube className="h-5 w-5" />,
       path: "/parcel-booking",
     },
