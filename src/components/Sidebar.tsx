@@ -576,9 +576,16 @@ const Sidebar: FC<SidebarProps> = ({
     })
     .filter(Boolean) as MenuItem[]
 
-  // Hub menu items (franchise items without Wallet)
+  // Hub menu items (franchise items without Wallet / Reports / restricted tools)
   const hubMenuItems: MenuItem[] = franchiseMenuItems
-    .filter(item => item.title !== "Wallet" && item.title !== "Reports")
+    .filter(
+      (item) =>
+        item.title !== "Wallet" &&
+        item.title !== "Reports" &&
+        item.title !== "Rate Calculator" &&
+        item.title !== "Service Availability Check" &&
+        item.title !== "Tracking"
+    )
 
   // Select menu items based on login type
   const menuItems = isStaffUser && !isRootUser
