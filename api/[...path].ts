@@ -63,6 +63,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
       return res.status(backendResponse.status).json(backendResponse.data)
     }
+    if (segments[0] === 'admin' && segments[1] === 'branch-wallet') {
+      const authHeader = req.headers.authorization
+      if (!authHeader) {
+        return res.status(401).json({ success: false, message: 'Authorization token required' })
+      }
+      const apiPath = segments.slice(1).join('/')
+      const backendUrl = `${BACKEND_API_URL}/admin/${apiPath}`
+      const backendResponse = await axios.request({
+        method: req.method as any,
+        url: backendUrl,
+        data: req.body,
+        params: req.query,
+        headers: { Authorization: authHeader, 'Content-Type': 'application/json' },
+        timeout: 30000,
+        validateStatus: (status) => status < 500,
+      })
+      return res.status(backendResponse.status).json(backendResponse.data)
+    }
     if (
       segments[0] === 'admin' &&
       segments[1] === 'staff' &&

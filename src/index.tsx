@@ -104,6 +104,7 @@ const PincodeServiceabilityPage = lazy(() => import("./pages/Settings/PincodeSer
 const RateMarkupPage = lazy(() => import("./pages/Settings/RateMarkupPage"))
 const RateCardMarkupPage = lazy(() => import("./pages/Settings/RateCardMarkupPage"))
 const SettingsRateCalculatorPage = lazy(() => import("./pages/Settings/RateCalculatorPage"))
+const BranchWalletPage = lazy(() => import("./pages/Settings/BranchWallet/BranchWalletPage"))
 
 // Profile
 const ProfilePage = lazy(() => import("./pages/Profile/ProfilePageModern"))
@@ -610,6 +611,15 @@ root.render(
             element={
               <PermissionRoute>
                 <RateCardMarkupPage />
+              </PermissionRoute>
+            }
+          />
+
+          <Route
+            path="/settings/branch-wallet"
+            element={
+              <PermissionRoute>
+                <BranchWalletPage />
               </PermissionRoute>
             }
           />
