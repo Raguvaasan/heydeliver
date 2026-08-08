@@ -285,7 +285,7 @@ const DashboardPage: FC = () => {
       return [
         {
           icon: <HiTruck className="h-5 w-5" />,
-          title: "Total Branch Count",
+          title: "Total Agency Count",
           value: totalFranchiseCount,
           subtitle: "Active franchises",
           percentage: undefined,
@@ -831,7 +831,7 @@ const DashboardPage: FC = () => {
               <Card>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Top Branch
+                    Top Agency
                   </h3>
                 </div>
                 <div className="space-y-4">

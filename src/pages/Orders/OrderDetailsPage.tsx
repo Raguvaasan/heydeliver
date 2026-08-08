@@ -166,7 +166,7 @@ const OrderDetailsPage: FC = () => {
 
           <Card className="p-4">
               <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
-                Branch Details
+                Agency Details
               </h3>
               <div className="space-y-1">
                 <p className="text-sm text-gray-800 dark:text-gray-200">

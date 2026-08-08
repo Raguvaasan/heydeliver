@@ -69,7 +69,7 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
     <Modal show={isOpen} onClose={onClose} size="3xl">
       <Modal.Header>
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Edit Branch
+          Edit Agency
         </h3>
       </Modal.Header>
       <Modal.Body className="max-h-[calc(100vh-12rem)] overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#64748b_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-500/70 hover:[&::-webkit-scrollbar-thumb]:bg-slate-400/80">
@@ -78,7 +78,7 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
             {/* Agency Name */}
             <div>
               <div className="flex items-center gap-1 mb-2">
-                <Label htmlFor="agencyName" value="Branch Name" />
+                <Label htmlFor="agencyName" value="Agency Name" />
                 <span className="text-red-500">*</span>
               </div>
               <TextInput
@@ -95,7 +95,7 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
             {/* Agency Owner */}
             <div>
               <div className="flex items-center gap-1 mb-2">
-                <Label htmlFor="agencyOwner" value="Branch Owner" />
+                <Label htmlFor="agencyOwner" value="Agency Owner" />
                 <span className="text-red-500">*</span>
               </div>
               <TextInput
@@ -219,7 +219,7 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
 
             {/* Image */}
             <div>
-              <Label htmlFor="image" value="Branch Image" className="mb-2" />
+              <Label htmlFor="image" value="Agency Image" className="mb-2" />
               <input
                 id="image"
                 name="image"
@@ -275,7 +275,7 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
               disabled={loading}
               className="bg-orange-500 hover:bg-orange-600"
             >
-              {loading ? "Updating..." : "Update Branch"}
+              {loading ? "Updating..." : "Update Agency"}
             </Button>
           </div>
         </form>

@@ -28,11 +28,11 @@ const ViewBranchWalletModal: FC<Props> = ({ isOpen, onClose, item }) => {
   return (
     <Modal show={isOpen} onClose={onClose} size="lg">
       <Modal.Header>
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Branch Wallet Details</h3>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Agency Wallet Details</h3>
       </Modal.Header>
       <Modal.Body>
         <div className="space-y-1">
-          <InfoRow label="Branch Name" value={item.branchName || item.agencyName} />
+          <InfoRow label="Agency Name" value={item.branchName || item.agencyName} />
           <InfoRow label="Wallet Balance" value={`₹ ${(Number(item.walletBalance) || 0).toLocaleString()}`} />
           <InfoRow label="Profit" value={`₹ ${(Number(item.profit) || 0).toLocaleString()}`} />
           <div className="flex flex-col md:flex-row md:items-center py-3 border-b border-gray-200 dark:border-gray-700">

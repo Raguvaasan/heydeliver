@@ -26,8 +26,8 @@ const statusColor: Record<string, string> = {
     "Parcel Arrived at Hub": "info",
     "Parcel Processed at Hub": "info",
     "Parcel Dispatched from Hub": "info",
-    "Parcel Arrived at Branch": "purple",
-    "Parcel Received at Branch": "purple",
+    "Parcel Arrived at Agency": "purple",
+    "Parcel Received at Agency": "purple",
     Delivered: "success",
     Cancelled: "failure",
 }
@@ -35,8 +35,8 @@ const statusColor: Record<string, string> = {
 const BRANCH_PRE_HUB_STATUSES = ["Parcel Collected"]
 const BRANCH_POST_HUB_STATUSES = [
     "Parcel Dispatched",
-    "Parcel Arrived at Branch",
-    "Parcel Received at Branch",
+    "Parcel Arrived at Agency",
+    "Parcel Received at Agency",
     "Delivered",
 ]
 const ALL_BRANCH_STATUSES = [...BRANCH_PRE_HUB_STATUSES, ...BRANCH_POST_HUB_STATUSES]
@@ -89,61 +89,61 @@ const ParcelManagementPage: FC = () => {
             return null
         }
     }
- 
+
     const profileData = getProfileData()
     const loginType = (sessionStorage.getItem("loginType") || "").toLowerCase()
     const { isAdmin, isHub, isBranch } = resolveParcelAccess(loginType, profileData)
- 
+
     const API_BASE = isAdmin ? ADMIN_BASE : isHub ? HUB_BASE : BRANCH_BASE
- 
+
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("")
     const [currentPage, setCurrentPage] = useState(1)
     const [parcels, setParcels] = useState<Parcel[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [apiError, setApiError] = useState<string | null>(null)
- 
+
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [modalMode, setModalMode] = useState<"add" | "edit">("add")
     const [selectedParcel, setSelectedParcel] = useState<Parcel | undefined>(undefined)
- 
+
     const [isViewModalOpen, setIsViewModalOpen] = useState(false)
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
- 
+
     const [hubs, setHubs] = useState<Hub[]>([])
     const [driverOptions, setDriverOptions] = useState<DriverOption[]>([])
     const [vehicleOptions, setVehicleOptions] = useState<VehicleOption[]>([])
     const [rowActionError, setRowActionError] = useState<string | null>(null)
- 
+
     const getAuthToken = () => {
         const authToken = sessionStorage.getItem("authToken")
         if (!authToken) throw new Error("Authorization token missing")
         return authToken
     }
- 
+
     const resolveHubValue = (hub: any) => {
         if (!hub) return { id: "", name: "" }
- 
+
         if (typeof hub === "string") {
             return { id: hub, name: hub }
         }
- 
+
         if (typeof hub === "object") {
             const id = String(hub._id || hub.id || hub.hubId || "")
             const name = String(hub.hubName || hub.name || hub.hub || "")
             return { id, name }
         }
- 
+
         return { id: String(hub), name: String(hub) }
     }
- 
+
     const extractAssignedHub = (payload: any) => {
         const source = payload?.hub || payload?.data?.hub || payload?.data?.assignedHub || payload?.assignedHub || payload?.hubDetails || payload?.hubData
         return resolveHubValue(source)
     }
- 
+
     const resolveDriverValue = (driver: any) => {
         if (!driver) return { id: "", name: "" }
         if (typeof driver === "string") return { id: driver, name: driver }
@@ -151,7 +151,7 @@ const ParcelManagementPage: FC = () => {
         const name = String(driver.driverName || driver.name || "")
         return { id, name }
     }
- 
+
     const resolveVehicleValue = (vehicle: any) => {
         if (!vehicle) return { id: "", label: "" }
         if (typeof vehicle === "string") return { id: vehicle, label: vehicle }
@@ -161,36 +161,36 @@ const ParcelManagementPage: FC = () => {
         const label = [type, reg].filter(Boolean).join(" - ") || reg || type
         return { id, label }
     }
- 
+
     const extractAssignedDriver = (payload: any) => {
         const source = payload?.driver || payload?.data?.driver || payload?.data?.assignedDriver || payload?.assignedDriver
         return resolveDriverValue(source)
     }
- 
+
     const extractAssignedVehicle = (payload: any) => {
         const source = payload?.vehicle || payload?.data?.vehicle || payload?.data?.assignedVehicle || payload?.assignedVehicle
         return resolveVehicleValue(source)
     }
- 
+
     const fetchParcels = async () => {
         setIsLoading(true)
         setApiError(null)
- 
+
         try {
             const authToken = getAuthToken()
- 
+
             const response = await fetch(API_BASE, {
                 headers: { Authorization: `Bearer ${authToken}` },
             })
- 
+
             if (!response.ok) {
                 const errBody = await response.json().catch(() => null)
                 throw new Error(errBody?.message || "Failed to load parcel bookings")
             }
- 
+
             const payload = await response.json()
             const orders = payload?.data?.orders ?? []
- 
+
             const resolveDeliveryBranch = (branch: any) => {
                 if (!branch) return { id: "", name: "" }
                 if (typeof branch === "string") return { id: "", name: branch }
@@ -198,7 +198,7 @@ const ParcelManagementPage: FC = () => {
                 const name = String(branch.agencyName || branch.name || branch.branchName || id || "")
                 return { id, name }
             }
- 
+
             const normalizedParcels: Parcel[] = orders.map((item: any) => {
                 const hub = resolveHubValue(item.hub)
                 const deliveryBranch = resolveDeliveryBranch(item.deliveryCustomer?.deliveryBranch)
@@ -207,12 +207,15 @@ const ParcelManagementPage: FC = () => {
                 return {
                     id: item._id,
                     orderId: item.orderNumber,
+                    bookingDate: item.bookingDate || item.createdAt || "",
                     deliveryCustomerName: item.deliveryCustomer?.name || "",
                     deliveryCustomerMobileNumber: item.deliveryCustomer?.mobileNumber || "",
+                    deliveryCustomerAddress: item.deliveryCustomer?.address || "",
                     deliveryBranch: deliveryBranch.name || item.deliveryCustomer?.deliveryBranch || "",
                     deliveryBranchId: deliveryBranch.id || "",
                     bookingCustomerName: item.bookingCustomer?.name || "",
                     bookingMobileNumber: item.bookingCustomer?.mobileNumber || "",
+                    bookingCustomerAddress: item.bookingCustomer?.address || "",
                     paymentType: item.paymentType === "To Pay" ? "To Pay" : "Paid",
                     article: item.parcelDetails?.article || "",
                     remarks: item.parcelDetails?.remarks || "",
@@ -228,6 +231,8 @@ const ParcelManagementPage: FC = () => {
                     assignedDriverName: driver.name,
                     assignedVehicleId: vehicle.id,
                     assignedVehicleLabel: vehicle.label,
+                    bookingCustomer: item.bookingCustomer && typeof item.bookingCustomer === "object" ? item.bookingCustomer : undefined,
+                    deliveryCustomer: item.deliveryCustomer && typeof item.deliveryCustomer === "object" ? item.deliveryCustomer : undefined,
                     // Raw objects (as returned by the API) so ViewParcelModal can
                     // render full driver/vehicle details, not just the flattened
                     // id/name used for the dropdowns.
@@ -235,7 +240,7 @@ const ParcelManagementPage: FC = () => {
                     vehicle: item.vehicle && typeof item.vehicle === "object" ? item.vehicle : undefined,
                 }
             })
- 
+
             setParcels(normalizedParcels)
         } catch (error) {
             setApiError(error instanceof Error ? error.message : "Failed to load parcel bookings")
@@ -244,7 +249,7 @@ const ParcelManagementPage: FC = () => {
             setIsLoading(false)
         }
     }
- 
+
     const fetchHubs = async () => {
         try {
             const authToken = getAuthToken()
@@ -252,20 +257,20 @@ const ParcelManagementPage: FC = () => {
                 headers: { Authorization: `Bearer ${authToken}` },
             })
             if (!response.ok) return
- 
+
             const payload = await response.json()
             const records = Array.isArray(payload)
                 ? payload
                 : Array.isArray(payload?.data?.hubs)
-                  ? payload.data.hubs
-                  : Array.isArray(payload?.data?.data)
-                    ? payload.data.data
-                    : Array.isArray(payload?.data)
-                      ? payload.data
-                      : Array.isArray(payload?.hubs)
-                        ? payload.hubs
-                        : []
- 
+                    ? payload.data.hubs
+                    : Array.isArray(payload?.data?.data)
+                        ? payload.data.data
+                        : Array.isArray(payload?.data)
+                            ? payload.data
+                            : Array.isArray(payload?.hubs)
+                                ? payload.hubs
+                                : []
+
             setHubs(
                 records.map((h: any) => ({
                     id: String(h._id || h.id || h.hubId || ""),
@@ -276,7 +281,7 @@ const ParcelManagementPage: FC = () => {
             // Non-critical — assignment dropdown just stays empty.
         }
     }
- 
+
     const fetchDriverOptions = async () => {
         try {
             const authToken = getAuthToken()
@@ -284,10 +289,10 @@ const ParcelManagementPage: FC = () => {
                 headers: { Authorization: `Bearer ${authToken}` },
             })
             if (!response.ok) return
- 
+
             const payload = await response.json()
             const records = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : []
- 
+
             setDriverOptions(
                 records.map((d: any) => ({
                     id: String(d._id || d.id || ""),
@@ -301,7 +306,7 @@ const ParcelManagementPage: FC = () => {
             // Non-critical — dropdown just stays empty.
         }
     }
- 
+
     const fetchVehicleOptions = async () => {
         try {
             const authToken = getAuthToken()
@@ -309,10 +314,10 @@ const ParcelManagementPage: FC = () => {
                 headers: { Authorization: `Bearer ${authToken}` },
             })
             if (!response.ok) return
- 
+
             const payload = await response.json()
             const records = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : []
- 
+
             setVehicleOptions(
                 records.map((v: any) => ({
                     id: String(v._id || v.id || ""),
@@ -325,7 +330,7 @@ const ParcelManagementPage: FC = () => {
             // Non-critical — dropdown just stays empty.
         }
     }
- 
+
     useEffect(() => {
         fetchParcels()
         if (isAdmin) fetchHubs()
@@ -335,7 +340,7 @@ const ParcelManagementPage: FC = () => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
- 
+
     const filteredParcels = useMemo(() => {
         return parcels.filter((parcel) => {
             const matchesSearch =
@@ -343,47 +348,47 @@ const ParcelManagementPage: FC = () => {
                 parcel.bookingCustomerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 parcel.deliveryCustomerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 parcel.deliveryBranch.toLowerCase().includes(searchTerm.toLowerCase())
- 
+
             const matchesStatus = statusFilter ? parcel.status === statusFilter : true
- 
+
             return matchesSearch && matchesStatus
         })
     }, [parcels, searchTerm, statusFilter])
- 
+
     const totalPages = Math.max(1, Math.ceil(filteredParcels.length / PAGE_SIZE))
- 
+
     const paginatedParcels = useMemo(() => {
         const start = (currentPage - 1) * PAGE_SIZE
         return filteredParcels.slice(start, start + PAGE_SIZE)
     }, [filteredParcels, currentPage])
- 
+
     const handleAdd = () => {
         setModalMode("add")
         setSelectedParcel(undefined)
         setIsModalOpen(true)
     }
- 
+
     const handleEdit = (parcel: Parcel) => {
         setModalMode("edit")
         setSelectedParcel(parcel)
         setIsModalOpen(true)
     }
- 
+
     const handleView = (parcel: Parcel) => {
         setSelectedParcel(parcel)
         setIsViewModalOpen(true)
     }
- 
+
     const handleDeleteClick = (id: string) => {
         setSelectedId(id)
         setIsDeleteModalOpen(true)
     }
- 
+
     const handleDeleteConfirm = async () => {
         if (!selectedId) return
         setIsDeleting(true)
         setRowActionError(null)
- 
+
         try {
             const authToken = getAuthToken()
             const res = await fetch(`${ADMIN_BASE}/${selectedId}`, {
@@ -403,12 +408,12 @@ const ParcelManagementPage: FC = () => {
             setSelectedId(null)
         }
     }
- 
+
     const handleAssignHub = async (parcelId: string, hubId: string) => {
         const previous = parcels.find((p) => p.id === parcelId)?.hubId ?? ""
         setParcels((prev) => prev.map((p) => (p.id === parcelId ? { ...p, hubId } : p)))
         setRowActionError(null)
- 
+
         try {
             const authToken = getAuthToken()
             const res = await fetch(`${ADMIN_BASE}/${parcelId}/assign-hub`, {
@@ -423,19 +428,19 @@ const ParcelManagementPage: FC = () => {
                 const errBody = await res.json().catch(() => null)
                 throw new Error(errBody?.message || "Failed to assign hub")
             }
- 
+
             const responsePayload = await res.json().catch(() => null)
             const assignedHub = extractAssignedHub(responsePayload)
             const fallbackHubName = hubs.find((hub) => hub.id === hubId)?.name || ""
- 
+
             setParcels((prev) =>
                 prev.map((p) =>
                     p.id === parcelId
                         ? {
-                              ...p,
-                              hubId: assignedHub.id || hubId,
-                              hubName: assignedHub.name || fallbackHubName,
-                          }
+                            ...p,
+                            hubId: assignedHub.id || hubId,
+                            hubName: assignedHub.name || fallbackHubName,
+                        }
                         : p
                 )
             )
@@ -446,14 +451,14 @@ const ParcelManagementPage: FC = () => {
             setRowActionError(error instanceof Error ? error.message : "Failed to assign hub")
         }
     }
- 
+
     // Shared status-update handler for both branch and hub actors — only the
     // base URL and value set differ.
     const handleStatusChange = async (parcelId: string, status: string, base: string) => {
         const previous = parcels.find((p) => p.id === parcelId)?.status
         setParcels((prev) => prev.map((p) => (p.id === parcelId ? { ...p, status } : p)))
         setRowActionError(null)
- 
+
         try {
             const authToken = getAuthToken()
             const res = await fetch(`${base}/${parcelId}/status`, {
@@ -468,7 +473,7 @@ const ParcelManagementPage: FC = () => {
                 const errBody = await res.json().catch(() => null)
                 throw new Error(errBody?.message || "Failed to update status")
             }
- 
+
             toast.success(`Status updated to ${status}`)
             fetchParcels()
         } catch (error) {
@@ -478,7 +483,7 @@ const ParcelManagementPage: FC = () => {
             toast.error(message)
         }
     }
- 
+
     // Shared handler for assigning/clearing a driver or vehicle on a hub order.
     // field: "driver" | "vehicle" — value "" clears the assignment (sent as null).
     const handleAssignVehicleOrDriver = async (parcelId: string, field: "driver" | "vehicle", value: string) => {
@@ -489,7 +494,7 @@ const ParcelManagementPage: FC = () => {
         const previousVehicleLabel = target?.assignedVehicleLabel ?? ""
         const previousDriverRaw = target?.driver
         const previousVehicleRaw = target?.vehicle
- 
+
         // Optimistic update — also patches the raw driver/vehicle object so
         // ViewParcelModal reflects the change immediately, ahead of the
         // background fetchParcels() refetch below.
@@ -500,11 +505,11 @@ const ParcelManagementPage: FC = () => {
                     const selected = driverOptions.find((d) => d.id === value)
                     const rawDriver = selected
                         ? {
-                              _id: selected.id,
-                              driverName: selected.name,
-                              phoneNumber: selected.phoneNumber,
-                              licenseNumber: selected.licenseNumber,
-                          }
+                            _id: selected.id,
+                            driverName: selected.name,
+                            phoneNumber: selected.phoneNumber,
+                            licenseNumber: selected.licenseNumber,
+                        }
                         : undefined
                     return { ...p, assignedDriverId: value, assignedDriverName: selected?.name || "", driver: rawDriver }
                 }
@@ -512,17 +517,17 @@ const ParcelManagementPage: FC = () => {
                 const label = selected ? [selected.type, selected.registrationNumber].filter(Boolean).join(" - ") : ""
                 const rawVehicle = selected
                     ? {
-                          _id: selected.id,
-                          vehicleType: selected.type,
-                          vehicleRegistrationNumber: selected.registrationNumber,
-                          capacity: selected.capacity,
-                      }
+                        _id: selected.id,
+                        vehicleType: selected.type,
+                        vehicleRegistrationNumber: selected.registrationNumber,
+                        capacity: selected.capacity,
+                    }
                     : undefined
                 return { ...p, assignedVehicleId: value, assignedVehicleLabel: label, vehicle: rawVehicle }
             })
         )
         setRowActionError(null)
- 
+
         try {
             const authToken = getAuthToken()
             const res = await fetch(`${HUB_BASE}/${parcelId}/assign-vehicle`, {
@@ -533,16 +538,16 @@ const ParcelManagementPage: FC = () => {
                 },
                 body: JSON.stringify({ [field]: value || null }),
             })
- 
+
             if (!res.ok) {
                 const errBody = await res.json().catch(() => null)
                 throw new Error(errBody?.message || `Failed to assign ${field}`)
             }
- 
+
             const responsePayload = await res.json().catch(() => null)
             const assignedDriver = extractAssignedDriver(responsePayload)
             const assignedVehicle = extractAssignedVehicle(responsePayload)
- 
+
             setParcels((prev) =>
                 prev.map((p) => {
                     if (p.id !== parcelId) return p
@@ -560,7 +565,7 @@ const ParcelManagementPage: FC = () => {
                     }
                 })
             )
- 
+
             toast.success(`${field === "driver" ? "Driver" : "Vehicle"} updated`)
             fetchParcels()
         } catch (error) {
@@ -569,14 +574,14 @@ const ParcelManagementPage: FC = () => {
                 prev.map((p) =>
                     p.id === parcelId
                         ? {
-                              ...p,
-                              assignedDriverId: previousDriverId,
-                              assignedDriverName: previousDriverName,
-                              assignedVehicleId: previousVehicleId,
-                              assignedVehicleLabel: previousVehicleLabel,
-                              driver: previousDriverRaw,
-                              vehicle: previousVehicleRaw,
-                          }
+                            ...p,
+                            assignedDriverId: previousDriverId,
+                            assignedDriverName: previousDriverName,
+                            assignedVehicleId: previousVehicleId,
+                            assignedVehicleLabel: previousVehicleLabel,
+                            driver: previousDriverRaw,
+                            vehicle: previousVehicleRaw,
+                        }
                         : p
                 )
             )
@@ -585,13 +590,28 @@ const ParcelManagementPage: FC = () => {
             toast.error(message)
         }
     }
- 
+
     const showAmountColumn = !isBranch
     const showDeliveryBranchColumn = !isBranch
     const assignmentColumnCount = (isAdmin ? 1 : 0) + (isHub ? 2 : 0)
     const baseColumnCount = 5 + (showDeliveryBranchColumn ? 1 : 0) + (showAmountColumn ? 1 : 0)
     const totalColumnCount = baseColumnCount + assignmentColumnCount + 1
- 
+
+    const formatDate = (value?: string) => {
+        if (!value) return "-"
+
+        const parsedDate = new Date(value)
+        if (Number.isNaN(parsedDate.getTime())) return value
+
+        return parsedDate.toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+        })
+    }
+
     return (
         <NavbarSidebarLayout>
             <div className="px-4">
@@ -599,24 +619,24 @@ const ParcelManagementPage: FC = () => {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Parcel Booking Management</h1>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Manage parcel bookings</p>
                 </div>
- 
+
                 <Card>
                     {apiError && (
                         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">
                             {apiError}
                         </div>
                     )}
- 
+
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                         <div className="flex-1">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">List of Bookings</h2>
- 
+
                             <div className="flex flex-col md:flex-row gap-3 max-w-3xl">
                                 <div className="relative flex-1">
                                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                         <HiSearch className="h-5 w-5 text-gray-400" />
                                     </div>
- 
+
                                     <TextInput
                                         type="search"
                                         placeholder="Search order ID, customer..."
@@ -628,7 +648,7 @@ const ParcelManagementPage: FC = () => {
                                         className="pl-10"
                                     />
                                 </div>
- 
+
                                 <Select
                                     value={statusFilter}
                                     onChange={(e) => {
@@ -646,7 +666,7 @@ const ParcelManagementPage: FC = () => {
                                 </Select>
                             </div>
                         </div>
- 
+
                         {!isAdmin && !isHub && (
                             <Button color="warning" onClick={() => handleAdd()} className="bg-orange-500 hover:bg-orange-600">
                                 <HiPlus className="mr-2 h-5 w-5" />
@@ -654,13 +674,14 @@ const ParcelManagementPage: FC = () => {
                             </Button>
                         )}
                     </div>
- 
+
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
                             <thead className="bg-gray-800 text-white text-xs uppercase">
                                 <tr>
                                     <th className="px-4 py-3">LR Number</th>
-                                    {showDeliveryBranchColumn && <th className="px-4 py-3">Delivery Branch</th>}
+                                    <th className="px-4 py-3">Date</th>
+                                    {showDeliveryBranchColumn && <th className="px-4 py-3">Delivery Agency</th>}
                                     <th className="px-4 py-3">Booking Customer</th>
                                     <th className="px-4 py-3">Payment Type</th>
                                     {showAmountColumn && <th className="px-4 py-3">Trans Charge</th>}
@@ -671,7 +692,7 @@ const ParcelManagementPage: FC = () => {
                                     <th className="px-4 py-3 text-center">Action</th>
                                 </tr>
                             </thead>
- 
+
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                 {isLoading ? (
                                     <tr>
@@ -683,25 +704,25 @@ const ParcelManagementPage: FC = () => {
                                     paginatedParcels.map((parcel) => {
                                         const hubAssigned = Boolean(parcel.hubId)
                                         const branchOptions = hubAssigned ? ALL_BRANCH_STATUSES : BRANCH_PRE_HUB_STATUSES
- 
+
                                         return (
                                             <tr key={parcel.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{parcel.orderId}</td>
- 
+                                                <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatDate(parcel.bookingDate || parcel.createdAt)}</td>
                                                 {showDeliveryBranchColumn && (
                                                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{parcel.deliveryBranch || "-"}</td>
                                                 )}
- 
+
                                                 <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{parcel.bookingCustomerName}</td>
- 
+
                                                 <td className="px-4 py-3 inline-block">
                                                     <Badge className="py-2" color={parcel.paymentType === "Paid" ? "success" : "warning"}>
                                                         {parcel.paymentType}
                                                     </Badge>
                                                 </td>
- 
+
                                                 {showAmountColumn && <td className="px-4 py-3 text-gray-900 dark:text-white">{parcel.transportationCharge}</td>}
- 
+
                                                 {/* Status cell: dropdown for branch/hub, read-only badge for admin */}
                                                 <td className="px-4 py-3">
                                                     {isBranch ? (
@@ -746,7 +767,7 @@ const ParcelManagementPage: FC = () => {
                                                         </Badge>
                                                     )}
                                                 </td>
- 
+
                                                 {isAdmin && (
                                                     <td>
                                                         <Select
@@ -765,7 +786,7 @@ const ParcelManagementPage: FC = () => {
                                                         </Select>
                                                     </td>
                                                 )}
- 
+
                                                 {isHub && (
                                                     <td>
                                                         <Select
@@ -784,7 +805,7 @@ const ParcelManagementPage: FC = () => {
                                                         </Select>
                                                     </td>
                                                 )}
- 
+
                                                 {isHub && (
                                                     <td>
                                                         <Select
@@ -803,19 +824,19 @@ const ParcelManagementPage: FC = () => {
                                                         </Select>
                                                     </td>
                                                 )}
- 
+
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center justify-center gap-2">
                                                         <button onClick={() => handleView(parcel)} className="p-1.5 text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400" title="View">
                                                             <HiEye className="h-5 w-5" />
                                                         </button>
- 
+
                                                         {!isHub && (
                                                             <button onClick={() => handleEdit(parcel)} className="p-1.5 text-gray-600 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400" title={isAdmin ? "Update Charge" : "Edit"}>
                                                                 <HiPencil className="h-5 w-5" />
                                                             </button>
                                                         )}
- 
+
                                                         {isAdmin && (
                                                             <button onClick={() => handleDeleteClick(parcel.id)} className="p-1.5 text-gray-600 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400" title="Delete">
                                                                 <HiTrash className="h-5 w-5" />
@@ -836,17 +857,17 @@ const ParcelManagementPage: FC = () => {
                             </tbody>
                         </table>
                     </div>
- 
+
                     <div className="flex items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                             Page {currentPage} of {totalPages}
                         </p>
- 
+
                         <div className="flex gap-2">
                             <Button size="sm" color="gray" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1}>
                                 Previous
                             </Button>
- 
+
                             <Button size="sm" color="gray" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>
                                 Next
                             </Button>
@@ -854,7 +875,7 @@ const ParcelManagementPage: FC = () => {
                     </div>
                 </Card>
             </div>
- 
+
             <AddEditParcel
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -865,19 +886,19 @@ const ParcelManagementPage: FC = () => {
                     fetchParcels().catch(() => undefined)
                 }}
             />
- 
+
             <ViewParcelModal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} parcel={selectedParcel} />
- 
+
             <DeleteConfirmModal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={handleDeleteConfirm}
                 title="Delete Booking"
                 message="Are you sure you want to delete this parcel booking? This action cannot be undone."
-                
+
             />
         </NavbarSidebarLayout>
     )
 }
- 
+
 export default ParcelManagementPage

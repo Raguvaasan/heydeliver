@@ -68,7 +68,7 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-500 to-orange-600">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
             <HiOfficeBuilding className="w-6 h-6" />
-            Add New Branch
+            Add New Agency
           </h3>
           <button
             onClick={onClose}
@@ -101,19 +101,19 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                 {/* Basic Details */}
                 <FormSection
                   title="Basic Information"
-                  description="Enter branch basic details"
+                  description="Enter agency basic details"
                   icon={<HiOfficeBuilding className="w-5 h-5" />}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput
                       name="agencyName"
-                      label="Branch Name"
+                      label="Agency Name"
                       required
-                      helperText="Official branch name"
+                      helperText="Official agency name"
                     />
                     <FormInput
                       name="agencyOwner"
-                      label="Branch Owner Name"
+                      label="Agency Owner Name"
                       required
                       helperText="Owner's full name"
                     />
@@ -142,7 +142,7 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                       label="Status"
                       options={statusOptions}
                       required
-                      helperText="Branch account status"
+                      helperText="Agency account status"
                     />
                   </div>
                 </FormSection>
@@ -150,7 +150,7 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                 {/* Location Details */}
                 <FormSection
                   title="Location Information"
-                  description="Enter branch address details"
+                  description="Enter agency address details"
                   icon={<HiLocationMarker className="w-5 h-5" />}
                 >
                   <FormTextarea
@@ -194,7 +194,7 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                     Cancel
                   </button>
                   <SaveButton loading={isSubmitting || loading} className="flex-1">
-                    Add Branch
+                    Add Agency
                   </SaveButton>
                 </div>
               </Form>

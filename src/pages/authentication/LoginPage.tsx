@@ -3,7 +3,15 @@ import { Label } from "flowbite-react"
 import { useEffect, useRef, useState, type FC, FormEvent } from "react"
 import { HiEye, HiEyeOff } from "react-icons/hi"
 import { HiArrowPath } from "react-icons/hi2"
-import { loginAdminUser, loginHubUser, sendFranchiseLoginOtp, verifyFranchiseLoginOtp, sendStaffLoginOtp, verifyStaffLoginOtp } from "../../store/loginStore"
+import {
+  loginAdminUser,
+  sendFranchiseLoginOtp,
+  verifyFranchiseLoginOtp,
+  sendStaffLoginOtp,
+  verifyStaffLoginOtp,
+  sendHubLoginOtp,
+  verifyHubLoginOtp,
+} from "../../store/loginStore"
 import toast from "react-hot-toast"
 import truckImg from "../../../public/images/truck.jpeg"
 interface LoginResponse {
@@ -78,7 +86,9 @@ const LoginPage: FC = function () {
       const response =
         loginType === "staff"
           ? await sendStaffLoginOtp(phone, countryCode, staffType)
-          : await sendFranchiseLoginOtp(phone, countryCode)
+          : loginType === "hub"
+            ? await sendHubLoginOtp(phone, countryCode)
+            : await sendFranchiseLoginOtp(phone, countryCode)
       const sent = response?.data?.success ?? true
       if (!sent) {
         throw new Error(response?.data?.message || "Unable to send OTP")
@@ -99,7 +109,7 @@ const LoginPage: FC = function () {
   const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault()
 
-    if (loginType !== "staff" && loginType !== "franchise" && captchaInput.toUpperCase() !== captchaAnswer.toUpperCase()) {
+    if (loginType !== "staff" && loginType !== "franchise" && loginType !== "hub" && captchaInput.toUpperCase() !== captchaAnswer.toUpperCase()) {
       toast.error("Please enter the correct captcha", { duration: 4000 })
       return
     }
@@ -125,7 +135,13 @@ const LoginPage: FC = function () {
         }
         result = (await verifyStaffLoginOtp(phone, countryCode, otp, staffType)) as LoginResponse
       } else if (loginType === "hub") {
-        result = (await loginHubUser(username, password)) as LoginResponse
+        if (!otpSent) {
+          throw new Error("Please send OTP first")
+        }
+        if (!otp.trim()) {
+          throw new Error("Please enter OTP")
+        }
+        result = (await verifyHubLoginOtp(phone, countryCode, otp)) as LoginResponse
       } else {
         result = (await loginAdminUser(email, password)) as LoginResponse
       }
@@ -186,17 +202,18 @@ const LoginPage: FC = function () {
   }
 
   useEffect(() => {
-    if (loginType !== "franchise" && loginType !== "staff") {
+    setOtp("")
+    setOtpSent(false)
+    setMobileOtpStep("phone")
+
+    if (loginType !== "franchise" && loginType !== "staff" && loginType !== "hub") {
       setPhone("")
       setCountryCode("+91")
-      setOtp("")
-      setOtpSent(false)
-      setMobileOtpStep("phone")
     }
   }, [loginType])
 
   useEffect(() => {
-    if ((loginType !== "staff" && loginType !== "franchise") || mobileOtpStep !== "verify" || resendTimer <= 0) return
+    if ((loginType !== "staff" && loginType !== "franchise" && loginType !== "hub") || mobileOtpStep !== "verify" || resendTimer <= 0) return
     const id = setInterval(() => {
       setResendTimer((prev) => (prev > 0 ? prev - 1 : 0))
     }, 1000)
@@ -323,19 +340,19 @@ const LoginPage: FC = function () {
               <div className="relative bg-white/95 backdrop-blur-2xl rounded-2xl sm:rounded-[1.75rem] p-6 sm:p-8 lg:p-12 border border-primary-200 shadow-[0_20px_48px_rgba(255,204,0,0.20)] hover:shadow-[0_24px_56px_rgba(255,204,0,0.28)] transition-shadow duration-300">
 
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 text-center">
-                  {((loginType === "staff" || loginType === "franchise") && mobileOtpStep === "verify") ? "Verify OTP" : "Sign In"}
+                  {((loginType === "staff" || loginType === "franchise" || loginType === "hub") && mobileOtpStep === "verify") ? "Verify OTP" : "Sign In"}
                 </h2>
                 <p className="text-gray-600 text-center mb-5 text-sm">
-                  {(loginType === "staff" || loginType === "franchise")
+                  {(loginType === "staff" || loginType === "franchise" || loginType === "hub")
                     ? (mobileOtpStep === "verify" ? `A one time password was sent to ${countryCode}${phone}` : "Enter mobile number to receive OTP")
                     : "Enter your credentials to access your account"}
                 </p>
 
                 {/* Login Type Selector */}
-                {!((loginType === "staff" || loginType === "franchise") && mobileOtpStep === "verify") && (
+                {!((loginType === "staff" || loginType === "franchise" || loginType === "hub") && mobileOtpStep === "verify") && (
                   <div className="flex mb-6 justify-center gap-2 sm:gap-4 flex-wrap">
                     {(["admin", "franchise", "hub", "staff"] as const).map((type) => {
-                      const label = type === "franchise" ? "Branch" : type
+                      const label = type === "franchise" ? "Agency" : type
                       return (
                       <label key={type} className="flex items-center cursor-pointer">
                         <input
@@ -430,7 +447,7 @@ const LoginPage: FC = function () {
                               }}
                               className="w-full text-base pl-4 pr-10 py-3 rounded-xl border border-gray-300 text-gray-700 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
                             >
-                              <option value="franchise">Branch</option>
+                              <option value="franchise">Agency</option>
                               <option value="hub">Hub</option>
                               <option value="head_quarter">Head Quarter</option>
                             </select>
@@ -479,7 +496,7 @@ const LoginPage: FC = function () {
                         </>
                       )}
                     </>
-                  ) : loginType === "franchise" ? (
+                  ) : loginType === "franchise" || loginType === "hub" ? (
                     <>
                       {mobileOtpStep === "verify" && (
                         <button
@@ -490,10 +507,10 @@ const LoginPage: FC = function () {
                           ← Back
                         </button>
                       )}
-                      {/* Franchise OTP Layout */}
+                      {/* OTP Layout */}
                       {mobileOtpStep === "phone" && (
                         <div className="space-y-1">
-                          <Label htmlFor="franchisePhone" className="block text-sm font-semibold text-gray-700">
+                          <Label htmlFor={loginType === "hub" ? "hubPhone" : "franchisePhone"} className="block text-sm font-semibold text-gray-700">
                             Phone Number
                           </Label>
                           <div className="grid grid-cols-1 sm:grid-cols-[96px_1fr] gap-2">
@@ -505,8 +522,8 @@ const LoginPage: FC = function () {
                               required
                               className="w-full text-base px-3 py-3 rounded-xl border border-gray-300 text-gray-700 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all duration-200 bg-white"
                             />
-                            <input
-                              id="franchisePhone"
+                              <input
+                              id={loginType === "hub" ? "hubPhone" : "franchisePhone"}
                               type="tel"
                               placeholder="Enter phone number"
                               value={phone}
@@ -620,7 +637,7 @@ const LoginPage: FC = function () {
                   )}
 
                   {/* Captcha */}
-                  {loginType !== "staff" && loginType !== "franchise" && (
+                  {loginType === "admin" && (
                     <div className="space-y-1">
                       <Label className="block text-sm font-semibold text-gray-700">Captcha</Label>
                       <div className="flex items-center gap-2 sm:gap-3">
@@ -650,7 +667,7 @@ const LoginPage: FC = function () {
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    disabled={isLoading || ((loginType === "staff" || loginType === "franchise") && mobileOtpStep !== "verify")}
+                    disabled={isLoading || ((loginType === "staff" || loginType === "franchise" || loginType === "hub") && mobileOtpStep !== "verify")}
                     className="w-full h-13 sm:h-14 mt-6 sm:mt-8 bg-primary-500 hover:bg-primary-600 disabled:bg-primary-300 text-white font-bold text-base sm:text-lg rounded-xl shadow-[0_10px_24px_rgba(255,204,0,0.28)] hover:shadow-[0_14px_32px_rgba(255,204,0,0.38)] transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                     style={{ minHeight: "52px" }}
                   >
@@ -676,7 +693,7 @@ const LoginPage: FC = function () {
                       </>
                     ) : (
                       <>
-                        <span>{(loginType === "staff" || loginType === "franchise") ? "Login" : "Sign In"}</span>
+                        <span>{(loginType === "staff" || loginType === "franchise" || loginType === "hub") ? "Login" : "Sign In"}</span>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path
                             strokeLinecap="round"

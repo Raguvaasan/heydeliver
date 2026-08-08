@@ -14,7 +14,7 @@ interface Props {
 }
 
 const validationSchema = Yup.object({
-  branchId: Yup.string().required("Branch is required"),
+  branchId: Yup.string().required("Agency is required"),
   amount: Yup.number().typeError("Amount must be a number").positive("Amount must be greater than 0").required("Amount is required"),
   paymentMethod: Yup.string().oneOf(["Cash", "UPI", "Bank"], "Select a valid payment method").required("Payment method is required"),
   reference: Yup.string().trim().min(2, "Reference must be at least 2 characters").max(100, "Reference must not exceed 100 characters").required("Reference is required"),
@@ -44,7 +44,7 @@ const BranchWalletAddModal: FC<Props> = ({ isOpen, onClose, onSuccess }) => {
         <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-500 to-orange-600">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
             <HiOutlineCurrencyRupee className="w-6 h-6" />
-            Add Branch Wallet Credit
+            Add Agency Wallet Credit
           </h3>
           <button onClick={onClose} className="text-white hover:bg-white/20 rounded-lg p-1.5 transition-colors" type="button">
             <HiX className="w-5 h-5" />
@@ -73,13 +73,13 @@ const BranchWalletAddModal: FC<Props> = ({ isOpen, onClose, onSuccess }) => {
         {({ values, handleChange, handleBlur, touched, errors, setFieldValue, isSubmitting }) => (
           <Form className="p-6">
             <FormSection
-              title="Branch Wallet Information"
-              description="Enter branch credit details"
+              title="Agency Wallet Information"
+              description="Enter agency credit details"
               icon={<HiOfficeBuilding className="w-5 h-5" />}
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2 flex flex-col gap-2">
-                  <Label value="Branch" />
+                  <Label value="Agency" />
                   <BranchWalletBranchSelector
                     value={values.branchId}
                     options={branchOptions}

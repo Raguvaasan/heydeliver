@@ -1,5 +1,5 @@
 // addEditParcel.tsx
-import { FC, useEffect, useState } from "react"
+import { FC, useEffect, useRef, useState } from "react"
 import { Modal } from "flowbite-react"
 import { Formik, Form, useField } from "formik"
 import * as Yup from "yup"
@@ -11,10 +11,14 @@ import { FormSection, SaveButton } from "../../components/FormHelpers"
 export interface ParcelFormValues {
     deliveryCustomerName: string
     deliveryCustomerMobileNumber: string
+    deliveryCustomerAddress: string
+    deliveryCustomerGstNumber: string
     deliveryBranch: string
 
     bookingCustomerName: string
     bookingMobileNumber: string
+    bookingCustomerAddress: string
+    bookingCustomerGstNumber: string
     paymentType: "Paid" | "To Pay"
 
     article: string
@@ -38,6 +42,7 @@ export interface StatusHistoryEntry {
 export interface Parcel extends ParcelFormValues {
     id: string
     orderId: string
+    bookingDate?: string
     deliveryBranchId?: string
     branchName?: string
     hubId?: string
@@ -47,6 +52,7 @@ export interface Parcel extends ParcelFormValues {
     assignedDriverName: string
     assignedVehicleId: string
     assignedVehicleLabel: string
+    createdAt: any
     driver?: {
         _id?: string
         driverName?: string
@@ -61,6 +67,16 @@ export interface Parcel extends ParcelFormValues {
         vehicleRegistrationNumber?: string
         status?: string
     }
+    bookingCustomer?: {
+        name?: string
+        mobileNumber?: string
+        address?: string
+    }
+    deliveryCustomer?: {
+        name?: string
+        mobileNumber?: string
+        address?: string
+    }
 }
 
 interface Props {
@@ -69,8 +85,6 @@ interface Props {
     mode: "add" | "edit"
     parcel?: Parcel
     onSuccess?: (parcel: Parcel) => void
-    // When true (admin editing an existing booking): every field is disabled
-    // except Transportation Charge, and submit hits the charge-only endpoint.
     chargeOnly?: boolean
 }
 
@@ -121,9 +135,21 @@ const FormRadioGroup: FC<{
 const fullSchema = Yup.object({
     deliveryCustomerName: Yup.string().trim().required("Delivery customer name is required").min(2).max(100),
     deliveryCustomerMobileNumber: Yup.string().trim().required("Delivery customer mobile number is required").matches(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number"),
+    deliveryCustomerAddress: Yup.string().trim().required("Delivery customer address is required").min(5).max(250),
+    deliveryCustomerGstNumber: Yup.string()
+        .trim()
+        .optional()
+        .transform((value) => (value ? value.toUpperCase() : ""))
+        .matches(/^$|^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/, "Enter a valid GSTIN"),
     deliveryBranch: Yup.string().trim().required("Delivery branch is required").min(2),
     bookingCustomerName: Yup.string().trim().required("Booking customer name is required").min(2).max(100),
     bookingMobileNumber: Yup.string().trim().required("Booking customer mobile number is required").matches(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number"),
+    bookingCustomerAddress: Yup.string().trim().required("Booking customer address is required").min(5).max(250),
+    bookingCustomerGstNumber: Yup.string()
+        .trim()
+        .optional()
+        .transform((value) => (value ? value.toUpperCase() : ""))
+        .matches(/^$|^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/, "Enter a valid GSTIN"),
     paymentType: Yup.string().oneOf(["Paid", "To Pay"]).required("Payment type is required"),
     article: Yup.string().trim().required("Article is required").min(2).max(100),
     remarks: Yup.string().trim().max(250),
@@ -140,9 +166,13 @@ const chargeSchema = Yup.object({
 const emptyValues: ParcelFormValues = {
     deliveryCustomerName: "",
     deliveryCustomerMobileNumber: "",
+    deliveryCustomerAddress: "",
+    deliveryCustomerGstNumber: "",
     deliveryBranch: "",
     bookingCustomerName: "",
     bookingMobileNumber: "",
+    bookingCustomerAddress: "",
+    bookingCustomerGstNumber: "",
     paymentType: "Paid",
     article: "",
     remarks: "",
@@ -161,9 +191,53 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
     const [apiError, setApiError] = useState<string | null>(null)
     const [deliveryBranches, setDeliveryBranches] = useState<DeliveryBranchOption[]>([])
     const [deliveryBranchesLoading, setDeliveryBranchesLoading] = useState(false)
+    const resetFormRef = useRef<null | ((nextState?: { values: ParcelFormValues }) => void)>(null)
 
-    const initialValues: ParcelFormValues = isEdit && parcel ? { ...parcel, deliveryBranch: parcel.deliveryBranchId || parcel.deliveryBranch } : emptyValues
+    const resolveDeliveryBranchValue = () => {
+        if (!isEdit || !parcel) return ""
+
+        const directId = parcel.deliveryBranchId || ""
+        if (directId) return directId
+
+        const branchName = parcel.deliveryBranch || ""
+        if (!branchName) return ""
+
+        const matchedBranch = deliveryBranches.find(
+            (branch) =>
+                branch.id === branchName ||
+                branch.agencyName === branchName
+        )
+
+        return matchedBranch?.id || branchName
+    }
+
+    const initialValues: ParcelFormValues = isEdit && parcel
+        ? {
+              deliveryCustomerName: parcel.deliveryCustomerName || "",
+              deliveryCustomerMobileNumber: parcel.deliveryCustomerMobileNumber || "",
+              deliveryCustomerAddress: parcel.deliveryCustomerAddress || "",
+              deliveryCustomerGstNumber: parcel.deliveryCustomerGstNumber || "",
+              deliveryBranch: resolveDeliveryBranchValue(),
+              bookingCustomerName: parcel.bookingCustomerName || "",
+              bookingMobileNumber: parcel.bookingMobileNumber || "",
+              bookingCustomerAddress: parcel.bookingCustomerAddress || "",
+              bookingCustomerGstNumber: parcel.bookingCustomerGstNumber || "",
+              paymentType: parcel.paymentType || "Paid",
+              article: parcel.article || "",
+              remarks: parcel.remarks || "",
+              numberOfParcels: parcel.numberOfParcels || "",
+              approximateValue: parcel.approximateValue || "",
+              transportationCharge: parcel.transportationCharge || "0",
+              status: parcel.status || "Order Created",
+          }
+        : emptyValues
     const fieldsDisabled = chargeOnly // everything but transportationCharge is locked
+
+    const handleClose = () => {
+        resetFormRef.current?.({ values: emptyValues })
+        setApiError(null)
+        onClose()
+    }
 
     useEffect(() => {
         if (!isOpen || chargeOnly) return
@@ -254,6 +328,8 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
 
                 const saved = await res.json()
                 onSuccess?.(saved)
+                resetFormRef.current?.({ values: emptyValues })
+                setApiError(null)
                 onClose()
                 return
             }
@@ -262,11 +338,19 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                 bookingCustomer: {
                     name: values.bookingCustomerName.trim(),
                     mobileNumber: values.bookingMobileNumber.trim(),
+                    address: values.bookingCustomerAddress.trim(),
+                    ...(values.bookingCustomerGstNumber.trim()
+                        ? { gstNumber: values.bookingCustomerGstNumber.trim().toUpperCase() }
+                        : {}),
                 },
                 paymentType: values.paymentType,
                 deliveryCustomer: {
                     name: values.deliveryCustomerName.trim(),
                     mobileNumber: values.deliveryCustomerMobileNumber.trim(),
+                    address: values.deliveryCustomerAddress.trim(),
+                    ...(values.deliveryCustomerGstNumber.trim()
+                        ? { gstNumber: values.deliveryCustomerGstNumber.trim().toUpperCase() }
+                        : {}),
                     deliveryBranch: values.deliveryBranch.trim(),
                 },
                 parcelDetails: {
@@ -296,6 +380,8 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
 
             const savedParcel: Parcel = await res.json()
             onSuccess?.(savedParcel)
+            resetFormRef.current?.({ values: emptyValues })
+            setApiError(null)
             onClose()
         } catch (err) {
             setApiError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
@@ -305,7 +391,7 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
     }
 
     return (
-        <Modal show={isOpen} onClose={onClose} size="4xl">
+        <Modal show={isOpen} onClose={handleClose} size="4xl">
             <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-2xl">
                 <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-500 to-orange-600">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
@@ -313,7 +399,7 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                         {chargeOnly ? "Update Transportation Charge" : isEdit ? "Edit Parcel Booking" : "New Parcel Booking"}
                     </h3>
 
-                    <button onClick={onClose} className="text-white hover:bg-white/20 rounded-lg p-1.5">
+                    <button onClick={handleClose} className="text-white hover:bg-white/20 rounded-lg p-1.5">
                         <HiX className="w-5 h-5" />
                     </button>
                 </div>
@@ -339,15 +425,19 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                         validationSchema={chargeOnly ? chargeSchema : fullSchema}
                         onSubmit={handleSubmit}
                     >
-                        {({ isSubmitting }) => (
+                        {({ isSubmitting, resetForm }) => {
+                            resetFormRef.current = resetForm
+                            return (
                             <Form className="space-y-6">
                                 <FormSection title="Deliver Customer" description="Details of the customer receiving the parcel" icon={<HiOutlineUser className="w-5 h-5" />}>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormInput name="deliveryCustomerName" label="Name" required disabled={fieldsDisabled} />
                                         <FormInput name="deliveryCustomerMobileNumber" label="Mobile Number" required disabled={fieldsDisabled} />
+                                        <FormInput name="deliveryCustomerAddress" label="Address" required disabled={fieldsDisabled} />
+                                        <FormInput name="deliveryCustomerGstNumber" label="GST Number" disabled={fieldsDisabled} helperText="Optional, must be a valid GSTIN if provided" />
                                         <FormSelect
                                             name="deliveryBranch"
-                                            label="Delivery Branch"
+                                            label="Delivery Agency"
                                             required
                                             disabled={fieldsDisabled || deliveryBranchesLoading}
                                             options={deliveryBranches.map((branch) => ({
@@ -363,6 +453,8 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormInput name="bookingCustomerName" label="Name" required disabled={fieldsDisabled} />
                                         <FormInput name="bookingMobileNumber" label="Mobile Number" required disabled={fieldsDisabled} />
+                                        <FormInput name="bookingCustomerAddress" label="Address" required disabled={fieldsDisabled} />
+                                        <FormInput name="bookingCustomerGstNumber" label="GST Number" disabled={fieldsDisabled} helperText="Optional, must be a valid GSTIN if provided" />
 
                                         <div className="md:col-span-2">
                                             <FormRadioGroup
@@ -410,19 +502,25 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                 <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                                     <button
                                         type="button"
-                                        onClick={onClose}
+                                        onClick={() => {
+                                            resetForm({ values: emptyValues })
+                                            handleClose()
+                                        }}
                                         disabled={isSubmitting}
                                         className="flex-1 px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
                                     >
                                         Cancel
                                     </button>
 
-                                    <SaveButton loading={isSubmitting} className="flex-1">
+                                    <SaveButton
+                                        loading={isSubmitting}
+                                        className="flex-1"
+                                    >
                                         {chargeOnly ? "Update Charge" : isEdit ? "Update Booking" : "Create Booking"}
                                     </SaveButton>
                                 </div>
                             </Form>
-                        )}
+                        )}}
                     </Formik>
                 </div>
             </div>

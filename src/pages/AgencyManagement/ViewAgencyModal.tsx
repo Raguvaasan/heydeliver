@@ -30,13 +30,13 @@ const ViewAgencyModal: FC<ViewAgencyModalProps> = ({ isOpen, onClose }) => {
     <Modal show={isOpen} onClose={onClose} size="lg">
       <Modal.Header>
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Branch Details
+          Agency Details
         </h3>
       </Modal.Header>
       <Modal.Body>
         <div className="space-y-1">
-          <InfoRow label="Branch Name" value={selectedAgency.agencyName} />
-          <InfoRow label="Branch Owner" value={selectedAgency.agencyOwner} />
+          <InfoRow label="Agency Name" value={selectedAgency.agencyName} />
+          <InfoRow label="Agency Owner" value={selectedAgency.agencyOwner} />
           <InfoRow label="Phone Number" value={selectedAgency.phone} />
           <InfoRow label="Email Address" value={selectedAgency.email} />
           <InfoRow label="GST" value={selectedAgency.gstNumber} />

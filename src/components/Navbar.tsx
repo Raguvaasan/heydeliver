@@ -66,7 +66,7 @@ const Navbar: FC<NavbarProps> = ({
         if (loginTypeValue) {
           const role =
             loginTypeValue.toLowerCase() === "franchise"
-              ? "Branch"
+              ? "Agency"
               : loginTypeValue.charAt(0).toUpperCase() + loginTypeValue.slice(1);
 
           

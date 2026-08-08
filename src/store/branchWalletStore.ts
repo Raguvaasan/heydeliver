@@ -189,7 +189,7 @@ export const useBranchWalletStore = create<BranchWalletState>((set, get) => ({
         branchWallets: state.branchWallets.map((item) => (item.id === normalized.id ? { ...item, ...normalized } : item)),
         loading: false,
       }))
-      toast.success("Branch wallet credited successfully")
+      toast.success("Agency wallet credited successfully")
     } catch (error: any) {
       const message = error?.response?.data?.message || error?.message || "Failed to credit branch wallet"
       set({ loading: false, error: message })

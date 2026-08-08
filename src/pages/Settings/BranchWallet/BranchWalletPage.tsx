@@ -74,7 +74,7 @@ const BranchWalletPage: FC = () => {
           <div className="overflow-x-auto">
             <Table hoverable>
               <Table.Head className="bg-gray-800 text-white">
-                <Table.HeadCell>Branch Name</Table.HeadCell>
+                <Table.HeadCell>Agency Name</Table.HeadCell>
                 <Table.HeadCell>Wallet Balance</Table.HeadCell>
                 <Table.HeadCell>Profit</Table.HeadCell>
                 <Table.HeadCell>Status</Table.HeadCell>

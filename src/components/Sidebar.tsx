@@ -230,15 +230,15 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/dashboard",
     },
     {
-      title: "Branch",
+      title: "Agency",
       icon: <HiOfficeBuilding className="h-5 w-5" />,
       path: "/agencies",
     },
-    {
-      title: "Collection Agency",
-      icon: <HiOfficeBuilding className="h-5 w-5" />,
-      path: "/collection-agencies",
-    },
+    // {
+    //   title: "Collection Agency",
+    //   icon: <HiOfficeBuilding className="h-5 w-5" />,
+    //   path: "/collection-agencies",
+    // },
     {
       title: "Hub",
       icon: <HiOfficeBuilding className="h-5 w-5" />,
@@ -312,11 +312,11 @@ const Sidebar: FC<SidebarProps> = ({
     //     // { title: "Delivery Performance", path: "/reports/delivery-performance" },
     //   ],
     // },
-    {
-      title: "Tracking",
-      icon: <HiLocationMarker className="h-5 w-5" />,
-      path: "/tracking",
-    },
+    // {
+    //   title: "Tracking",
+    //   icon: <HiLocationMarker className="h-5 w-5" />,
+    //   path: "/tracking",
+    // },
     {
       title: "Settings",
       icon: <HiCog className="h-5 w-5" />,
@@ -367,21 +367,21 @@ const Sidebar: FC<SidebarProps> = ({
         { title: "Role & Permissions", path: "/franchise-role" },
       ],
     },
-    {
-      title: "Rate Calculator",
-      icon: <HiChartBar className="h-5 w-5" />,
-      path: "/rate-calculator",
-    },
-    {
-      title: "Service Availability Check",
-      icon: <HiCog className="h-5 w-5" />,
-      path: "/service-availability",
-    },
-    {
-      title: "Tracking",
-      icon: <HiLocationMarker className="h-5 w-5" />,
-      path: "/tracking",
-    },
+    // {
+    //   title: "Rate Calculator",
+    //   icon: <HiChartBar className="h-5 w-5" />,
+    //   path: "/rate-calculator",
+    // },
+    // {
+    //   title: "Service Availability Check",
+    //   icon: <HiCog className="h-5 w-5" />,
+    //   path: "/service-availability",
+    // },
+    // {
+    //   title: "Tracking",
+    //   icon: <HiLocationMarker className="h-5 w-5" />,
+    //   path: "/tracking",
+    // },
     {
       title: "Orders",
       icon: <HiCube className="h-5 w-5" />,
@@ -487,7 +487,7 @@ const Sidebar: FC<SidebarProps> = ({
     .map((item) => {
       if (item.title === "Dashboard") return item
 
-      if (item.title === "Branch") {
+      if (item.title === "Agency") {
         return hasStaffModuleAccess(["Franchise"]) ? item : null
       }
 
@@ -590,6 +590,15 @@ const Sidebar: FC<SidebarProps> = ({
         item.title !== "Tracking"
     )
 
+  const agencyStaffMenuItems: MenuItem[] = isStaffUser && effectiveLoginType === "franchise"
+    ? franchiseMenuItems
+        .map((item) => {
+          if (item.title !== "Orders") return item
+          return item
+        })
+        .filter(Boolean) as MenuItem[]
+    : franchiseMenuItems
+
   // Select menu items based on login type
   const menuItems = isStaffUser && !isRootUser
     ? effectiveLoginType === "admin"
@@ -629,7 +638,7 @@ const Sidebar: FC<SidebarProps> = ({
         }).filter(Boolean) as MenuItem[]
       : staffMenuItems
     : effectiveLoginType === "franchise"
-    ? franchiseMenuItems
+    ? agencyStaffMenuItems
     : isCollectionAgencyUser
     ? franchiseMenuItems
     : effectiveLoginType === "hub"
@@ -814,7 +823,7 @@ const Sidebar: FC<SidebarProps> = ({
                   </p>
                   <p className="text-[10px] text-gray-600 dark:text-gray-400 capitalize">
                      {loginType.toLowerCase() === "franchise"
-    ? "Branch"
+                    ? "Agency"
     : loginType.charAt(0).toUpperCase() + loginType.slice(1)}
                   </p>
                 </div>

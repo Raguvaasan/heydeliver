@@ -118,6 +118,21 @@ export const loginHubUser = (
   return http.post("/admin/hub/unified-login", payload)
 }
 
+export const sendHubLoginOtp = (phone: string, countryCode: string) => {
+  return http.post("/admin/login/send-otp", {
+    phone: phone.trim(),
+    countryCode: countryCode.trim(),
+  })
+}
+
+export const verifyHubLoginOtp = (phone: string, countryCode: string, otp: string) => {
+  return http.post("/admin/login/verify-otp", {
+    phone: phone.trim(),
+    countryCode: countryCode.trim(),
+    otp: otp.trim(),
+  })
+}
+
 interface Profile {
   name: string
   email: string

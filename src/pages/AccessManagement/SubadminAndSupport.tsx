@@ -181,7 +181,7 @@ const UserPage: FC = function () {
                   : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   }`}
               >
-                Branch
+                Agency
               </button>
               <button
                 onClick={() => setActiveTab("hub")}
@@ -393,7 +393,7 @@ const AddStaffModal: FC<{
     }
 
     if (type === "franchise" && !franchiseId) {
-      toast.error("Branch is required for branch staff")
+      toast.error("Agency is required for agency staff")
       return
     }
 
@@ -451,7 +451,7 @@ const AddStaffModal: FC<{
                 : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 }`}
             >
-              Branch
+              Agency
             </button>
             <button
               onClick={() => {
@@ -537,7 +537,7 @@ const AddStaffModal: FC<{
               ) : modalTab === "franchise" ? (
                 <div>
                   <Label htmlFor="franchiseId">
-                    Branch<span className="text-red-500">*</span>
+                    Agency<span className="text-red-500">*</span>
                   </Label>
                   <Select
                     id="franchiseId"
@@ -546,7 +546,7 @@ const AddStaffModal: FC<{
                     onChange={handleChange}
                     required
                   >
-                    <option value="">Select Branch</option>
+                    <option value="">Select Agency</option>
                     {agencies.map((agency) => (
                       <option key={agency.id} value={agency.id}>
                         {agency.agencyName}
@@ -677,7 +677,7 @@ const EditStaffModal: FC<{
     }
 
     if (type === "franchise" && !franchiseId) {
-      toast.error("Branch is required for branch staff")
+      toast.error("Agency is required for agency staff")
       return
     }
 
@@ -744,7 +744,7 @@ const EditStaffModal: FC<{
                 }}
                 className="pb-3 px-1 font-medium text-orange-500 border-b-2 border-orange-500"
               >
-                Branch
+                Agency
               </button>
             )}
             {formData.type === "hub" && (
@@ -830,7 +830,7 @@ const EditStaffModal: FC<{
               ) : modalTab === "franchise" ? (
                 <div>
                   <Label htmlFor="edit-franchiseId-main">
-                    Branch<span className="text-red-500">*</span>
+                    Agency<span className="text-red-500">*</span>
                   </Label>
                   <Select
                     id="edit-franchiseId-main"
@@ -839,7 +839,7 @@ const EditStaffModal: FC<{
                     onChange={handleChange}
                     required
                   >
-                    <option value="">Select Branch</option>
+                    <option value="">Select Agency</option>
                     {agencies.map((agency) => (
                       <option key={agency.id} value={agency.id}>
                         {agency.agencyName}

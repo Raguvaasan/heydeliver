@@ -60,10 +60,10 @@ const AgencyManagementPage: FC = () => {
         {/* Page Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Branch Management
+            Agency Management
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Manage all branches and their information
+            Manage all agencies and their information
           </p>
         </div>
 
@@ -73,7 +73,7 @@ const AgencyManagementPage: FC = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                List of Branches
+                List of Agencies
               </h2>
               <div className="relative max-w-md">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -111,8 +111,8 @@ const AgencyManagementPage: FC = () => {
                 <thead className="bg-gray-800 text-white text-xs uppercase">
                   <tr>
                     <th className="px-4 py-3 w-16">S.No</th>
-                    <th className="px-4 py-3">Branch Name</th>
-                    <th className="px-4 py-3">Branch Owner</th>
+                    <th className="px-4 py-3">Agency Name</th>
+                    <th className="px-4 py-3">Agency Owner</th>
                     <th className="px-4 py-3">Phone</th>
                     <th className="px-4 py-3">GST</th>
                     <th className="px-4 py-3">Status</th>
@@ -191,7 +191,7 @@ const AgencyManagementPage: FC = () => {
                         colSpan={7}
                         className="px-4 py-8 text-center text-gray-500"
                       >
-                        No branches found
+                        No agencies found
                       </td>
                     </tr>
                   )}
@@ -219,8 +219,8 @@ const AgencyManagementPage: FC = () => {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDeleteConfirm}
-        title="Delete Branch"
-        message="Are you sure you want to delete this branch? This action cannot be undone."
+        title="Delete Agency"
+        message="Are you sure you want to delete this agency? This action cannot be undone."
       />
     </NavbarSidebarLayout>
   )

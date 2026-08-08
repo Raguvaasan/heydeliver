@@ -417,12 +417,12 @@ const ProfilePageModern: FC = () => {
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                               <FormInput
                                 name="firstName"
-                                label={isFranchiseLogin ? "Branch Name" : "First Name"}
+                                label={isFranchiseLogin ? "Agency Name" : "First Name"}
                                 required
                               />
                               <FormInput
                                 name="lastName"
-                                label={isFranchiseLogin ? "Branch Owner" : "Last Name"}
+                                label={isFranchiseLogin ? "Agency Owner" : "Last Name"}
                                 required
                               />
                             </div>
@@ -453,15 +453,15 @@ const ProfilePageModern: FC = () => {
 
                     {/* Franchise / Hub Information */}
                     <FormSection
-                      title={isHubLogin ? "Hub Information" : "Branch Information"}
-                      description={isHubLogin ? "Your hub details (read-only)" : "Your branch details (read-only)"}
+                      title={isHubLogin ? "Hub Information" : "Agency Information"}
+                      description={isHubLogin ? "Your hub details (read-only)" : "Your agency details (read-only)"}
                       icon={<HiOfficeBuilding className="w-5 h-5" />}
                     >
                       <div className="space-y-4">
                         <div className="space-y-4">
                           <div>
                             <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {isHubLogin ? "Hub Name" : "Branch Name"}
+                              {isHubLogin ? "Hub Name" : "Agency Name"}
                             </label>
                             <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
                               {isHubLogin ? (resolvedHubName || "N/A") : (profileData.franchiseName || "N/A")}
@@ -469,7 +469,7 @@ const ProfilePageModern: FC = () => {
                           </div>
                           <div>
                             <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {isHubLogin ? "Hub Manager Name" : "Branch Code"}
+                              {isHubLogin ? "Hub Manager Name" : "Agency Code"}
                             </label>
                             <div className="rounded-lg bg-gray-100 px-4 py-3 text-gray-900 dark:bg-gray-700 dark:text-white">
                               {isHubLogin ? (profileData.hubManagerName || "N/A") : (profileData.franchiseCode || "N/A")}

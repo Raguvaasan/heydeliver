@@ -85,6 +85,8 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
     if (value === undefined || value === null || value === "") return undefined
     return String(value)
   }
+  const deliveryCustomerAddress = resolveValue(parcel.deliveryCustomerAddress || parcel.deliveryCustomer?.address)
+  const bookingCustomerAddress = resolveValue(parcel.bookingCustomerAddress || parcel.bookingCustomer?.address)
 
   return (
     <div
@@ -121,7 +123,8 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                 <Field label="Name" value={parcel.deliveryCustomerName} />
                 <Field label="Mobile Number" value={parcel.deliveryCustomerMobileNumber} />
-                <Field label="Delivery Branch" value={parcel.deliveryBranch} />
+                <Field label="Address" value={deliveryCustomerAddress} />
+                <Field label="Delivery Agency" value={parcel.deliveryBranch} />
               </div>
             </section>
 
@@ -130,6 +133,7 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 <Field label="Name" value={parcel.bookingCustomerName} />
                 <Field label="Mobile Number" value={parcel.bookingMobileNumber} />
+                <Field label="Address" value={bookingCustomerAddress} />
               </div>
               <div className="mt-2.5">
                 <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
@@ -173,6 +177,7 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
               <SectionTitle title="Order Summary" />
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                 <Field label="Order ID" value={parcel.orderId} />
+                <Field label="Date" value={formatDate(parcel.bookingDate)} />
                 <div className="rounded-lg bg-white px-3 py-2.5 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
                   <div className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Status</div>
                   <div className="mt-1.5">

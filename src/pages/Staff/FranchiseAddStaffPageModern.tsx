@@ -243,7 +243,7 @@ const FranchiseAddStaffPageModern: FC = () => {
                     ) : (
                       <FormSelect
                         name="franchiseId"
-                        label="Branch"
+                        label="Agency"
                         options={franchiseOptions}
                         required
                         helperText="Assign to branch"

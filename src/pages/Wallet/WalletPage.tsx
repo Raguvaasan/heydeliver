@@ -156,7 +156,7 @@ const WalletPage: FC = () => {
       <div className="px-4 pt-6">
         <div className="mb-4">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-            {isAdmin ? "Branch Wallet Transactions" : "Wallet"}
+            {isAdmin ? "Agency Wallet Transactions" : "Wallet"}
           </h1>
         </div>
 
@@ -174,7 +174,7 @@ const WalletPage: FC = () => {
           <Card className="mb-6">
             <div className="mb-4">
               <h2 className="text-lg font-medium text-gray-700 dark:text-gray-300">
-                Branch Wallets Overview
+                Agency Wallets Overview
               </h2>
             </div>
             <div className="flex gap-8">
@@ -372,7 +372,7 @@ const WalletPage: FC = () => {
                     <tr>
                       <th className="px-4 py-3">Transaction ID</th>
                       <th className="px-4 py-3">Transaction Date</th>
-                      {isAdmin && <th className="px-4 py-3">Branch / User</th>}
+                      {isAdmin && <th className="px-4 py-3">Agency / User</th>}
                       <th className="px-4 py-3">Payment Method</th>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Transaction Amount</th>
