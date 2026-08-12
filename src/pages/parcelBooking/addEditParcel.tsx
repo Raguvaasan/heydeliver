@@ -7,6 +7,7 @@ import { HiOutlineUser, HiOutlineArchiveBox, HiInformationCircle } from "react-i
 import { HiX, HiExclamationCircle } from "react-icons/hi"
 import { FormInput, FormSelect } from "../../components/FormComponents"
 import { FormSection, SaveButton } from "../../components/FormHelpers"
+import toast from "react-hot-toast"
 
 export interface ParcelFormValues {
     deliveryCustomerName: string
@@ -188,6 +189,8 @@ const DELIVERY_BRANCH_OPTIONS_BASE = "/api/admin/branch/parcel-order/options/del
 
 const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, chargeOnly = false }) => {
     const isEdit = mode === "edit"
+    const loginType = String(sessionStorage.getItem("loginType") || "").toLowerCase()
+    const isAdminUser = loginType === "admin"
     const [apiError, setApiError] = useState<string | null>(null)
     const [deliveryBranches, setDeliveryBranches] = useState<DeliveryBranchOption[]>([])
     const [deliveryBranchesLoading, setDeliveryBranchesLoading] = useState(false)
@@ -213,23 +216,23 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
 
     const initialValues: ParcelFormValues = isEdit && parcel
         ? {
-              deliveryCustomerName: parcel.deliveryCustomerName || "",
-              deliveryCustomerMobileNumber: parcel.deliveryCustomerMobileNumber || "",
-              deliveryCustomerAddress: parcel.deliveryCustomerAddress || "",
-              deliveryCustomerGstNumber: parcel.deliveryCustomerGstNumber || "",
-              deliveryBranch: resolveDeliveryBranchValue(),
-              bookingCustomerName: parcel.bookingCustomerName || "",
-              bookingMobileNumber: parcel.bookingMobileNumber || "",
-              bookingCustomerAddress: parcel.bookingCustomerAddress || "",
-              bookingCustomerGstNumber: parcel.bookingCustomerGstNumber || "",
-              paymentType: parcel.paymentType || "Paid",
-              article: parcel.article || "",
-              remarks: parcel.remarks || "",
-              numberOfParcels: parcel.numberOfParcels || "",
-              approximateValue: parcel.approximateValue || "",
-              transportationCharge: parcel.transportationCharge || "0",
-              status: parcel.status || "Order Created",
-          }
+            deliveryCustomerName: parcel.deliveryCustomerName || "",
+            deliveryCustomerMobileNumber: parcel.deliveryCustomerMobileNumber || "",
+            deliveryCustomerAddress: parcel.deliveryCustomerAddress || "",
+            deliveryCustomerGstNumber: parcel.deliveryCustomerGstNumber || "",
+            deliveryBranch: resolveDeliveryBranchValue(),
+            bookingCustomerName: parcel.bookingCustomerName || "",
+            bookingMobileNumber: parcel.bookingMobileNumber || "",
+            bookingCustomerAddress: parcel.bookingCustomerAddress || "",
+            bookingCustomerGstNumber: parcel.bookingCustomerGstNumber || "",
+            paymentType: parcel.paymentType || "Paid",
+            article: parcel.article || "",
+            remarks: parcel.remarks || "",
+            numberOfParcels: parcel.numberOfParcels || "",
+            approximateValue: parcel.approximateValue || "",
+            transportationCharge: parcel.transportationCharge || "0",
+            status: parcel.status || "Order Created",
+        }
         : emptyValues
     const fieldsDisabled = chargeOnly // everything but transportationCharge is locked
 
@@ -299,96 +302,125 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
         }
     }, [isOpen, chargeOnly])
 
-    const handleSubmit = async (
-        values: ParcelFormValues,
-        { setSubmitting }: { setSubmitting: (v: boolean) => void }
-    ) => {
-        setApiError(null)
+   const handleSubmit = async (
+    values: ParcelFormValues,
+    { setSubmitting }: { setSubmitting: (v: boolean) => void }
+) => {
+    setApiError(null);
 
-        try {
-            const authToken = sessionStorage.getItem("authToken")
-            if (!authToken) throw new Error("Authorization token missing")
+    try {
+        const authToken = sessionStorage.getItem("authToken");
+        if (!authToken) throw new Error("Authorization token missing");
 
-            if (chargeOnly) {
-                if (!parcel?.id) throw new Error("Missing booking reference")
+        // Charge Only
+        if (chargeOnly) {
+            if (!parcel?.id) throw new Error("Missing booking reference");
 
-                const res = await fetch(`${ADMIN_BASE}/${parcel.id}/charge`, {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${authToken}`,
-                    },
-                    body: JSON.stringify({ transportationCharge: Number(values.transportationCharge) }),
-                })
-
-                if (!res.ok) {
-                    const errBody = await res.json().catch(() => null)
-                    throw new Error(errBody?.message || "Failed to update transportation charge")
-                }
-
-                const saved = await res.json()
-                onSuccess?.(saved)
-                resetFormRef.current?.({ values: emptyValues })
-                setApiError(null)
-                onClose()
-                return
-            }
-
-            const payload = {
-                bookingCustomer: {
-                    name: values.bookingCustomerName.trim(),
-                    mobileNumber: values.bookingMobileNumber.trim(),
-                    address: values.bookingCustomerAddress.trim(),
-                    ...(values.bookingCustomerGstNumber.trim()
-                        ? { gstNumber: values.bookingCustomerGstNumber.trim().toUpperCase() }
-                        : {}),
-                },
-                paymentType: values.paymentType,
-                deliveryCustomer: {
-                    name: values.deliveryCustomerName.trim(),
-                    mobileNumber: values.deliveryCustomerMobileNumber.trim(),
-                    address: values.deliveryCustomerAddress.trim(),
-                    ...(values.deliveryCustomerGstNumber.trim()
-                        ? { gstNumber: values.deliveryCustomerGstNumber.trim().toUpperCase() }
-                        : {}),
-                    deliveryBranch: values.deliveryBranch.trim(),
-                },
-                parcelDetails: {
-                    article: values.article.trim(),
-                    remarks: values.remarks.trim(),
-                    numberOfParcels: Number(values.numberOfParcels),
-                    approximateValue: Number(values.approximateValue),
-                },
-            }
-
-            const url = isEdit && parcel?.id ? `${BRANCH_BASE}/${parcel.id}` : BRANCH_BASE
-            const method = isEdit ? "PUT" : "POST"
-
-            const res = await fetch(url, {
-                method,
+            const res = await fetch(`${ADMIN_BASE}/${parcel.id}/charge`, {
+                method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${authToken}`,
                 },
-                body: JSON.stringify(payload),
-            })
+                body: JSON.stringify({
+                    transportationCharge: Number(values.transportationCharge),
+                }),
+            });
+
+            const data = await res.json();
 
             if (!res.ok) {
-                const errBody = await res.json().catch(() => null)
-                throw new Error(errBody?.message || `Failed to ${isEdit ? "update" : "create"} booking`)
+                throw new Error(
+                    data.message || "Failed to update transportation charge"
+                );
             }
 
-            const savedParcel: Parcel = await res.json()
-            onSuccess?.(savedParcel)
-            resetFormRef.current?.({ values: emptyValues })
-            setApiError(null)
-            onClose()
-        } catch (err) {
-            setApiError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
-        } finally {
-            setSubmitting(false)
+            onSuccess?.(data);
+            resetFormRef.current?.({ values: emptyValues });
+            setApiError(null);
+            onClose();
+            return;
         }
+
+        // Create / Update Payload
+        const payload = {
+            bookingCustomer: {
+                name: values.bookingCustomerName.trim(),
+                mobileNumber: values.bookingMobileNumber.trim(),
+                address: values.bookingCustomerAddress.trim(),
+                ...(values.bookingCustomerGstNumber.trim()
+                    ? {
+                          gstNumber: values.bookingCustomerGstNumber
+                              .trim()
+                              .toUpperCase(),
+                      }
+                    : {}),
+            },
+            paymentType: values.paymentType,
+            deliveryCustomer: {
+                name: values.deliveryCustomerName.trim(),
+                mobileNumber: values.deliveryCustomerMobileNumber.trim(),
+                address: values.deliveryCustomerAddress.trim(),
+                ...(values.deliveryCustomerGstNumber.trim()
+                    ? {
+                          gstNumber: values.deliveryCustomerGstNumber
+                              .trim()
+                              .toUpperCase(),
+                      }
+                    : {}),
+                deliveryBranch: values.deliveryBranch.trim(),
+            },
+            parcelDetails: {
+                article: values.article.trim(),
+                remarks: values.remarks.trim(),
+                numberOfParcels: Number(values.numberOfParcels),
+                approximateValue: Number(values.approximateValue),
+            },
+        };
+
+        const url =
+            isEdit && parcel?.id
+                ? `${BRANCH_BASE}/${parcel.id}`
+                : BRANCH_BASE;
+
+        const method = isEdit ? "PUT" : "POST";
+
+        const res = await fetch(url, {
+            method,
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${authToken}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok) {
+            throw new Error(
+                data?.message ||
+                    `Failed to ${isEdit ? "update" : "create"} booking`
+            );
+        }
+
+        const savedParcel: Parcel = data;
+
+        onSuccess?.(savedParcel);
+        resetFormRef.current?.({ values: emptyValues });
+        setApiError(null);
+        onClose();
+    } catch (err) {
+        const message =
+            err instanceof Error
+                ? err.message
+                : "Something went wrong. Please try again.";
+
+        setApiError(message);
+        toast.error(message);
+    } finally {
+        setSubmitting(false);
     }
+};
 
     return (
         <Modal show={isOpen} onClose={handleClose} size="4xl">
@@ -428,99 +460,100 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                         {({ isSubmitting, resetForm }) => {
                             resetFormRef.current = resetForm
                             return (
-                            <Form className="space-y-6">
-                                <FormSection title="Deliver Customer" description="Details of the customer receiving the parcel" icon={<HiOutlineUser className="w-5 h-5" />}>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormInput name="deliveryCustomerName" label="Name" required disabled={fieldsDisabled} />
-                                        <FormInput name="deliveryCustomerMobileNumber" label="Mobile Number" required disabled={fieldsDisabled} />
-                                        <FormInput name="deliveryCustomerAddress" label="Address" required disabled={fieldsDisabled} />
-                                        <FormInput name="deliveryCustomerGstNumber" label="GST Number" disabled={fieldsDisabled} helperText="Optional, must be a valid GSTIN if provided" />
-                                        <FormSelect
-                                            name="deliveryBranch"
-                                            label="Delivery Agency"
-                                            required
-                                            disabled={fieldsDisabled || deliveryBranchesLoading}
-                                            options={deliveryBranches.map((branch) => ({
-                                                value: branch.id,
-                                                label: branch.agencyName,
-                                            }))}
-                                            helperText={deliveryBranchesLoading ? "Loading delivery branches..." : undefined}
-                                        />
-                                    </div>
-                                </FormSection>
-
-                                <FormSection title="Booking Customer" description="Details of the customer booking the parcel" icon={<HiOutlineUser className="w-5 h-5" />}>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormInput name="bookingCustomerName" label="Name" required disabled={fieldsDisabled} />
-                                        <FormInput name="bookingMobileNumber" label="Mobile Number" required disabled={fieldsDisabled} />
-                                        <FormInput name="bookingCustomerAddress" label="Address" required disabled={fieldsDisabled} />
-                                        <FormInput name="bookingCustomerGstNumber" label="GST Number" disabled={fieldsDisabled} helperText="Optional, must be a valid GSTIN if provided" />
-
-                                        <div className="md:col-span-2">
-                                            <FormRadioGroup
-                                                name="paymentType"
-                                                label="Payment Type"
+                                <Form className="space-y-6">
+                                    <FormSection title="Deliver Customer" description="Details of the customer receiving the parcel" icon={<HiOutlineUser className="w-5 h-5" />}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormInput name="deliveryCustomerName" label="Name" required disabled={fieldsDisabled} />
+                                            <FormInput name="deliveryCustomerMobileNumber" label="Mobile Number" required disabled={fieldsDisabled} />
+                                            <FormInput name="deliveryCustomerAddress" label="Address" required disabled={fieldsDisabled} />
+                                            <FormInput name="deliveryCustomerGstNumber" label="GST Number" disabled={fieldsDisabled} helperText="Optional, must be a valid GSTIN if provided" />
+                                            <FormSelect
+                                                name="deliveryBranch"
+                                                label="Delivery Agency"
                                                 required
-                                                disabled={fieldsDisabled}
-                                                options={[
-                                                    { value: "Paid", label: "Paid" },
-                                                    { value: "To Pay", label: "To Pay" },
-                                                ]}
+                                                disabled={fieldsDisabled || deliveryBranchesLoading}
+                                                options={deliveryBranches.map((branch) => ({
+                                                    value: branch.id,
+                                                    label: branch.agencyName,
+                                                }))}
+                                                helperText={deliveryBranchesLoading ? "Loading delivery branches..." : undefined}
                                             />
                                         </div>
-                                    </div>
-                                </FormSection>
+                                    </FormSection>
 
-                                <FormSection title="Article Details" description="Parcel content and charge details" icon={<HiOutlineArchiveBox className="w-5 h-5" />}>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormInput name="article" label="Article" required disabled={fieldsDisabled} />
-                                        <FormInput name="numberOfParcels" label="Number of Parcels" type="number" required disabled={fieldsDisabled} />
-                                        <FormInput name="approximateValue" label="Approximate Value" type="number" required disabled={fieldsDisabled} />
+                                    <FormSection title="Booking Customer" description="Details of the customer booking the parcel" icon={<HiOutlineUser className="w-5 h-5" />}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormInput name="bookingCustomerName" label="Name" required disabled={fieldsDisabled} />
+                                            <FormInput name="bookingMobileNumber" label="Mobile Number" required disabled={fieldsDisabled} />
+                                            <FormInput name="bookingCustomerAddress" label="Address" required disabled={fieldsDisabled} />
+                                            <FormInput name="bookingCustomerGstNumber" label="GST Number" disabled={fieldsDisabled} helperText="Optional, must be a valid GSTIN if provided" />
 
-                                        <div>
-                                            <FormInput
-                                                name="transportationCharge"
-                                                label="Transportation Charge"
-                                                type="number"
-                                                required
-                                                disabled={false}
-                                            />
-                                            <p className="mt-1.5 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                                <HiInformationCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                                                {chargeOnly
-                                                    ? "This is the only field you can update here."
-                                                    : "The transportation charge is set by the administrator."}
-                                            </p>
+                                            <div className="md:col-span-2">
+                                                <FormRadioGroup
+                                                    name="paymentType"
+                                                    label="Payment Type"
+                                                    required
+                                                    disabled={fieldsDisabled}
+                                                    options={[
+                                                        { value: "Paid", label: "Paid" },
+                                                        { value: "To Pay", label: "To Pay" },
+                                                    ]}
+                                                />
+                                            </div>
                                         </div>
+                                    </FormSection>
 
-                                        <div className="md:col-span-2">
-                                            <FormInput name="remarks" label="Remarks" disabled={fieldsDisabled} />
+                                    <FormSection title="Article Details" description="Parcel content and charge details" icon={<HiOutlineArchiveBox className="w-5 h-5" />}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormInput name="article" label="Article" required disabled={fieldsDisabled} />
+                                            <FormInput name="numberOfParcels" label="Number of Parcels" type="number" required disabled={fieldsDisabled} />
+                                            <FormInput name="approximateValue" label="Approximate Value" type="number" required disabled={fieldsDisabled} />
+
+                                            <div>
+                                                <FormInput
+                                                    name="transportationCharge"
+                                                    label="Transportation Charge"
+                                                    type="number"
+                                                    required
+                                                    disabled={!isAdminUser}
+                                                />
+                                                <p className="mt-1.5 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg">
+                                                    <HiInformationCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                                    {isAdminUser
+                                                        ? "This field can be updated by admin users."
+                                                        : "The transportation charge is set by the administrator."}
+                                                </p>
+                                            </div>
+
+                                            <div className="md:col-span-2">
+                                                <FormInput name="remarks" label="Remarks" disabled={fieldsDisabled} />
+                                            </div>
                                         </div>
+                                    </FormSection>
+
+                                    <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                resetForm({ values: emptyValues })
+                                                handleClose()
+                                            }}
+                                            disabled={isSubmitting}
+                                            className="flex-1 px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
+                                        >
+                                            Cancel
+                                        </button>
+
+                                        <SaveButton
+                                            loading={isSubmitting}
+                                            className="flex-1"
+                                        >
+                                            {chargeOnly ? "Update Charge" : isEdit ? "Update Booking" : "Create Booking"}
+                                        </SaveButton>
                                     </div>
-                                </FormSection>
-
-                                <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            resetForm({ values: emptyValues })
-                                            handleClose()
-                                        }}
-                                        disabled={isSubmitting}
-                                        className="flex-1 px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
-                                    >
-                                        Cancel
-                                    </button>
-
-                                    <SaveButton
-                                        loading={isSubmitting}
-                                        className="flex-1"
-                                    >
-                                        {chargeOnly ? "Update Charge" : isEdit ? "Update Booking" : "Create Booking"}
-                                    </SaveButton>
-                                </div>
-                            </Form>
-                        )}}
+                                </Form>
+                            )
+                        }}
                     </Formik>
                 </div>
             </div>

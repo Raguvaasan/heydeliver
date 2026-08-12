@@ -15,6 +15,7 @@ import { Toaster } from "react-hot-toast"
 import VehicleManagementPage from "./pages/vehicleManagement/vehicleManagementPage"
 import DriverManagementPage from "./pages/driverManagement/driverManagementPage"
 import ParcelManagementPage from "./pages/parcelBooking/parcelBooking"
+import AgencyParcelOrdersPage from "./pages/AgencyOrders/AgencyParcelOrdersPage"
 
 // Lazy load all page components for better performance
 // Authentication
@@ -211,11 +212,29 @@ root.render(
             }
           />
 
-           <Route
+          <Route
             path="/parcel-booking"
             element={
               <PermissionRoute>
                 <ParcelManagementPage />
+              </PermissionRoute>
+            }
+          />
+
+          <Route
+            path="/parcel-booking/inward"
+            element={
+              <PermissionRoute>
+                <AgencyParcelOrdersPage direction="inward" />
+              </PermissionRoute>
+            }
+          />
+
+          <Route
+            path="/parcel-booking/outward"
+            element={
+              <PermissionRoute>
+                <AgencyParcelOrdersPage direction="outward" />
               </PermissionRoute>
             }
           />

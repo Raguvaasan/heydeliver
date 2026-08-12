@@ -386,6 +386,11 @@ const Sidebar: FC<SidebarProps> = ({
       title: "Orders",
       icon: <HiCube className="h-5 w-5" />,
       path: "/parcel-booking",
+      submenu: [
+        { title: "Parcel Booking", path: "/parcel-booking" },
+        { title: "Inward Orders", path: "/parcel-booking/inward" },
+        { title: "Outward Orders", path: "/parcel-booking/outward" },
+      ],
     },
     {
       title: "Wallet",
