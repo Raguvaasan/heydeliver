@@ -72,6 +72,25 @@ const StatCard: FC<StatCardProps> = ({
   )
 }
 
+const resolveMetricValue = (value: unknown) => {
+  if (typeof value === "number" || typeof value === "string") {
+    return value
+  }
+
+  if (value && typeof value === "object") {
+    const metric = value as {
+      count?: number | string
+      total?: number | string
+      value?: number | string
+      active?: number | string
+    }
+
+    return metric.count ?? metric.total ?? metric.active ?? metric.value ?? 0
+  }
+
+  return 0
+}
+
 const DashboardPage: FC = () => {
   const navigate = useNavigate()
   const rawLoginType = sessionStorage.getItem("loginType") || "admin"
@@ -97,8 +116,9 @@ const DashboardPage: FC = () => {
   const isHubLogin = loginType === "hub"
   const [loading, setLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<any>(null)
-  const [topFranchises, setTopFranchises] = useState<any[]>([])
+  const [topAgencies, setTopAgencies] = useState<any[]>([])
   const [walletStats, setWalletStats] = useState<any>(null)
+  const [paymentTypeDistribution, setPaymentTypeDistribution] = useState<any[]>([])
   const [selectedPeriod, setSelectedPeriod] = useState<"day" | "week" | "month" | "year" | "thisMonth" | "lastMonth">(isHubLogin ? "week" : "day")
   const [revenueLoading, setRevenueLoading] = useState(false)
   const hasLoadedInitially = useRef(false)
@@ -132,15 +152,17 @@ const DashboardPage: FC = () => {
 
       if (loginType === "admin") {
         // Admin: Fetch all 3 API calls in parallel
-        const [dashboardRes, topFranchisesRes, walletStatsRes] = await Promise.all([
+        const [dashboardRes, topAgenciesRes, walletStatsRes] = await Promise.all([
           http.get(endpoint, { params }),
-          http.get("/admin/dashboard", { params: { type: 'top-franchises', limit: 3 } }),
-          http.get("/admin/dashboard", { params: { type: 'wallet-statistics' } })
+          http.get("/admin/dashboard/top-agencies", { params: { limit: 5, period: selectedPeriod } }),
+          http.get("/admin/dashboard/wallet-statistics")
         ])
 
-        setDashboardData(dashboardRes.data?.data || dashboardRes.data)
-        setTopFranchises(topFranchisesRes.data?.data || [])
-        setWalletStats(walletStatsRes.data?.data || walletStatsRes.data)
+        const dashboardPayload = dashboardRes.data?.data || dashboardRes.data || {}
+        setDashboardData(dashboardPayload)
+        setPaymentTypeDistribution(dashboardPayload.paymentTypeDistribution || [])
+        setTopAgencies(dashboardPayload.topAgencies || topAgenciesRes.data?.data || topAgenciesRes.data || [])
+        setWalletStats(dashboardPayload.walletSummary || walletStatsRes.data?.data || walletStatsRes.data)
       } else if (isHubLogin) {
         // Hub: fetch base dashboard data without period; fetch revenue with period
         const [baseResponse, revenueResponse] = await Promise.all([
@@ -159,13 +181,18 @@ const DashboardPage: FC = () => {
       } else {
         // Franchise: Single API call
         const response = await http.get(endpoint, { params })
-        setDashboardData(response.data?.data || response.data)
+        const payload = response.data?.data || response.data || {}
+        setDashboardData(payload)
+        setPaymentTypeDistribution(payload.paymentTypeDistribution || [])
+        setTopAgencies(payload.topAgencies || [])
+        setWalletStats(payload.walletSummary || null)
       }
     } catch (error: any) {
       toast.error("Failed to load dashboard data")
       setDashboardData({})
-      setTopFranchises([])
+      setTopAgencies([])
       setWalletStats(null)
+      setPaymentTypeDistribution([])
     } finally {
       if (showPageLoader) setLoading(false)
       if (showRevenueLoader) setRevenueLoading(false)
@@ -202,12 +229,16 @@ const DashboardPage: FC = () => {
         const endpoint = loginType === "admin" ? "/admin/dashboard" : "/dashboard"
         const params = { period: selectedPeriod }
         const response = await http.get(endpoint, { params })
-        const data = response.data?.data || response.data
+        const data = response.data?.data || response.data || {}
         setDashboardData(data)
+        setPaymentTypeDistribution(data.paymentTypeDistribution || [])
+        setTopAgencies(data.topAgencies || [])
+        setWalletStats(data.walletSummary || null)
       }
     } catch (error: any) {
       toast.error("Failed to load dashboard data")
       setDashboardData({})
+      setPaymentTypeDistribution([])
     } finally {
       if (showPageLoader) setLoading(false)
       if (showRevenueLoader) setRevenueLoading(false)
@@ -266,44 +297,37 @@ const DashboardPage: FC = () => {
     } else {
       // Admin view - 6 cards with specific metrics
       const overview = dashboardData.overview || {}
-      const revenue = overview.revenue || {}
-      const totalOrders = overview.totalOrders || {}
 
       // Calculate metrics from correct API fields
-      const totalFranchiseCount = overview.activeAgencies || 0
-      const totalHubsCount =
-        overview.totalHubs ??
-        overview.activeHubs ??
-        overview.hubs ??
-        overview.hubCount ??
-        0
-      const totalOrdersCount = totalOrders.allTime || 0
-      const totalRevenueCount = revenue.total || 0
-      const todayOrderCount = totalOrders.today || 0
-      const todayRevenueCount = revenue.today || 0
+      const totalFranchiseCount = resolveMetricValue(overview.totalAgencies)
+      const totalHubsCount = resolveMetricValue(overview.totalHubs)
+      const totalOrdersCount = resolveMetricValue(overview.totalOrders)
+      const totalRevenueCount = resolveMetricValue(overview.totalRevenue)
+      const todayOrderCount = resolveMetricValue(overview.todayOrders)
+      const todayRevenueCount = resolveMetricValue(overview.todayRevenue)
 
       return [
         {
           icon: <HiTruck className="h-5 w-5" />,
           title: "Total Agency Count",
           value: totalFranchiseCount,
-          subtitle: "Active franchises",
+          subtitle: `Active: ${resolveMetricValue(overview.totalAgencies?.active)}`,
           percentage: undefined,
           iconBgColor: "bg-purple-500",
           onClick: () => navigate("/agencies")
         },
         {
           icon: <HiCube className="h-5 w-5" />,
-          title: "Total Hubs",
+          title: "Total Hub Count",
           value: totalHubsCount,
-          subtitle: "Total hubs",
+          subtitle: `Active: ${resolveMetricValue(overview.totalHubs?.active)}`,
           percentage: undefined,
           iconBgColor: "bg-indigo-500",
           onClick: () => navigate("/hubs")
         },
         {
           icon: <HiCube className="h-5 w-5" />,
-          title: "Total Orders Count",
+          title: "Total Orders",
           value: totalOrdersCount,
           subtitle: "All time orders",
           percentage: undefined,
@@ -312,7 +336,7 @@ const DashboardPage: FC = () => {
         },
         {
           icon: <HiCurrencyRupee className="h-5 w-5" />,
-          title: "Total Revenue Count",
+          title: "Total Revenue",
           value: `₹${Number(totalRevenueCount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           subtitle: "All time revenue",
           percentage: undefined,
@@ -321,21 +345,19 @@ const DashboardPage: FC = () => {
         },
         {
           icon: <HiCube className="h-5 w-5" />,
-          title: "Today Order Count",
+          title: "Today's Order",
           value: todayOrderCount,
           subtitle: `Today's orders`,
-          percentage: totalOrders.percentageChange ? `${totalOrders.percentageChange}%` : undefined,
+          percentage: undefined,
           iconBgColor: "bg-orange-500",
-          // onClick: () => navigate("/orders", { state: { status: 'all' } })
         },
         {
           icon: <HiCurrencyRupee className="h-5 w-5" />,
-          title: "Today's Revenue Count",
+          title: "Today's Revenue",
           value: `₹${Number(todayRevenueCount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           subtitle: `Today's revenue`,
-          percentage: revenue.percentageChange ? `${revenue.percentageChange}%` : undefined,
+          percentage: undefined,
           iconBgColor: "bg-teal-500",
-          // onClick: () => navigate("/reports/revenue")
         },
       ]
     }
@@ -354,20 +376,16 @@ const DashboardPage: FC = () => {
     })
   }
 
-  // Handle shipment type data - both franchise and admin use shipmentTypeDistribution array
+  // Handle shipment/payment type data - both franchise and admin use distribution arrays
   const isFranchise = loginType === "franchise" || loginType === "staff" || loginType === "hub"
-  let shipmentTypeDistribution: any[] = []
-  let totalShipmentTypes = 0
-
-  // Both admin and franchise now use the same shipmentTypeDistribution array from API
-  // Show all types, even with 0 count
-  shipmentTypeDistribution = isHubLogin
+  const shipmentTypeDistribution = isHubLogin
     ? (dashboardData?.shipmentType || []).map((item: any) => ({
         type: item.mode,
+        label: item.label || item.mode,
         count: item.count,
       }))
-    : (dashboardData?.shipmentTypeDistribution || [])
-  totalShipmentTypes = shipmentTypeDistribution.reduce(
+    : (paymentTypeDistribution.length > 0 ? paymentTypeDistribution : (dashboardData?.paymentTypeDistribution || []))
+  const totalShipmentTypes = shipmentTypeDistribution.reduce(
     (sum: number, item: any) => sum + (item.count || 0),
     0
   )
@@ -409,55 +427,12 @@ const DashboardPage: FC = () => {
     })
   }
 
-  // Generate revenue trend for admin based on period
-  const generateAdminRevenueTrend = () => {
-    const totalRevenue = dashboardData?.overview?.revenue?.total || 0
-
-    if (totalRevenue === 0) return []
-
-    switch (selectedPeriod) {
-      case 'day': {
-        // For day, show hourly trend (last 12 hours)
-        const hours = ['12am', '3am', '6am', '9am', '12pm', '3pm', '6pm', '9pm']
-        return hours.map((hour, index) => ({
-          day: hour,
-          revenue: (totalRevenue / hours.length) * (0.5 + Math.random() * 1.5)
-        }))
-      }
-      case 'week': {
-        // For week, show daily trend (7 days)
-        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-        return days.map((day) => ({
-          day,
-          revenue: (totalRevenue / days.length) * (0.5 + Math.random() * 1.5)
-        }))
-      }
-      case 'month': {
-        // For month, show weekly trend (4 weeks)
-        return ['Week 1', 'Week 2', 'Week 3', 'Week 4'].map((week) => ({
-          day: week,
-          revenue: (totalRevenue / 4) * (0.5 + Math.random() * 1.5)
-        }))
-      }
-      case 'year': {
-        // For year, show monthly trend (12 months)
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        return months.map((month) => ({
-          day: month,
-          revenue: (totalRevenue / months.length) * (0.5 + Math.random() * 1.5)
-        }))
-      }
-      default:
-        return []
-    }
-  }
-
   // Get revenue trend data
   const revenueTrend = isFranchise
     ? generateWeeklyRevenueTrend()
     : (dashboardData?.revenueTrend && dashboardData.revenueTrend.length > 0
       ? dashboardData.revenueTrend
-      : generateAdminRevenueTrend())
+      : [])
 
   return (
     <NavbarSidebarLayout>
@@ -533,9 +508,9 @@ const DashboardPage: FC = () => {
                       </>
                     ) : (
                       <>
-                        <p className="text-2xl font-bold text-green-600 mt-2">
+                        {/* <p className="text-2xl font-bold text-green-600 mt-2">
                           ₹{Number(dashboardData?.overview?.revenue?.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
+                        </p> */}
                         {dashboardData?.overview?.revenue?.percentageChange && (
                           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             <span className={parseFloat(dashboardData.overview.revenue.percentageChange) >= 0 ? 'text-green-600' : 'text-red-600'}>
@@ -547,34 +522,36 @@ const DashboardPage: FC = () => {
                       </>
                     )}
                   </div>
-                  <div className="mb-4 flex gap-2">
-                    {(isHubLogin
-                      ? (["week", "thisMonth", "lastMonth", "month"] as const)
-                      : (["day", "week", "month", "year"] as const)
-                    ).map((period) => (
-                      <button
-                        key={period}
-                        type="button"
-                        onClick={() => setSelectedPeriod(period)}
-                        className={`rounded-lg px-3 py-1 text-sm capitalize ${selectedPeriod === period
-                            ? "bg-[#FFCC00] text-white"
-                            : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                          }`}
-                      >
-                        {period === "thisMonth" ? "This Month" : period === "lastMonth" ? "Last Month" : period}
-                      </button>
-                    ))}
-                  </div>
+                  {isFranchise ? (
+                    <div className="mb-4 flex gap-2">
+                      {(isHubLogin
+                        ? (["week", "thisMonth", "lastMonth", "month"] as const)
+                        : (["day", "week", "month", "year"] as const)
+                      ).map((period) => (
+                        <button
+                          key={period}
+                          type="button"
+                          onClick={() => setSelectedPeriod(period)}
+                          className={`rounded-lg px-3 py-1 text-sm capitalize ${selectedPeriod === period
+                              ? "bg-[#FFCC00] text-white"
+                              : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                            }`}
+                        >
+                          {period === "thisMonth" ? "This Month" : period === "lastMonth" ? "Last Month" : period}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                   <RevenueChart data={revenueTrend} height={240} />
                 </>
               )}
             </Card>
 
-            {/* Shipment Type Chart */}
+            {/* Payment Type Diagram */}
             <Card>
               <div className="mb-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Shipment Type
+                  Payment Type Diagram
                 </h3>
               </div>
               <div className="flex items-center justify-center h-56 mb-4">
@@ -710,7 +687,7 @@ const DashboardPage: FC = () => {
                       { bg: 'bg-purple-500', text: 'text-purple-500' },
                       { bg: 'bg-pink-500', text: 'text-pink-500' }
                     ]
-                    const displayType = item.type || 'All Shipments'
+                    const displayType = item.label || item.type || 'Payment Type'
                     const percentage = totalShipmentTypes > 0
                       ? ((item.count / totalShipmentTypes) * 100).toFixed(1)
                       : '0.0'
@@ -767,7 +744,7 @@ const DashboardPage: FC = () => {
                       {/* <th className="px-4 py-3">
                         <input type="checkbox" className="rounded" />
                       </th> */}
-                      <th className="px-4 py-3">Order ID</th>
+                      <th className="px-4 py-3">LR Number</th>
                       {/* {loginType === "admin" && <th className="px-4 py-3">Franchise</th>} */}
                       <th className="px-4 py-3">Amount</th>
                       <th className="px-4 py-3">Date</th>
@@ -787,7 +764,7 @@ const DashboardPage: FC = () => {
                             <input type="checkbox" className="rounded" />
                           </td> */}
                           <td className="px-4 py-3 font-medium text-gray-900 dark:text-white text-xs">
-                            {booking.orderId || booking.bookingId || booking._id || "-"}
+                            {booking.orderNumber}
                           </td>
                           {/* {loginType === "admin" && (
                             <td className="px-4 py-3 text-gray-900 dark:text-white">
@@ -835,45 +812,45 @@ const DashboardPage: FC = () => {
                   </h3>
                 </div>
                 <div className="space-y-4">
-                  {topFranchises.length > 0 ? (
-                    topFranchises.map((franchise: any, index: number) => (
-                      <div key={franchise._id || index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  {topAgencies.length > 0 ? (
+                    topAgencies.map((agency: any, index: number) => (
+                      <div key={agency._id || agency.agencyId || index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold">
                             {index + 1}
                           </div>
                           <div>
                             <p className="font-medium text-gray-900 dark:text-white">
-                              {franchise.franchiseName || franchise.name || "-"}
+                              {agency.agencyName || agency.franchiseName || agency.name || "-"}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {franchise.orderCount || 0} orders
+                              {agency.city || agency.agencyType || "Agency"}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-gray-900 dark:text-white">
-                            ₹{Number(franchise.totalValue || 0).toLocaleString()}
+                            ₹{Number(agency.revenue || agency.totalValue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
                           <p className="text-xs text-gray-500">
-                            Revenue
+                            {agency.orders || agency.orderCount || 0} orders
                           </p>
                         </div>
                       </div>
                     ))
                   ) : (
                     <div className="text-center py-8 text-gray-500">
-                      No franchise data available
+                      No agency data available
                     </div>
                   )}
                 </div>
               </Card>
 
-              {/* Wallet Statistics */}
+              {/* Wallet Summary */}
               <Card className="border border-gray-200 dark:border-gray-700">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Wallet Statistics
+                    Wallet Summary
                   </h3>
                   <span className="rounded-full bg-primary-100 px-2.5 py-1 text-xs font-semibold text-primary-800 dark:bg-primary-900/40 dark:text-primary-200">
                     Live
@@ -884,49 +861,36 @@ const DashboardPage: FC = () => {
                     <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/25">
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Total Balance
+                          Total Transactions
                         </p>
                         <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800/70 dark:text-gray-300">
                           {walletStats.totalWallets || 0} wallets
                         </span>
                       </div>
-                      <p className="text-3xl font-extrabold text-blue-600 dark:text-blue-400 tracking-tight">
-                        ₹{Number(walletStats.totalBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <p className="text-3xl font-extrabold text-blue-600 dark:text-blue-400 tracking-tight">
+                          {Number(walletStats.totalTransactions || ((walletStats.credits?.count || 0) + (walletStats.debits?.count || 0))).toLocaleString('en-IN')}
                       </p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/25">
                         <p className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Total Credits
+                          Payment for Truecargo
                         </p>
                         <p className="text-2xl font-bold text-green-700 dark:text-green-400">
-                          ₹{Number(walletStats.credits?.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                        <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                          {walletStats.credits?.count || 0} transactions
+                          ₹{Number(walletStats.paymentForTruecargo || walletStats.credits?.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
                       <div className="rounded-xl border border-primary-300 bg-primary-100 p-4 dark:border-primary-700 dark:bg-primary-900/25">
                         <p className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Total Debits
+                          Agency Payment
                         </p>
                         <p className="text-2xl font-bold text-primary-800 dark:text-primary-300">
-                          ₹{Number(walletStats.debits?.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                        <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                          {walletStats.debits?.count || 0} transactions
+                          ₹{Number(walletStats.agencyPayment || walletStats.debits?.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
                     </div>
-                    <div className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Total Transactions
-                        </span>
-                        <span className="rounded-md bg-gray-100 px-2 py-0.5 text-sm font-bold text-gray-900 dark:bg-gray-700 dark:text-white">
-                          {(walletStats.credits?.count || 0) + (walletStats.debits?.count || 0)}
-                        </span>
-                      </div>
+                    <div className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300">
+                      Settled orders: {walletStats.settledOrders || 0}
                     </div>
                   </div>
                 ) : (

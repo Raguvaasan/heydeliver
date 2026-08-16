@@ -323,7 +323,7 @@ const Sidebar: FC<SidebarProps> = ({
       path: "/settings",
       submenu: [
         { title: "Wallet", path: "/settings/branch-wallet" },
-        { title: "Percentage", path: "" },
+        { title: "Profit Percentage", path: "/settings/profit-percentage" },
         // { title: "Rate Calculator", path: "/settings/rate-calculator" },
         // { title: "Rate Calculator Setup", path: "/rate-calculator" },
         // { title: "Pincode Serviceability", path: "/settings/pincode-serviceability" },

@@ -106,6 +106,7 @@ const RateMarkupPage = lazy(() => import("./pages/Settings/RateMarkupPage"))
 const RateCardMarkupPage = lazy(() => import("./pages/Settings/RateCardMarkupPage"))
 const SettingsRateCalculatorPage = lazy(() => import("./pages/Settings/RateCalculatorPage"))
 const BranchWalletPage = lazy(() => import("./pages/Settings/BranchWallet/BranchWalletPage"))
+const ProfitPercentagePage = lazy(() => import("./pages/Settings/ProfitPercentage/ProfitPercentagePage"))
 
 // Profile
 const ProfilePage = lazy(() => import("./pages/Profile/ProfilePageModern"))
@@ -639,6 +640,15 @@ root.render(
             element={
               <PermissionRoute>
                 <BranchWalletPage />
+              </PermissionRoute>
+            }
+          />
+
+          <Route
+            path="/settings/profit-percentage"
+            element={
+              <PermissionRoute>
+                <ProfitPercentagePage />
               </PermissionRoute>
             }
           />

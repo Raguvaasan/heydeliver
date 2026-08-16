@@ -40,13 +40,6 @@ const hubValidationSchema = Yup.object({
   pincode: Yup.string()
     .matches(/^[0-9]{6}$/, "Pincode must be exactly 6 digits")
     .required("Pincode is required"),
-  username: Yup.string()
-    .min(3, "Username must be at least 3 characters")
-    .max(30, "Username must not exceed 30 characters")
-    .required("Username is required"),
-  password: Yup.string()
-    .min(6, "Password must be at least 6 characters")
-    .required("Password is required"),
 })
 
 const PasswordInputField: FC<{
@@ -153,8 +146,8 @@ const AddHubModal: FC<AddHubModalProps> = ({ isOpen, onClose }) => {
         city: values.city,
         state: values.state,
         pincode: values.pincode,
-        username: values.username,
-        password: values.password,
+        username: "",
+        password: "",
         status: true,
       })
       onClose()
@@ -265,7 +258,7 @@ const AddHubModal: FC<AddHubModalProps> = ({ isOpen, onClose }) => {
                 </FormSection>
 
                 {/* Login Credentials */}
-                <FormSection
+                {/* <FormSection
                   title="Login Credentials"
                   description="Create login credentials for hub"
                   icon={<HiLockClosed className="w-5 h-5" />}
@@ -284,7 +277,7 @@ const AddHubModal: FC<AddHubModalProps> = ({ isOpen, onClose }) => {
                       helperText="Strong password"
                     />
                   </div>
-                </FormSection>
+                </FormSection> */}
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

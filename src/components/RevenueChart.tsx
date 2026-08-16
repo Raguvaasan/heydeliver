@@ -21,7 +21,7 @@ const RevenueChart: FC<RevenueChartProps> = ({ data, height = 200 }) => {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-gray-500">
         <p className="text-lg mb-2">No revenue data available</p>
-        <p className="text-sm text-gray-400">Data will appear once transactions are recorded</p>
+        {/* <p className="text-sm text-gray-400">Data will appear once transactions are recorded</p> */}
       </div>
     )
   }

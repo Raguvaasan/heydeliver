@@ -1,6 +1,6 @@
 // addEditParcel.tsx
 import { FC, useEffect, useRef, useState } from "react"
-import { Modal } from "flowbite-react"
+import { Checkbox, Label, Modal } from "flowbite-react"
 import { Formik, Form, useField } from "formik"
 import * as Yup from "yup"
 import { HiOutlineUser, HiOutlineArchiveBox, HiInformationCircle } from "react-icons/hi2"
@@ -20,7 +20,7 @@ export interface ParcelFormValues {
     bookingMobileNumber: string
     bookingCustomerAddress: string
     bookingCustomerGstNumber: string
-    paymentType: "Paid" | "To Pay"
+    paymentType: "Paid" | "To Pay" | "Credit"
 
     article: string
     remarks: string
@@ -151,7 +151,7 @@ const fullSchema = Yup.object({
         .optional()
         .transform((value) => (value ? value.toUpperCase() : ""))
         .matches(/^$|^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/, "Enter a valid GSTIN"),
-    paymentType: Yup.string().oneOf(["Paid", "To Pay"]).required("Payment type is required"),
+    paymentType: Yup.string().oneOf(["Paid", "To Pay", "Credit"]).required("Payment type is required"),
     article: Yup.string().trim().required("Article is required").min(2).max(100),
     remarks: Yup.string().trim().max(250),
     numberOfParcels: Yup.number().typeError("Must be a valid number").required().integer().positive().max(9999),
@@ -302,125 +302,125 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
         }
     }, [isOpen, chargeOnly])
 
-   const handleSubmit = async (
-    values: ParcelFormValues,
-    { setSubmitting }: { setSubmitting: (v: boolean) => void }
-) => {
-    setApiError(null);
+    const handleSubmit = async (
+        values: ParcelFormValues,
+        { setSubmitting }: { setSubmitting: (v: boolean) => void }
+    ) => {
+        setApiError(null);
 
-    try {
-        const authToken = sessionStorage.getItem("authToken");
-        if (!authToken) throw new Error("Authorization token missing");
+        try {
+            const authToken = sessionStorage.getItem("authToken");
+            if (!authToken) throw new Error("Authorization token missing");
 
-        // Charge Only
-        if (chargeOnly) {
-            if (!parcel?.id) throw new Error("Missing booking reference");
+            // Charge Only
+            if (chargeOnly) {
+                if (!parcel?.id) throw new Error("Missing booking reference");
 
-            const res = await fetch(`${ADMIN_BASE}/${parcel.id}/charge`, {
-                method: "PATCH",
+                const res = await fetch(`${ADMIN_BASE}/${parcel.id}/charge`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                    body: JSON.stringify({
+                        transportationCharge: Number(values.transportationCharge),
+                    }),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(
+                        data.message || "Failed to update transportation charge"
+                    );
+                }
+
+                onSuccess?.(data);
+                resetFormRef.current?.({ values: emptyValues });
+                setApiError(null);
+                onClose();
+                return;
+            }
+
+            // Create / Update Payload
+            const payload = {
+                bookingCustomer: {
+                    name: values.bookingCustomerName.trim(),
+                    mobileNumber: values.bookingMobileNumber.trim(),
+                    address: values.bookingCustomerAddress.trim(),
+                    ...(values.bookingCustomerGstNumber.trim()
+                        ? {
+                            gstNumber: values.bookingCustomerGstNumber
+                                .trim()
+                                .toUpperCase(),
+                        }
+                        : {}),
+                },
+                paymentType: values.paymentType,
+                deliveryCustomer: {
+                    name: values.deliveryCustomerName.trim(),
+                    mobileNumber: values.deliveryCustomerMobileNumber.trim(),
+                    address: values.deliveryCustomerAddress.trim(),
+                    ...(values.deliveryCustomerGstNumber.trim()
+                        ? {
+                            gstNumber: values.deliveryCustomerGstNumber
+                                .trim()
+                                .toUpperCase(),
+                        }
+                        : {}),
+                    deliveryBranch: values.deliveryBranch.trim(),
+                },
+                parcelDetails: {
+                    article: values.article.trim(),
+                    remarks: values.remarks.trim(),
+                    numberOfParcels: Number(values.numberOfParcels),
+                    approximateValue: Number(values.approximateValue),
+                },
+            };
+
+            const url =
+                isEdit && parcel?.id
+                    ? `${BRANCH_BASE}/${parcel.id}`
+                    : BRANCH_BASE;
+
+            const method = isEdit ? "PUT" : "POST";
+
+            const res = await fetch(url, {
+                method,
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${authToken}`,
                 },
-                body: JSON.stringify({
-                    transportationCharge: Number(values.transportationCharge),
-                }),
+                body: JSON.stringify(payload),
             });
 
-            const data = await res.json();
+            const data = await res.json().catch(() => null);
 
             if (!res.ok) {
                 throw new Error(
-                    data.message || "Failed to update transportation charge"
+                    data?.message ||
+                    `Failed to ${isEdit ? "update" : "create"} booking`
                 );
             }
 
-            onSuccess?.(data);
+            const savedParcel: Parcel = data;
+
+            onSuccess?.(savedParcel);
             resetFormRef.current?.({ values: emptyValues });
             setApiError(null);
             onClose();
-            return;
+        } catch (err) {
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : "Something went wrong. Please try again.";
+
+            setApiError(message);
+            toast.error(message);
+        } finally {
+            setSubmitting(false);
         }
-
-        // Create / Update Payload
-        const payload = {
-            bookingCustomer: {
-                name: values.bookingCustomerName.trim(),
-                mobileNumber: values.bookingMobileNumber.trim(),
-                address: values.bookingCustomerAddress.trim(),
-                ...(values.bookingCustomerGstNumber.trim()
-                    ? {
-                          gstNumber: values.bookingCustomerGstNumber
-                              .trim()
-                              .toUpperCase(),
-                      }
-                    : {}),
-            },
-            paymentType: values.paymentType,
-            deliveryCustomer: {
-                name: values.deliveryCustomerName.trim(),
-                mobileNumber: values.deliveryCustomerMobileNumber.trim(),
-                address: values.deliveryCustomerAddress.trim(),
-                ...(values.deliveryCustomerGstNumber.trim()
-                    ? {
-                          gstNumber: values.deliveryCustomerGstNumber
-                              .trim()
-                              .toUpperCase(),
-                      }
-                    : {}),
-                deliveryBranch: values.deliveryBranch.trim(),
-            },
-            parcelDetails: {
-                article: values.article.trim(),
-                remarks: values.remarks.trim(),
-                numberOfParcels: Number(values.numberOfParcels),
-                approximateValue: Number(values.approximateValue),
-            },
-        };
-
-        const url =
-            isEdit && parcel?.id
-                ? `${BRANCH_BASE}/${parcel.id}`
-                : BRANCH_BASE;
-
-        const method = isEdit ? "PUT" : "POST";
-
-        const res = await fetch(url, {
-            method,
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${authToken}`,
-            },
-            body: JSON.stringify(payload),
-        });
-
-        const data = await res.json().catch(() => null);
-
-        if (!res.ok) {
-            throw new Error(
-                data?.message ||
-                    `Failed to ${isEdit ? "update" : "create"} booking`
-            );
-        }
-
-        const savedParcel: Parcel = data;
-
-        onSuccess?.(savedParcel);
-        resetFormRef.current?.({ values: emptyValues });
-        setApiError(null);
-        onClose();
-    } catch (err) {
-        const message =
-            err instanceof Error
-                ? err.message
-                : "Something went wrong. Please try again.";
-
-        setApiError(message);
-        toast.error(message);
-    } finally {
-        setSubmitting(false);
-    }
-};
+    };
 
     return (
         <Modal show={isOpen} onClose={handleClose} size="4xl">
@@ -497,6 +497,7 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                                     options={[
                                                         { value: "Paid", label: "Paid" },
                                                         { value: "To Pay", label: "To Pay" },
+                                                        { value: "Credit", label: "Credit" },
                                                     ]}
                                                 />
                                             </div>
@@ -530,7 +531,30 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                             </div>
                                         </div>
                                     </FormSection>
+                                    <div className="flex gap-12">
+                                        <div>
+                                            <input
+                                                type="checkbox"
+                                                className="h-4 w-4 cursor-pointer rounded border-gray-300 bg-gray-100 text-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-primary-500"
+                                            // checked={perm.view}
+                                            //onChange={() => handleCheckboxChange(index, "view")}
+                                            />
+                                            <Label className="ml-2 text-sm">
+                                                Pick up from Customer address
+                                            </Label></div>
 
+                                        <div>
+                                            <input
+                                                type="checkbox"
+                                                className="h-4 w-4 cursor-pointer rounded border-gray-300 bg-gray-100 text-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-primary-500"
+                                            // checked={perm.view}
+                                            //onChange={() => handleCheckboxChange(index, "view")}
+                                            />
+                                            <Label className="ml-2 text-sm">
+                                                Deliver to Customer address
+                                            </Label>
+                                        </div>
+                                    </div>
                                     <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                                         <button
                                             type="button"

@@ -33,7 +33,13 @@ const statusColor: Record<string, string> = {
     Cancelled: "failure",
 }
 
-const BRANCH_PRE_HUB_STATUSES = ["Parcel Collected"]
+const paymentTypeColor: Record<string, string> = {
+    Paid: "success",
+    "To Pay": "warning",
+    Credit: "info",
+}
+
+const BRANCH_PRE_HUB_STATUSES = ["Order Created"]
 const BRANCH_POST_HUB_STATUSES = [
     "Parcel Dispatched",
     "Parcel Arrived at Agency",
@@ -429,7 +435,12 @@ const ParcelManagementPage: FC = () => {
                     bookingCustomerName: item.bookingCustomer?.name || "",
                     bookingMobileNumber: item.bookingCustomer?.mobileNumber || "",
                     bookingCustomerAddress: item.bookingCustomer?.address || "",
-                    paymentType: item.paymentType === "To Pay" ? "To Pay" : "Paid",
+                    paymentType:
+                        item.paymentType === "Paid" ||
+                        item.paymentType === "To Pay" ||
+                        item.paymentType === "Credit"
+                            ? item.paymentType
+                            : "Paid",
                     article: item.parcelDetails?.article || "",
                     remarks: item.parcelDetails?.remarks || "",
                     numberOfParcels: String(item.parcelDetails?.numberOfParcels ?? ""),
@@ -929,7 +940,7 @@ const ParcelManagementPage: FC = () => {
                                                 <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{parcel.bookingCustomerName}</td>
 
                                                 <td className="px-4 py-3 inline-block">
-                                                    <Badge className="py-2" color={parcel.paymentType === "Paid" ? "success" : "warning"}>
+                                                    <Badge className="py-2" color={paymentTypeColor[parcel.paymentType] ?? "gray"}>
                                                         {parcel.paymentType}
                                                     </Badge>
                                                 </td>

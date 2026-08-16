@@ -34,7 +34,7 @@ const ViewBranchWalletModal: FC<Props> = ({ isOpen, onClose, item }) => {
         <div className="space-y-1">
           <InfoRow label="Agency Name" value={item.branchName || item.agencyName} />
           <InfoRow label="Wallet Balance" value={`₹ ${(Number(item.walletBalance) || 0).toLocaleString()}`} />
-          <InfoRow label="Profit" value={`₹ ${(Number(item.profit) || 0).toLocaleString()}`} />
+          <InfoRow label="Profit" value={`₹ ${(Number(item.raw.totalProfitEarned) || 0).toLocaleString()}`} />
           <div className="flex flex-col md:flex-row md:items-center py-3 border-b border-gray-200 dark:border-gray-700">
             <div className="w-full md:w-1/3 font-medium text-gray-700 dark:text-gray-300 mb-1 md:mb-0">Status</div>
             <div className="w-full md:w-2/3">

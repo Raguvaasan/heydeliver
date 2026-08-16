@@ -18,6 +18,12 @@ const statusColor: Record<string, string> = {
   Cancelled: "failure",
 }
 
+const paymentTypeColor: Record<string, string> = {
+  Paid: "success",
+  "To Pay": "warning",
+  Credit: "info",
+}
+
 const SectionTitle: FC<{ title: string; }> = ({ title }) => (
   <div className="mb-3 flex items-center gap-2">
     <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">{title}</h4>
@@ -140,7 +146,7 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
                   Payment Type
                 </div>
                 <Badge
-                  color={parcel.paymentType === "Paid" ? "success" : "warning"}
+                  color={paymentTypeColor[parcel.paymentType] ?? "gray"}
                   className="inline-flex rounded-full px-3 py-1.5 text-sm font-semibold"
                 >
                   {parcel.paymentType}
