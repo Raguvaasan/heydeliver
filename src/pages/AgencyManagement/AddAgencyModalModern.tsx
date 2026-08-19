@@ -2,11 +2,12 @@ import { FC } from "react"
 import { Modal } from "flowbite-react"
 import { useAgencyStore } from "../../store/agencyStore"
 import { HiX, HiOfficeBuilding, HiLocationMarker, HiLockClosed } from "react-icons/hi"
-import { Formik, Form } from "formik"
+import { Formik, Form, Field } from "formik"
 import { FormInput, FormSelect, FormTextarea } from "../../components/FormComponents"
 import { SaveButton, FormSection } from "../../components/FormHelpers"
 import { agencyValidationSchema, emailValidation } from "../../utils/validationSchemas"
 import { sanitizeText } from "../../utils/sanitize"
+import * as Yup from "yup"
 
 interface AddAgencyModalProps {
   isOpen: boolean
@@ -15,6 +16,15 @@ interface AddAgencyModalProps {
 
 const addAgencyModalValidationSchema = agencyValidationSchema.shape({
   email: emailValidation,
+  agencyType: Yup.boolean().required("Agency type is required"),
+  commission: Yup.string().when("agencyType", {
+    is: false,
+    then: (schema) =>
+      schema
+        .required("Commission is required for third party agencies")
+        .matches(/^\d+(\.\d{1,2})?$/, "Enter a valid commission value"),
+    otherwise: (schema) => schema.notRequired(),
+  }),
 })
 
 const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
@@ -51,7 +61,9 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
         city: sanitizeText(values.city),
         state: values.state,
         pincode: sanitizeText(values.pincode),
-        status: values.status
+        status: values.status,
+        agencyType: values.agencyType,
+        commission: values.agencyType === false ? sanitizeText(values.commission) : null,
       }
 
       await addAgency(sanitizedValues)
@@ -92,11 +104,13 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
               state: "",
               pincode: "",
               status: "Active",
+              agencyType: true,
+              commission: "",
             }}
             validationSchema={addAgencyModalValidationSchema}
             onSubmit={handleSubmit}
           >
-            {({ isSubmitting }) => (
+            {({ isSubmitting, values, errors, touched, setFieldValue }) => (
               <Form className="space-y-6">
                 {/* Basic Details */}
                 <FormSection
@@ -144,6 +158,42 @@ const AddAgencyModalModern: FC<AddAgencyModalProps> = ({ isOpen, onClose }) => {
                       required
                       helperText="Agency account status"
                     />
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Agency Type <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-6">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Field
+                          type="radio"
+                          name="agencyType"
+                          value="true"
+                          checked={values.agencyType === true}
+                          onChange={() => {
+                            setFieldValue("agencyType", true)
+                            setFieldValue("commission", "")
+                          }}
+                          className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Own Agency</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Field
+                          type="radio"
+                          name="agencyType"
+                          value="false"
+                          checked={values.agencyType === false}
+                          onChange={() => setFieldValue("agencyType", false)}
+                          className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Third Party (Commission applicable)</span>
+                      </label>
+                    </div>
+                    {touched.agencyType && errors.agencyType && (
+                      <p className="mt-1 text-sm text-red-500">{errors.agencyType as string}</p>
+                    )}
                   </div>
                 </FormSection>
 

@@ -4,6 +4,7 @@ import {
   HiTruck,
   HiCube,
   HiCurrencyRupee,
+  HiOfficeBuilding,
 } from "react-icons/hi"
 import { useNavigate } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
@@ -113,6 +114,12 @@ const DashboardPage: FC = () => {
         ? "admin"
         : staffAssignedType
       : rawLoginType
+  const isAgencyLogin =
+    loginType === "franchise" ||
+    loginType === "staff" ||
+    loginType === "agency" ||
+    loginType === "collection-agency" ||
+    loginType === "collectionagency"
   const isHubLogin = loginType === "hub"
   const [loading, setLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<any>(null)
@@ -178,6 +185,13 @@ const DashboardPage: FC = () => {
           revenue: revenueData.revenue ?? baseData.revenue,
           period: revenueData.period ?? baseData.period,
         })
+      } else if (isAgencyLogin) {
+        const response = await http.get("/admin/agency/dashboard")
+        const payload = response.data?.data || response.data || {}
+        setDashboardData(payload)
+        setPaymentTypeDistribution([])
+        setTopAgencies([])
+        setWalletStats(null)
       } else {
         // Franchise: Single API call
         const response = await http.get(endpoint, { params })
@@ -225,6 +239,10 @@ const DashboardPage: FC = () => {
           revenue: revenueData.revenue ?? baseData.revenue,
           period: revenueData.period ?? baseData.period,
         })
+      } else if (isAgencyLogin) {
+        const response = await http.get("/admin/agency/dashboard")
+        const data = response.data?.data || response.data || {}
+        setDashboardData(data)
       } else {
         const endpoint = loginType === "admin" ? "/admin/dashboard" : "/dashboard"
         const params = { period: selectedPeriod }
@@ -248,6 +266,61 @@ const DashboardPage: FC = () => {
   // Build stats array from API data
   const buildStats = () => {
     if (!dashboardData) return []
+
+    if (isAgencyLogin) {
+      const overview = dashboardData.overview || {}
+      const currency = overview.currency || "INR"
+      const formatAmount = (value: unknown) =>
+        `${currency === "INR" ? "₹" : ""}${Number(value || 0).toLocaleString("en-IN", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`
+
+      return [
+        {
+          icon: <HiCube className="h-5 w-5" />,
+          title: "Total Orders",
+          value: resolveMetricValue(overview.totalOrders),
+          subtitle: "All time orders",
+          iconBgColor: "bg-blue-500",
+        },
+        {
+          icon: <HiCube className="h-5 w-5" />,
+          title: "Today's Orders",
+          value: resolveMetricValue(overview.todayOrders),
+          subtitle: "Orders created today",
+          iconBgColor: "bg-orange-500",
+        },
+        {
+          icon: <HiCurrencyRupee className="h-5 w-5" />,
+          title: "Total Revenue",
+          value: formatAmount(overview.totalRevenue),
+          subtitle: "All time revenue",
+          iconBgColor: "bg-green-500",
+        },
+        {
+          icon: <HiCurrencyRupee className="h-5 w-5" />,
+          title: "Today's Revenue",
+          value: formatAmount(overview.todayRevenue),
+          subtitle: "Revenue created today",
+          iconBgColor: "bg-teal-500",
+        },
+        {
+          icon: <HiCube className="h-5 w-5" />,
+          title: "Outstanding Orders",
+          value: resolveMetricValue(overview.outstandingOrders),
+          subtitle: formatAmount(overview.totalOutstanding),
+          iconBgColor: "bg-red-500",
+        },
+        {
+          icon: <HiCurrencyRupee className="h-5 w-5" />,
+          title: "Wallet Balance",
+          value: formatAmount(overview.walletBalance),
+          subtitle: `${resolveMetricValue(overview.payoutOrders)} payout orders`,
+          iconBgColor: "bg-purple-500",
+        },
+      ]
+    }
 
     const isFranchise = loginType === "franchise" || loginType === "staff" || loginType === "hub"
 
@@ -441,12 +514,39 @@ const DashboardPage: FC = () => {
           <Spinner size="xl" />
         </div>
       ) : (
-        <div className="px-4 pt-6">
+        <div className="px-4">
           {/* Page Header */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Overview
-            </h1>
+            {isAgencyLogin && dashboardData?.agency && (
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <HiOfficeBuilding className="h-5 w-5 text-orange-500" />
+                      <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                        Agency Dashboard
+                      </p>
+                    </div>
+                    <h2 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">
+                      {dashboardData.agency.agencyName || "Agency"}
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {[dashboardData.agency.city, dashboardData.agency.state].filter(Boolean).join(", ") || "Location unavailable"}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs font-medium">
+                    <span className="rounded-full bg-green-100 px-3 py-1 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                      {dashboardData.agency.status || "Active"}
+                    </span>
+                    {dashboardData.agency.profitPercentage != null && (
+                      <span className="rounded-full bg-blue-100 px-3 py-1 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                        Profit {dashboardData.agency.profitPercentage}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Stats Cards */}
@@ -466,6 +566,7 @@ const DashboardPage: FC = () => {
           </div>
 
           {/* Charts Section */}
+          {!isAgencyLogin && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-6">
             {/* Revenue Chart */}
             <Card className="lg:col-span-2">
@@ -721,9 +822,11 @@ const DashboardPage: FC = () => {
               </div>
             </Card>
           </div>
+          )}
 
           {/* Recent Bookings Table */}
-          <Card>
+          {loginType === "admin" &&(
+ <Card>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Recent Bookings
@@ -800,6 +903,8 @@ const DashboardPage: FC = () => {
               )}
             </div>
           </Card>
+          )}
+         
 
           {/* Admin-Only Sections */}
           {loginType === "admin" && (

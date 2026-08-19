@@ -53,6 +53,7 @@ const AgencyManagementPage: FC = () => {
     agency.agencyOwner?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     agency.phone?.includes(searchTerm)
   )
+  const getAgencyTypeLabel = (agencyType?: boolean) => (agencyType ? "Own Agency" : "Third Party")
 
   return (
     <NavbarSidebarLayout>
@@ -113,6 +114,7 @@ const AgencyManagementPage: FC = () => {
                     <th className="px-4 py-3 w-16">S.No</th>
                     <th className="px-4 py-3">Agency Name</th>
                     <th className="px-4 py-3">Agency Owner</th>
+                    <th className="px-4 py-3">Agency Type</th>
                     <th className="px-4 py-3">Phone</th>
                     <th className="px-4 py-3">GST</th>
                     <th className="px-4 py-3">Status</th>
@@ -142,6 +144,9 @@ const AgencyManagementPage: FC = () => {
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           {agency.agencyOwner}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                          {agency.type}
                         </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           {agency.phone}
@@ -188,7 +193,7 @@ const AgencyManagementPage: FC = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={8}
                         className="px-4 py-8 text-center text-gray-500"
                       >
                         No agencies found

@@ -291,16 +291,16 @@ const Sidebar: FC<SidebarProps> = ({
     //     { title: "All Orders", path: "/orders" },
     //   ],
     // },
-    {
-      title: "Payments",
-      icon: <HiCreditCard className="h-5 w-5" />,
-      path: "/payments",
-      submenu: [
-        { title: "Wallet Transactions", path: "/wallet/transactions" },
-        { title: "Revenue", path: "/payments/revenue" },
-        // { title: "Invoices", path: "/invoice" },
-      ],
-    },
+    // {
+    //   title: "Payments",
+    //   icon: <HiCreditCard className="h-5 w-5" />,
+    //   path: "/payments",
+    //   submenu: [
+    //     { title: "Wallet Transactions", path: "/wallet/transactions" },
+    //     { title: "Revenue", path: "/payments/revenue" },
+    //     // { title: "Invoices", path: "/invoice" },
+    //   ],
+    // },
     // {
     //   title: "Reports",
     //   icon: <HiChartBar className="h-5 w-5" />,
@@ -392,17 +392,17 @@ const Sidebar: FC<SidebarProps> = ({
         { title: "Outward Orders", path: "/parcel-booking/outward" },
       ],
     },
-    {
-      title: "Wallet",
-      icon: <HiCurrencyRupee className="h-5 w-5" />,
-      path: "/wallet",
-      submenu: isAdmin 
-        ? [{ title: "Transaction details", path: "/wallet" }]
-        : [
-            { title: "Add Money", path: "/wallet/add" },
-            { title: "Transaction details", path: "/wallet" },
-          ],
-    },
+    // {
+    //   title: "Wallet",
+    //   icon: <HiCurrencyRupee className="h-5 w-5" />,
+    //   path: "/wallet",
+    //   submenu: isAdmin 
+    //     ? [{ title: "Transaction details", path: "/wallet" }]
+    //     : [
+    //         { title: "Add Money", path: "/wallet/add" },
+    //         { title: "Transaction details", path: "/wallet" },
+    //       ],
+    // },
     // {
     //   title: "Invoice",
     //   icon: <HiDocumentText className="h-5 w-5" />,

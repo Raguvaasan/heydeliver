@@ -2,6 +2,7 @@ import { FC, useEffect, useState } from "react"
 import NavbarSidebarLayout from "../../../layouts/navbar-sidebar"
 import { Badge, Button, Card, Label, Select, Spinner, Table, TextInput } from "flowbite-react"
 import { HiEye, HiPlus, HiSearch } from "react-icons/hi"
+import { useNavigate } from "react-router-dom"
 import BranchWalletAddModal from "./BranchWalletAddModal"
 import ViewBranchWalletModal from "./ViewBranchWalletModal"
 import { BranchWallet, useBranchWalletStore } from "../../../store/branchWalletStore"
@@ -9,6 +10,7 @@ import { BranchWallet, useBranchWalletStore } from "../../../store/branchWalletS
 const PAGE_SIZE = 10
 
 const BranchWalletPage: FC = () => {
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [page, setPage] = useState(1)
@@ -26,7 +28,7 @@ const BranchWalletPage: FC = () => {
 
   const handleView = (item: BranchWallet) => {
     setSelectedBranchWallet(item)
-    setIsViewOpen(true)
+    navigate(`/settings/branch-wallet/${item.id || item.branchId || item.branchName}`)
   }
 
   return (
@@ -91,26 +93,20 @@ const BranchWalletPage: FC = () => {
                   </Table.Row>
                 ) : branchWallets.length > 0 ? (
                   branchWallets.map((item, index) => (
-                    <Table.Row key={item.id || index}>
+                    <Table.Row
+                      key={item.id || index}
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                      onClick={() => handleView(item)}
+                    >
                       <Table.Cell className="font-medium text-gray-900 dark:text-white">{item.branchName || "-"}</Table.Cell>
                       <Table.Cell>₹ {(Number(item.walletBalance) || 0).toLocaleString()}</Table.Cell>
-                      <Table.Cell>₹ {item.raw.totalBookingAmount}</Table.Cell>
-                      <Table.Cell>₹ {item.raw.totalProfitEarned}</Table.Cell>
+                      <Table.Cell>₹ {item.raw?.totalBookingAmount ?? 0}</Table.Cell>
+                      <Table.Cell>₹ {item.raw?.totalProfitEarned ?? 0}</Table.Cell>
                       <Table.Cell>
                         <Badge color={String(item.status || "").toLowerCase() === "active" ? "success" : "failure"}>
                           {item.status || "Unknown"}
                         </Badge>
                       </Table.Cell>
-                      {/* <Table.Cell className="text-center">
-                        <button
-                          onClick={() => handleView(item)}
-                          className="p-1.5 text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
-                          title="View"
-                          type="button"
-                        >
-                          <HiEye className="h-5 w-5" />
-                        </button>
-                      </Table.Cell> */}
                     </Table.Row>
                   ))
                 ) : (

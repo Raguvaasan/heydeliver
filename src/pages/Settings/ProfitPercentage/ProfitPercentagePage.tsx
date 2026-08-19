@@ -1,9 +1,10 @@
 import { FC, useEffect, useState } from "react"
 import NavbarSidebarLayout from "../../../layouts/navbar-sidebar"
 import { Badge, Button, Card, Label, Spinner, Table, TextInput } from "flowbite-react"
-import { HiPlus, HiSearch } from "react-icons/hi"
+import { HiPencil, HiPlus, HiSearch } from "react-icons/hi"
 import ProfitPercentageAddModal from "./ProfitPercentageAddModal"
 import { useProfitPercentageStore } from "../../../store/profitPercentageStore"
+import ProfitPercentageEditModal from "./ProfitPercentageEditModal"
 
 const PAGE_SIZE = 10
 
@@ -11,6 +12,8 @@ const ProfitPercentagePage: FC = () => {
   const [searchTerm, setSearchTerm] = useState("")
   const [page, setPage] = useState(1)
   const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<any>(null)
   const { items, loading, pagination, fetchItems } = useProfitPercentageStore()
 
   useEffect(() => {
@@ -65,11 +68,12 @@ const ProfitPercentagePage: FC = () => {
                 <Table.HeadCell>Loading Charge</Table.HeadCell>
                 <Table.HeadCell>Misc Charge</Table.HeadCell>
                 <Table.HeadCell>Status</Table.HeadCell>
+                <Table.HeadCell>Actions</Table.HeadCell>
               </Table.Head>
               <Table.Body className="divide-y">
                 {loading ? (
                   <Table.Row>
-                    <Table.Cell colSpan={4}>
+                    <Table.Cell colSpan={6}>
                       <div className="flex items-center justify-center py-8">
                         <Spinner size="lg" />
                       </div>
@@ -87,11 +91,24 @@ const ProfitPercentagePage: FC = () => {
                           {item.status || "Unknown"}
                         </Badge>
                       </Table.Cell>
+                      <Table.Cell>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedItem(item)
+                            setIsEditOpen(true)
+                          }}
+                          className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium"
+                          title="Edit"
+                        >
+                          <HiPencil className="h-5 w-5" />
+                        </button>
+                      </Table.Cell>
                     </Table.Row>
                   ))
                 ) : (
                   <Table.Row>
-                    <Table.Cell colSpan={4} className="py-10 text-center text-gray-500">No profit percentages found</Table.Cell>
+                    <Table.Cell colSpan={6} className="py-10 text-center text-gray-500">No profit percentages found</Table.Cell>
                   </Table.Row>
                 )}
               </Table.Body>
@@ -113,6 +130,15 @@ const ProfitPercentagePage: FC = () => {
       <ProfitPercentageAddModal
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
+        onSuccess={() => fetchItems({ page, limit: PAGE_SIZE, search: searchTerm || undefined })}
+      />
+      <ProfitPercentageEditModal
+        isOpen={isEditOpen}
+        item={selectedItem}
+        onClose={() => {
+          setIsEditOpen(false)
+          setSelectedItem(null)
+        }}
         onSuccess={() => fetchItems({ page, limit: PAGE_SIZE, search: searchTerm || undefined })}
       />
     </NavbarSidebarLayout>

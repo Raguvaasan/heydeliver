@@ -121,6 +121,12 @@ const ParcelManagementPage: FC = () => {
     const [parcels, setParcels] = useState<Parcel[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [apiError, setApiError] = useState<string | null>(null)
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: PAGE_SIZE,
+        total: 0,
+        totalPages: 1,
+    })
 
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [modalMode, setModalMode] = useState<"add" | "edit">("add")
@@ -397,8 +403,14 @@ const ParcelManagementPage: FC = () => {
 
         try {
             const authToken = getAuthToken()
+            const query = new URLSearchParams({
+                page: String(currentPage),
+                limit: String(PAGE_SIZE),
+            })
+            if (searchTerm.trim()) query.set("search", searchTerm.trim())
+            if (statusFilter) query.set("status", statusFilter)
 
-            const response = await fetch(API_BASE, {
+            const response = await fetch(`${API_BASE}?${query.toString()}`, {
                 headers: { Authorization: `Bearer ${authToken}` },
             })
 
@@ -408,7 +420,8 @@ const ParcelManagementPage: FC = () => {
             }
 
             const payload = await response.json()
-            const orders = payload?.data?.orders ?? []
+            const orders = payload?.data?.orders ?? payload?.orders ?? []
+            const meta = payload?.data?.pagination || payload?.pagination || null
 
             const resolveDeliveryBranch = (branch: any) => {
                 if (!branch) return { id: "", name: "" }
@@ -466,9 +479,33 @@ const ParcelManagementPage: FC = () => {
             })
 
             setParcels(normalizedParcels)
+            if (meta) {
+                const metaLimit = Number(meta.limit || PAGE_SIZE)
+                const metaTotal = Number(meta.total || normalizedParcels.length)
+                const metaTotalPages = Number(meta.totalPages || Math.max(1, Math.ceil(metaTotal / metaLimit)))
+                setPagination({
+                    page: Number(meta.page || currentPage),
+                    limit: metaLimit,
+                    total: metaTotal,
+                    totalPages: metaTotalPages,
+                })
+            } else {
+                setPagination({
+                    page: currentPage,
+                    limit: PAGE_SIZE,
+                    total: normalizedParcels.length,
+                    totalPages: Math.max(1, Math.ceil(normalizedParcels.length / PAGE_SIZE)),
+                })
+            }
         } catch (error) {
             setApiError(error instanceof Error ? error.message : "Failed to load parcel bookings")
             setParcels([])
+            setPagination({
+                page: currentPage,
+                limit: PAGE_SIZE,
+                total: 0,
+                totalPages: 1,
+            })
         } finally {
             setIsLoading(false)
         }
@@ -565,26 +602,13 @@ const ParcelManagementPage: FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    const filteredParcels = useMemo(() => {
-        return parcels.filter((parcel) => {
-            const matchesSearch =
-                parcel.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                parcel.bookingCustomerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                parcel.deliveryCustomerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                parcel.deliveryBranch.toLowerCase().includes(searchTerm.toLowerCase())
+    useEffect(() => {
+        fetchParcels()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage, searchTerm, statusFilter])
 
-            const matchesStatus = statusFilter ? parcel.status === statusFilter : true
-
-            return matchesSearch && matchesStatus
-        })
-    }, [parcels, searchTerm, statusFilter])
-
-    const totalPages = Math.max(1, Math.ceil(filteredParcels.length / PAGE_SIZE))
-
-    const paginatedParcels = useMemo(() => {
-        const start = (currentPage - 1) * PAGE_SIZE
-        return filteredParcels.slice(start, start + PAGE_SIZE)
-    }, [filteredParcels, currentPage])
+    const totalPages = pagination.totalPages || 1
+    const paginatedParcels = useMemo(() => parcels, [parcels])
 
     const handleAdd = () => {
         setModalMode("add")
@@ -624,6 +648,8 @@ const ParcelManagementPage: FC = () => {
                 throw new Error(errBody?.message || "Failed to delete booking")
             }
             setParcels((prev) => prev.filter((p) => p.id !== selectedId))
+            setCurrentPage(1)
+            fetchParcels()
         } catch (error) {
             setRowActionError(error instanceof Error ? error.message : "Failed to delete booking")
         } finally {

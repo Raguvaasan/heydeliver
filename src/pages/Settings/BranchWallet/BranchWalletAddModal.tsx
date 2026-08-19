@@ -93,10 +93,10 @@ const BranchWalletAddModal: FC<Props> = ({ isOpen, onClose, onSuccess }) => {
                   {touched.branchId && errors.branchId ? <p className="text-sm text-red-600">{errors.branchId}</p> : null}
                 </div>
 
-                <div>
+                {/* <div>
                   <Label value="Current Balance" />
                   <TextInput className="mt-2" readOnly value={`₹ ${Number(currentBalance || 0).toLocaleString()}`} />
-                </div>
+                </div> */}
 
                 <div>
                   <Label value="Amount" />

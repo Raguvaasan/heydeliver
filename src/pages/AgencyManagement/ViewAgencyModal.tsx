@@ -11,6 +11,7 @@ const ViewAgencyModal: FC<ViewAgencyModalProps> = ({ isOpen, onClose }) => {
   const { selectedAgency } = useAgencyStore()
 
   if (!selectedAgency) return null
+  const agencyTypeLabel = selectedAgency.agencyType ? "Own Agency" : "Third Party"
 
   const InfoRow: FC<{ label: string; value: string | undefined }> = ({
     label,
@@ -37,6 +38,10 @@ const ViewAgencyModal: FC<ViewAgencyModalProps> = ({ isOpen, onClose }) => {
         <div className="space-y-1">
           <InfoRow label="Agency Name" value={selectedAgency.agencyName} />
           <InfoRow label="Agency Owner" value={selectedAgency.agencyOwner} />
+          <InfoRow label="Agency Type" value={agencyTypeLabel} />
+          {selectedAgency.agencyType === false && (
+            <InfoRow label="Commission" value={selectedAgency.commission != null ? String(selectedAgency.commission) : undefined} />
+          )}
           <InfoRow label="Phone Number" value={selectedAgency.phone} />
           <InfoRow label="Email Address" value={selectedAgency.email} />
           <InfoRow label="GST" value={selectedAgency.gstNumber} />

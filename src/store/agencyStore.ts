@@ -8,6 +8,8 @@ interface Agency {
   agencyOwner: string
   phone: string
   status: "Active" | "Inactive"
+  agencyType?: boolean
+  commission?: string | number | null
   email?: string
   address?: string
   city?: string
@@ -67,6 +69,8 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
         agencyOwner: item.agencyOwner,
         phone: item.phone,
         status: item.status,
+        agencyType: item.agencyType,
+        commission: item.commission,
         email: item.email,
         address: item.address,
         city: item.city,
@@ -77,6 +81,7 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
         updatedAt: item.updatedAt,
         image: item.image,
         gstNumber: item.gstNumber || item.gst,
+        type: item.type
       }))
 
       const pagination = response.data?.data?.pagination ?? null
@@ -120,6 +125,8 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
         agencyOwner: payload?.agencyOwner,
         phone: payload?.phone,
         status: payload?.status,
+        agencyType: payload?.agencyType,
+        commission: payload?.commission,
         email: payload?.email,
         address: payload?.address,
         city: payload?.city,
@@ -181,6 +188,8 @@ export const useAgencyStore = create<AgencyState>((set, get) => ({
         agencyOwner: payload?.agencyOwner,
         phone: payload?.phone,
         status: payload?.status,
+        agencyType: payload?.agencyType,
+        commission: payload?.commission,
         email: payload?.email,
         address: payload?.address,
         city: payload?.city,

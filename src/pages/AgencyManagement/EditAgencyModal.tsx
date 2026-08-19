@@ -8,12 +8,13 @@ interface EditAgencyModalProps {
 }
 
 const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
-  const { selectedAgency, updateAgency, loading } = useAgencyStore()
+  const { selectedAgency, updateAgency, loading, fetchAgencies } = useAgencyStore()
   const [formData, setFormData] = useState({
     agencyName: "",
     agencyOwner: "",
     phone: "",
     email: "",
+    agencyType: true as boolean,
     address: "",
     city: "",
     state: "",
@@ -30,6 +31,7 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
         agencyOwner: selectedAgency.agencyOwner || "",
         phone: selectedAgency.phone || "",
         email: selectedAgency.email || "",
+        agencyType: selectedAgency.agencyType ?? true,
         address: selectedAgency.address || "",
         city: (selectedAgency as any).city || "",
         state: (selectedAgency as any).state || "",
@@ -56,9 +58,9 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
       try {
         await updateAgency(selectedAgency.id, {
           ...formData,
-          image: imageFile ?? undefined,
         })
         onClose()
+        fetchAgencies()
       } catch (error) {
         // Error handled by store
       }
@@ -143,6 +145,48 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
               />
             </div>
 
+            {/* Agency Type */}
+            <div>
+              <div className="flex items-center gap-1 mb-2">
+                <Label htmlFor="agencyType" value="Agency Type" />
+                <span className="text-red-500">*</span>
+              </div>
+              <Select
+                id="agencyType"
+                name="agencyType"
+                value={formData.agencyType ? "true" : "false"}
+                onChange={(e) => {
+                  const nextType = e.target.value === "true"
+                  setFormData({
+                    ...formData,
+                    agencyType: nextType,
+                  })
+                }}
+                required
+              >
+                <option value="true">Own Agency</option>
+                <option value="false">Third Party</option>
+              </Select>
+            </div>
+
+            {/* {formData.agencyType === false && (
+              <div>
+                <div className="flex items-center gap-1 mb-2">
+                  <Label htmlFor="commission" value="Commission" />
+                  <span className="text-red-500">*</span>
+                </div>
+                <TextInput
+                  id="commission"
+                  name="commission"
+                  type="text"
+                  placeholder="Enter commission"
+                  value={formData.commission}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            )} */}
+
             {/* GST */}
             <div>
               <div className="flex items-center gap-1 mb-2">
@@ -215,22 +259,6 @@ const EditAgencyModal: FC<EditAgencyModalProps> = ({ isOpen, onClose }) => {
                 onChange={handleChange}
                 required
               />
-            </div>
-
-            {/* Image */}
-            <div>
-              <Label htmlFor="image" value="Agency Image" className="mb-2" />
-              <input
-                id="image"
-                name="image"
-                type="file"
-                accept="image/*"
-                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-                className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
-              />
-              {imageFile && (
-                <p className="text-xs text-gray-500 mt-1">{imageFile.name}</p>
-              )}
             </div>
 
             {/* Status */}
