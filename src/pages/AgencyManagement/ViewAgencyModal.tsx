@@ -39,9 +39,6 @@ const ViewAgencyModal: FC<ViewAgencyModalProps> = ({ isOpen, onClose }) => {
           <InfoRow label="Agency Name" value={selectedAgency.agencyName} />
           <InfoRow label="Agency Owner" value={selectedAgency.agencyOwner} />
           <InfoRow label="Agency Type" value={agencyTypeLabel} />
-          {selectedAgency.agencyType === false && (
-            <InfoRow label="Commission" value={selectedAgency.commission != null ? String(selectedAgency.commission) : undefined} />
-          )}
           <InfoRow label="Phone Number" value={selectedAgency.phone} />
           <InfoRow label="Email Address" value={selectedAgency.email} />
           <InfoRow label="GST" value={selectedAgency.gstNumber} />
