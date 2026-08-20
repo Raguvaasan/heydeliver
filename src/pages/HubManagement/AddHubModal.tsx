@@ -70,10 +70,9 @@ const PasswordInputField: FC<{
             placeholder-transparent
             transition-all duration-200
             focus:outline-none focus:ring-2 focus:ring-offset-0
-            ${
-              hasError
-                ? "border-red-500 focus:border-red-500 focus:ring-red-200"
-                : "border-gray-300 dark:border-gray-600 focus:border-orange-500 focus:ring-orange-200"
+            ${hasError
+              ? "border-red-500 focus:border-red-500 focus:ring-red-200"
+              : "border-gray-300 dark:border-gray-600 focus:border-orange-500 focus:ring-orange-200"
             }
           `}
           placeholder={label}
@@ -99,10 +98,9 @@ const PasswordInputField: FC<{
             transition-all duration-200
             peer-placeholder-shown:text-base peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-gray-400
             peer-focus:-top-2.5 peer-focus:text-sm
-            ${
-              hasError
-                ? "text-red-600 dark:text-red-400 peer-focus:text-red-600"
-                : "text-gray-700 dark:text-gray-300 peer-focus:text-orange-600"
+            ${hasError
+              ? "text-red-600 dark:text-red-400 peer-focus:text-red-600"
+              : "text-gray-700 dark:text-gray-300 peer-focus:text-orange-600"
             }
           `}
         >
@@ -121,7 +119,7 @@ const PasswordInputField: FC<{
 }
 
 const AddHubModal: FC<AddHubModalProps> = ({ isOpen, onClose }) => {
-  const { addHub, loading } = useHubStore()
+  const { addHub, loading, hubs } = useHubStore()
 
   const stateOptions = [
     { value: "Tamil Nadu", label: "Tamil Nadu" },
@@ -136,8 +134,12 @@ const AddHubModal: FC<AddHubModalProps> = ({ isOpen, onClose }) => {
     { value: "West Bengal", label: "West Bengal" },
   ]
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (
+    values: any,
+    { resetForm }: { resetForm: () => void }
+  ) => {
     try {
+      const hubNumber = hubs.length + 1
       await addHub({
         hubName: values.hubName,
         hubManagerName: values.hubManagerName,
@@ -146,10 +148,12 @@ const AddHubModal: FC<AddHubModalProps> = ({ isOpen, onClose }) => {
         city: values.city,
         state: values.state,
         pincode: values.pincode,
-        username: "",
-        password: "",
+        username: `Hub ${hubNumber}.gmail.com`,
+        password: "Admin@123",
         status: true,
       })
+
+      resetForm()
       onClose()
     } catch (error) {
       throw error
@@ -190,7 +194,7 @@ const AddHubModal: FC<AddHubModalProps> = ({ isOpen, onClose }) => {
             validationSchema={hubValidationSchema}
             onSubmit={handleSubmit}
           >
-            {({ isSubmitting }) => (
+            {({ isSubmitting, resetForm }) => (
               <Form className="space-y-6">
                 {/* Basic Details */}
                 <FormSection
@@ -283,7 +287,10 @@ const AddHubModal: FC<AddHubModalProps> = ({ isOpen, onClose }) => {
                 <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <button
                     type="button"
-                    onClick={onClose}
+                    onClick={() => {
+                      resetForm()
+                      onClose()
+                    }}
                     disabled={isSubmitting || loading}
                     className="flex-1 px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-4 focus:ring-gray-200 disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
                   >
