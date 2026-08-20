@@ -187,7 +187,7 @@ const AgencyParcelOrdersPage = ({ direction }: AgencyParcelOrdersPageProps) => {
 
           <div className="mb-6 flex flex-col gap-3">
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-4">
-              <div className="relative xl:col-span-2">
+              <div className="relative xl:col-span-1">
                 <Label htmlFor="order-search" className="mb-1 block text-xs">
                   Search
                 </Label>
@@ -197,7 +197,7 @@ const AgencyParcelOrdersPage = ({ direction }: AgencyParcelOrdersPageProps) => {
                 <TextInput
                   id="order-search"
                   type="search"
-                  placeholder="Search order, customer, phone, location..."
+                  placeholder="Order, customer, phone, location..."
                   value={search}
                   onChange={(e) => {
                     setPage(1)
@@ -235,9 +235,6 @@ const AgencyParcelOrdersPage = ({ direction }: AgencyParcelOrdersPageProps) => {
                   }}
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
                 <Label htmlFor="payment-type" className="mb-1 block text-xs">
                   Payment Type
@@ -255,7 +252,10 @@ const AgencyParcelOrdersPage = ({ direction }: AgencyParcelOrdersPageProps) => {
                   <option value="To Pay">To Pay</option>
                 </Select>
               </div>
-              <div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {/* <div>
                 <Label htmlFor="hub-assignment" className="mb-1 block text-xs">
                   Hub Assignment
                 </Label>
@@ -271,7 +271,7 @@ const AgencyParcelOrdersPage = ({ direction }: AgencyParcelOrdersPageProps) => {
                   <option value="Assigned">Assigned</option>
                   <option value="Unassigned">Unassigned</option>
                 </Select>
-              </div>
+              </div> */}
             </div>
           </div>
 

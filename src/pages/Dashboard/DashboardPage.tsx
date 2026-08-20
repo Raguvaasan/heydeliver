@@ -276,57 +276,6 @@ const DashboardPage: FC = () => {
           maximumFractionDigits: 2,
         })}`
 
-      return [
-        {
-          icon: <HiCube className="h-5 w-5" />,
-          title: "Total Orders",
-          value: resolveMetricValue(overview.totalOrders),
-          subtitle: "All time orders",
-          iconBgColor: "bg-blue-500",
-        },
-        {
-          icon: <HiCube className="h-5 w-5" />,
-          title: "Today's Orders",
-          value: resolveMetricValue(overview.todayOrders),
-          subtitle: "Orders created today",
-          iconBgColor: "bg-orange-500",
-        },
-        {
-          icon: <HiCurrencyRupee className="h-5 w-5" />,
-          title: "Total Revenue",
-          value: formatAmount(overview.totalRevenue),
-          subtitle: "All time revenue",
-          iconBgColor: "bg-green-500",
-        },
-        {
-          icon: <HiCurrencyRupee className="h-5 w-5" />,
-          title: "Today's Revenue",
-          value: formatAmount(overview.todayRevenue),
-          subtitle: "Revenue created today",
-          iconBgColor: "bg-teal-500",
-        },
-        {
-          icon: <HiCube className="h-5 w-5" />,
-          title: "Outstanding Orders",
-          value: resolveMetricValue(overview.outstandingOrders),
-          subtitle: formatAmount(overview.totalOutstanding),
-          iconBgColor: "bg-red-500",
-        },
-        {
-          icon: <HiCurrencyRupee className="h-5 w-5" />,
-          title: "Wallet Balance",
-          value: formatAmount(overview.walletBalance),
-          subtitle: `${resolveMetricValue(overview.payoutOrders)} payout orders`,
-          iconBgColor: "bg-purple-500",
-        },
-      ]
-    }
-
-    const isFranchise = loginType === "franchise" || loginType === "staff" || loginType === "hub"
-
-    if (isFranchise) {
-      // Franchise-specific mapping
-      const overview = dashboardData.overview || {}
       const activeShipmentsLabel = typeof overview.activeShipments === "object" ? overview.activeShipments?.label || "" : ""
       const activeShipmentsCount = typeof overview.activeShipments === "object" ? overview.activeShipments?.count || 0 : overview.activeShipments || 0
       const totalShipmentsCount = typeof overview.totalShipments === "object" ? overview.totalShipments?.count || 0 : overview.totalShipments || 0
@@ -337,30 +286,54 @@ const DashboardPage: FC = () => {
       const cards = [
         {
           icon: <HiTruck className="h-5 w-5" />,
-          title: "Active Shipments",
-          value: activeShipmentsCount,
-          subtitle: activeShipmentsLabel,
+          title: "Total Orders",
+          value: resolveMetricValue(overview.totalOrders),
+          subtitle: "All time orders",
           percentage: undefined,
           iconBgColor: "bg-blue-500",
-          onClick: () => navigate("/orders", { state: { status: 'active' } })
+          onClick: () => navigate("/parcel-booking", { state: { status: 'all' } })
         },
         {
           icon: <HiCube className="h-5 w-5" />,
-          title: "Total Shipments",
-          value: totalShipmentsCount,
-          subtitle: totalShipmentsLabel,
+          title: "Today's Orders",
+          value: resolveMetricValue(overview.todayOrders),
+          subtitle: "Orders created today",
           percentage: undefined,
           iconBgColor: "bg-orange-500",
-          onClick: () => navigate("/orders", { state: { status: 'all' } })
+        },
+        {
+          icon: <HiCurrencyRupee className="h-5 w-5" />,
+          title: "Total Revenue",
+          value: `₹${Number(overview.totalRevenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          subtitle: "All time revenue",
+          percentage: undefined,
+          iconBgColor: "bg-green-500",
+          onClick: () => navigate("/payout")
+        },
+        {
+          icon: <HiCurrencyRupee className="h-5 w-5" />,
+          title: "Today's Revenue",
+          value: `₹${Number(overview.todayRevenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          subtitle: "Revenue created today",
+          percentage: undefined,
+          iconBgColor: "bg-teal-500",
+        },
+        {
+          icon: <HiCube className="h-5 w-5" />,
+          title: "Outstanding Orders",
+          value: resolveMetricValue(overview.outstandingOrders),
+          subtitle: `₹${Number(overview.totalOutstanding || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          percentage: undefined,
+          iconBgColor: "bg-red-500",
         },
         {
           icon: <HiCurrencyRupee className="h-5 w-5" />,
           title: "Wallet Balance",
-          value: `₹${Number(walletAmount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          value: overview.walletBalance,
           subtitle: walletLabel,
           percentage: undefined,
-          iconBgColor: "bg-green-500",
-          onClick: () => navigate("/wallet")
+          iconBgColor: "bg-purple-500",
+          onClick: () => navigate("/payout")
         },
       ]
 

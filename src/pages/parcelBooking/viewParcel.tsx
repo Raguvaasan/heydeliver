@@ -30,13 +30,21 @@ const SectionTitle: FC<{ title: string; }> = ({ title }) => (
   </div>
 )
 
-const Field: FC<{ label: string; value?: string; highlight?: boolean }> = ({ label, value, highlight = false }) => (
+const Field: FC<{
+  label: string
+  value?: string
+  highlight?: boolean
+  className?: string
+}> = ({ label, value, highlight = false, className = "", }) => (
   <div className="rounded-lg bg-white px-3 py-2.5 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
-    <div className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{label}</div>
+    <div className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+      {label}
+    </div>
     <div
-      className={`mt-1 truncate text-sm font-semibold ${
-        highlight ? "text-orange-600 dark:text-orange-400" : "text-gray-900 dark:text-white"
-      }`}
+      className={`mt-1 truncate text-sm font-semibold ${className} ${highlight
+          ? "text-orange-600 dark:text-orange-400"
+          : "text-gray-900 dark:text-white"
+        }`}
       title={value || "N/A"}
     >
       {value || "N/A"}
@@ -93,6 +101,8 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
   }
   const deliveryCustomerAddress = resolveValue(parcel.deliveryCustomerAddress || parcel.deliveryCustomer?.address)
   const bookingCustomerAddress = resolveValue(parcel.bookingCustomerAddress || parcel.bookingCustomer?.address)
+  const pickupAddress = resolveValue((parcel as any).pickupAddress)
+  const deliveryAddress = resolveValue((parcel as any).deliveryAddress)
 
   return (
     <div
@@ -124,6 +134,27 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
         {/* Body — the only scrollable region */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           <div className="space-y-3">
+
+            {(pickupAddress || deliveryAddress) && (
+              <div className="flex gap-4 flex-col">
+                {pickupAddress && (
+                  <Field
+                    label="Pickup Address"
+                    value={pickupAddress}
+                    className="whitespace-normal break-words"
+                  />
+                )}
+
+                {deliveryAddress && (
+                  <Field
+                    label="Delivery Address"
+                    value={deliveryAddress}
+                    className="whitespace-normal break-words"
+                  />
+                )}
+              </div>
+            )}
+
             <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
               <SectionTitle title="Delivery Customer" />
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
@@ -211,7 +242,7 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
                     <div className="space-y-2 rounded-lg bg-white p-3 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
                       <Field label="Vehicle Type" value={resolveValue(vehicle.vehicleType)} />
                       <Field label="Capacity" value={resolveValue(vehicle.capacity)} />
-                      <Field label="Registration Number" value={resolveValue(vehicle.vehicleRegistrationNumber )} />
+                      <Field label="Registration Number" value={resolveValue(vehicle.vehicleRegistrationNumber)} />
                       {/* <Field label="Status" value={resolveValue(vehicle.status)} /> */}
                     </div>
                   )}

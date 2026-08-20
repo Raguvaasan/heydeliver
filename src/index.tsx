@@ -49,6 +49,7 @@ const RouteManagementPage = lazy(() => import("./pages/RouteManagement/RouteMana
 
 // Customer Management
 const CustomersPage = lazy(() => import("./pages/Customers/CustomersPage"))
+const CustomerDetailsPage = lazy(() => import("./pages/Customers/CustomerDetailsPage"))
 const B2BCustomersPage = lazy(() => import("./pages/B2BCustomers/B2BCustomersPage"))
 
 // Staff Management
@@ -107,6 +108,7 @@ const RateCardMarkupPage = lazy(() => import("./pages/Settings/RateCardMarkupPag
 const SettingsRateCalculatorPage = lazy(() => import("./pages/Settings/RateCalculatorPage"))
 const BranchWalletPage = lazy(() => import("./pages/Settings/BranchWallet/BranchWalletPage"))
 const BranchWalletDetailsPage = lazy(() => import("./pages/Settings/BranchWallet/BranchWalletDetailsPage"))
+const PayoutPage = lazy(() => import("./pages/Settings/Payout/PayoutPage"))
 const ProfitPercentagePage = lazy(() => import("./pages/Settings/ProfitPercentage/ProfitPercentagePage"))
 
 // Profile
@@ -264,6 +266,15 @@ root.render(
             element={
               <PermissionRoute>
                 <CustomersPage />
+              </PermissionRoute>
+            }
+          />
+
+          <Route
+            path="/customers/:mobileNumber"
+            element={
+              <PermissionRoute>
+                <CustomerDetailsPage />
               </PermissionRoute>
             }
           />
@@ -650,6 +661,15 @@ root.render(
             element={
               <PermissionRoute>
                 <BranchWalletDetailsPage />
+              </PermissionRoute>
+            }
+          />
+
+          <Route
+            path="/payout"
+            element={
+              <PermissionRoute>
+                <PayoutPage />
               </PermissionRoute>
             }
           />

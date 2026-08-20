@@ -264,11 +264,11 @@ const Sidebar: FC<SidebarProps> = ({
       icon: <HiUser className="h-5 w-5" />,
       path: "/driver",
     },
-    // {
-    //   title: "Customers",
-    //   icon: <HiUserGroup className="h-5 w-5" />,
-    //   path: "/customers",
-    // },
+    {
+      title: "Customers",
+      icon: <HiUserGroup className="h-5 w-5" />,
+      path: "/customers",
+    },
     // {
     //   title: "B2B Customer",
     //   icon: <HiUserGroup className="h-5 w-5" />,
@@ -392,6 +392,11 @@ const Sidebar: FC<SidebarProps> = ({
         { title: "Outward Orders", path: "/parcel-booking/outward" },
       ],
     },
+    {
+      title: "Payout",
+      icon: <HiCurrencyRupee className="h-5 w-5" />,
+      path: "/payout",
+    },
     // {
     //   title: "Wallet",
     //   icon: <HiCurrencyRupee className="h-5 w-5" />,
@@ -408,16 +413,16 @@ const Sidebar: FC<SidebarProps> = ({
     //   icon: <HiDocumentText className="h-5 w-5" />,
     //   path: "/invoice",
     // },
-    {
-      title: "Reports",
-      icon: <HiChartBar className="h-5 w-5" />,
-      path: "/reports",
-      submenu: [
-        { title: "Staffs Performance", path: "/reports/staff-performance" },
-        { title: "Orders (Day Wise / Weekly / Custom Date)", path: "/reports/orders" },
-        { title: "Revenue (Day Wise / Weekly / Custom Date)", path: "/reports/revenue" },
-      ],
-    },
+    // {
+    //   title: "Reports",
+    //   icon: <HiChartBar className="h-5 w-5" />,
+    //   path: "/reports",
+    //   submenu: [
+    //     { title: "Staffs Performance", path: "/reports/staff-performance" },
+    //     { title: "Orders (Day Wise / Weekly / Custom Date)", path: "/reports/orders" },
+    //     { title: "Revenue (Day Wise / Weekly / Custom Date)", path: "/reports/revenue" },
+    //   ],
+    // },
     {
       title: "Profile",
       icon: <HiUser className="h-5 w-5" />,
@@ -604,6 +609,24 @@ const Sidebar: FC<SidebarProps> = ({
         .filter(Boolean) as MenuItem[]
     : franchiseMenuItems
 
+  const agencyMenuItems: MenuItem[] = [
+    {
+      title: "Dashboard",
+      icon: <HiHome className="h-5 w-5" />,
+      path: "/dashboard",
+    },
+    {
+      title: "Payout",
+      icon: <HiCurrencyRupee className="h-5 w-5" />,
+      path: "/payout",
+    },
+    {
+      title: "Profile",
+      icon: <HiUser className="h-5 w-5" />,
+      path: "/profile",
+    },
+  ]
+
   // Select menu items based on login type
   const menuItems = isStaffUser && !isRootUser
     ? effectiveLoginType === "admin"
@@ -645,7 +668,9 @@ const Sidebar: FC<SidebarProps> = ({
     : effectiveLoginType === "franchise"
     ? agencyStaffMenuItems
     : isCollectionAgencyUser
-    ? franchiseMenuItems
+    ? agencyMenuItems
+    : effectiveLoginType === "agency"
+    ? agencyMenuItems
     : effectiveLoginType === "hub"
     ? hubMenuItems
     : effectiveLoginType === "admin"

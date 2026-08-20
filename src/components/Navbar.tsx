@@ -2,6 +2,7 @@ import { FC, useMemo, useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { HiMenu, HiSearch, HiBell, HiChevronDown, HiLogout, HiCurrencyRupee } from "react-icons/hi"
 import { useWalletStore } from "../store/walletStore"
+import http from "../common/httpRequest"
 
 interface NavbarProps {
   isMobileOpen: boolean
@@ -24,6 +25,7 @@ const Navbar: FC<NavbarProps> = ({
   const [staffAssignedType, setStaffAssignedType] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const [payoutSummary, setPayoutSummary] = useState<{ totalPayoutPaid?: number; totalPayoutDue?: number }>({})
   const dropdownRef = useRef<HTMLDivElement>(null)
   const effectiveLoginType =
     loginType === "staff" && (staffAssignedType === "hub" || staffAssignedType === "franchise" || staffAssignedType === "head_quarter")
@@ -85,6 +87,20 @@ const Navbar: FC<NavbarProps> = ({
             : loginTypeValue
         if (effectiveType === "franchise" || effectiveType === "staff") {
           fetchBalance()
+        }
+
+        if (effectiveType === "franchise" || effectiveType === "staff") {
+          http.get("/admin/agency/dashboard")
+            .then((response) => {
+              const overview = response.data?.data?.overview || response.data?.overview || {}
+              setPayoutSummary({
+                totalPayoutPaid: Number(overview.totalPayoutPaid || 0),
+                totalPayoutDue: Number(overview.totalPayoutDue || 0),
+              })
+            })
+            .catch(() => {
+              setPayoutSummary({})
+            })
         }
       }
     } catch (error) {
@@ -216,23 +232,22 @@ const Navbar: FC<NavbarProps> = ({
           {/* Wallet Balance (Franchise) or Notifications (Admin) */}
           {effectiveLoginType === "franchise" || effectiveLoginType === "staff" ? (
             <><div
-              onClick={() => navigate("/wallet")}
+              onClick={() => navigate("/payout")}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
             >
               <HiCurrencyRupee className="h-5 w-5" />
               <span className="font-semibold text-sm">
-                To be Paid: ₹
-                {/* {balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} */}
+                Paid: ₹{Number(payoutSummary.totalPayoutPaid || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
               <div
-                onClick={() => navigate("/wallet")}
+                onClick={() => navigate("/payout")}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
               >
                 <HiCurrencyRupee className="h-5 w-5" />
                 <span className="font-semibold text-sm">
-                  Available Balance: ₹
-                  {/* {balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} */}
+                  To Pay: ₹{Number(payoutSummary.totalPayoutDue || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                   
                 </span>
               </div>
             </>

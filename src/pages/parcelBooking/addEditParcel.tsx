@@ -21,6 +21,10 @@ export interface ParcelFormValues {
     bookingCustomerAddress: string
     bookingCustomerGstNumber: string
     paymentType: "Paid" | "To Pay" | "Credit"
+    pickupAddressEnabled: boolean
+    deliveryAddressEnabled: boolean
+    pickupAddress: string
+    deliveryAddress: string
 
     article: string
     remarks: string
@@ -78,6 +82,8 @@ export interface Parcel extends ParcelFormValues {
         mobileNumber?: string
         address?: string
     }
+    pickupAddress?: string
+    deliveryAddress?: string
 }
 
 interface Props {
@@ -152,6 +158,18 @@ const fullSchema = Yup.object({
         .transform((value) => (value ? value.toUpperCase() : ""))
         .matches(/^$|^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/, "Enter a valid GSTIN"),
     paymentType: Yup.string().oneOf(["Paid", "To Pay", "Credit"]).required("Payment type is required"),
+    pickupAddressEnabled: Yup.boolean(),
+    deliveryAddressEnabled: Yup.boolean(),
+    pickupAddress: Yup.string().trim().when("pickupAddressEnabled", {
+        is: true,
+        then: (schema) => schema.required("Pickup address is required").min(5).max(250),
+        otherwise: (schema) => schema.notRequired(),
+    }),
+    deliveryAddress: Yup.string().trim().when("deliveryAddressEnabled", {
+        is: true,
+        then: (schema) => schema.required("Delivery address is required").min(5).max(250),
+        otherwise: (schema) => schema.notRequired(),
+    }),
     article: Yup.string().trim().required("Article is required").min(2).max(100),
     remarks: Yup.string().trim().max(250),
     numberOfParcels: Yup.number().typeError("Must be a valid number").required().integer().positive().max(9999),
@@ -175,6 +193,10 @@ const emptyValues: ParcelFormValues = {
     bookingCustomerAddress: "",
     bookingCustomerGstNumber: "",
     paymentType: "Paid",
+    pickupAddressEnabled: false,
+    deliveryAddressEnabled: false,
+    pickupAddress: "",
+    deliveryAddress: "",
     article: "",
     remarks: "",
     numberOfParcels: "",
@@ -226,6 +248,10 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
             bookingCustomerAddress: parcel.bookingCustomerAddress || "",
             bookingCustomerGstNumber: parcel.bookingCustomerGstNumber || "",
             paymentType: parcel.paymentType || "Paid",
+            pickupAddressEnabled: Boolean((parcel as any).pickupAddress),
+            deliveryAddressEnabled: Boolean((parcel as any).deliveryAddress),
+            pickupAddress: (parcel as any).pickupAddress || "",
+            deliveryAddress: (parcel as any).deliveryAddress || "",
             article: parcel.article || "",
             remarks: parcel.remarks || "",
             numberOfParcels: parcel.numberOfParcels || "",
@@ -376,6 +402,12 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                     numberOfParcels: Number(values.numberOfParcels),
                     approximateValue: Number(values.approximateValue),
                 },
+                ...(values.pickupAddressEnabled && values.pickupAddress.trim()
+                    ? { pickupAddress: values.pickupAddress.trim() }
+                    : {}),
+                ...(values.deliveryAddressEnabled && values.deliveryAddress.trim()
+                    ? { deliveryAddress: values.deliveryAddress.trim() }
+                    : {}),
             };
 
             const url =
@@ -457,7 +489,7 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                         validationSchema={chargeOnly ? chargeSchema : fullSchema}
                         onSubmit={handleSubmit}
                     >
-                        {({ isSubmitting, resetForm }) => {
+                        {({ isSubmitting, resetForm, values, setFieldValue }) => {
                             resetFormRef.current = resetForm
                             return (
                                 <Form className="space-y-6">
@@ -535,9 +567,9 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                         <div>
                                             <input
                                                 type="checkbox"
+                                                checked={values.pickupAddressEnabled}
+                                                onChange={(e) => setFieldValue("pickupAddressEnabled", e.target.checked)}
                                                 className="h-4 w-4 cursor-pointer rounded border-gray-300 bg-gray-100 text-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-primary-500"
-                                            // checked={perm.view}
-                                            //onChange={() => handleCheckboxChange(index, "view")}
                                             />
                                             <Label className="ml-2 text-sm">
                                                 Pick up from Customer address
@@ -546,15 +578,25 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                         <div>
                                             <input
                                                 type="checkbox"
+                                                checked={values.deliveryAddressEnabled}
+                                                onChange={(e) => setFieldValue("deliveryAddressEnabled", e.target.checked)}
                                                 className="h-4 w-4 cursor-pointer rounded border-gray-300 bg-gray-100 text-primary-500 focus:ring-2 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:focus:ring-primary-500"
-                                            // checked={perm.view}
-                                            //onChange={() => handleCheckboxChange(index, "view")}
                                             />
                                             <Label className="ml-2 text-sm">
                                                 Deliver to Customer address
                                             </Label>
                                         </div>
                                     </div>
+                                    {values.pickupAddressEnabled && (
+                                        <div>
+                                            <FormInput name="pickupAddress" label="Pickup Address" required />
+                                        </div>
+                                    )}
+                                    {values.deliveryAddressEnabled && (
+                                        <div>
+                                            <FormInput name="deliveryAddress" label="Delivery Address" required />
+                                        </div>
+                                    )}
                                     <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                                         <button
                                             type="button"

@@ -155,198 +155,205 @@ const ParcelManagementPage: FC = () => {
     })()
 
     const handleGenerateInvoice = async (orderId: string) => {
-    setIsGeneratingInvoice(orderId)
-    try {
-        const authToken = getAuthToken()
-        const endpoint = isAgencyLogin
-            ? `/admin/agency/invoice?orderId=${encodeURIComponent(orderId)}`
-            : `/admin/invoice?orderId=${encodeURIComponent(orderId)}`
-
-        const response = await fetch(`/api${endpoint}`, {
-            headers: { Authorization: `Bearer ${authToken}` },
-        })
-
-        if (!response.ok) {
-            const errText = await response.text()
-            throw new Error(errText || "Failed to generate invoice")
-        }
-
-        const payload = await response.json().catch(() => null)
-        const invoiceData = payload?.data?.invoices?.[0] || payload?.data?.invoice || payload?.data || payload || {}
-        const order = invoiceData?.order || {}
-        const billTo = invoiceData?.billTo || {}
-        const shipTo = invoiceData?.shipTo || {}
-        const issuedByAgency = invoiceData?.issuedByAgency || invoiceData?.agency || {}
-        const parcelDetails = invoiceData?.parcelDetails || {}
-        const charges = invoiceData?.charges || {}
-        const amount = charges?.totalAmount ?? order?.totalAmount ?? invoiceData?.invoiceAmount ?? 0
-        const transportationCharge = charges?.transportationCharge ?? 0
-        const loadingCharge = charges?.loadingCharge ?? 0
-        const miscellaneousCharge = charges?.miscellaneousCharge ?? 0
-        const orderDate = invoiceData?.invoiceDate || order?.createdAt || invoiceData?.createdAt || ""
-        const dObj = orderDate ? new Date(orderDate) : new Date()
-        const dateStr = dObj.toLocaleDateString()
-
-        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
-        const margin = 20
-        const pageWidth = doc.internal.pageSize.getWidth()
-        const contentWidth = pageWidth - margin * 2
-
+        setIsGeneratingInvoice(orderId)
         try {
-            const logoImg = await loadImage("https://truecargos.com/admin/images/logo.png")
-            const logoW = 40
-            const logoH = (logoImg.height / logoImg.width) * logoW
-            doc.addImage(logoImg, "PNG", margin, margin, logoW, logoH)
-        } catch {
-            doc.setFont("helvetica", "bold")
+            const authToken = getAuthToken()
+            const endpoint = isAgencyLogin
+                ? `/admin/agency/invoice?orderId=${encodeURIComponent(orderId)}`
+                : `/admin/invoice?orderId=${encodeURIComponent(orderId)}`
+
+            const response = await fetch(`/api${endpoint}`, {
+                headers: { Authorization: `Bearer ${authToken}` },
+            })
+
+            if (!response.ok) {
+                const errText = await response.text()
+                throw new Error(errText || "Failed to generate invoice")
+            }
+
+            const payload = await response.json().catch(() => null)
+            const invoiceData = payload?.data?.invoices?.[0] || payload?.data?.invoice || payload?.data || payload || {}
+            const order = invoiceData?.order || {}
+            const billTo = invoiceData?.billTo || {}
+            const shipTo = invoiceData?.shipTo || {}
+            const issuedByAgency = invoiceData?.issuedByAgency || invoiceData?.agency || {}
+            const parcelDetails = invoiceData?.parcelDetails || {}
+            const charges = invoiceData?.charges || {}
+            const amount = charges?.totalAmount ?? order?.totalAmount ?? invoiceData?.invoiceAmount ?? 0
+            const transportationCharge = charges?.transportationCharge ?? 0
+            const loadingCharge = charges?.loadingCharge ?? 0
+            const miscellaneousCharge = charges?.miscellaneousCharge ?? 0
+            const orderDate = invoiceData?.invoiceDate || order?.createdAt || invoiceData?.createdAt || ""
+            const dObj = orderDate ? new Date(orderDate) : new Date()
+            const dateStr = dObj.toLocaleDateString()
+            const pickupAddress = invoiceData?.pickupAddress || order?.pickupAddress || billTo?.address || ""
+            const deliveryAddressFull = invoiceData?.deliveryAddress || order?.deliveryAddress || shipTo?.address || ""
+
+            const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
+            const margin = 20
+            const pageWidth = doc.internal.pageSize.getWidth()
+            const contentWidth = pageWidth - margin * 2
+
+            try {
+                const logoImg = await loadImage("https://truecargos.com/admin/images/logo.png")
+                const logoW = 40
+                const logoH = (logoImg.height / logoImg.width) * logoW
+                doc.addImage(logoImg, "PNG", margin, margin, logoW, logoH)
+            } catch {
+                doc.setFont("helvetica", "bold")
+                doc.setFontSize(24)
+                doc.setTextColor(249, 115, 22)
+                doc.text("TRUECARGO", margin, margin + 10)
+            }
+
+            doc.setTextColor(0)
             doc.setFontSize(24)
-            doc.setTextColor(249, 115, 22)
-            doc.text("TRUECARGO", margin, margin + 10)
-        }
-
-        doc.setTextColor(0)
-        doc.setFontSize(24)
-        doc.setFont("helvetica", "bold")
-        doc.text("INVOICE", pageWidth - margin, margin + 10, { align: "right" })
-        doc.setDrawColor(200)
-        doc.line(margin, margin + 25, pageWidth - margin, margin + 25)
-
-        // ---------- FROM (sender / booking customer) ----------
-        let currentY = margin + 35
-        doc.setFontSize(10)
-        doc.setFont("helvetica", "bold")
-        doc.text("FROM:", margin, currentY)
-        doc.setFont("helvetica", "normal")
-        currentY += 5
-        doc.text(String(billTo?.name || "-"), margin, currentY)
-        currentY += 5
-        if (billTo?.mobileNumber) {
-            doc.text(`Phone: ${billTo.mobileNumber}`, margin, currentY)
-            currentY += 5
-        }
-        const senderLines = doc.splitTextToSize(String(billTo?.address || ""), 80)
-        doc.text(senderLines, margin, currentY)
-        const fromBlockEndY = currentY + senderLines.length * 5
-
-        // ---------- Invoice meta (right column, consistently aligned) ----------
-        const infoLabelX = pageWidth - 75
-        const infoValueX = pageWidth - margin
-        let infoY = margin + 35
-        doc.setFontSize(10)
-        const infoRow = (label: string, value: string) => {
             doc.setFont("helvetica", "bold")
-            doc.text(label, infoLabelX, infoY)
+            doc.text("INVOICE", pageWidth - margin, margin + 10, { align: "right" })
+            doc.setDrawColor(200)
+            doc.line(margin, margin + 25, pageWidth - margin, margin + 25)
+
+            // ---------- FROM (sender / booking customer) ----------
+            let currentY = margin + 35
+            doc.setFontSize(10)
+            doc.setFont("helvetica", "bold")
+            doc.text("FROM:", margin, currentY)
             doc.setFont("helvetica", "normal")
-            doc.text(value, infoValueX, infoY, { align: "right" })
-            infoY += 7
-        }
-        infoRow("Invoice:", String(invoiceData?.invoiceNumber || order?.orderNumber || orderId))
-        infoRow("Date:", dateStr)
-        infoRow("LR Number:", String(order?.orderNumber || invoiceData?.orderNumber || orderId))
-        infoRow("Agency:", String(issuedByAgency?.agencyName || invoiceData?.agency?.agencyName || "-"))
-
-        currentY = Math.max(fromBlockEndY, infoY) + 10
-
-        // ---------- SHIP TO (receiver) ----------
-        doc.setFillColor(245, 245, 245)
-        doc.rect(margin, currentY, contentWidth, 10, "F")
-        doc.setFont("helvetica", "bold")
-        doc.setFontSize(10)
-        doc.text("SHIP TO", margin + 5, currentY + 7)
-        doc.setFontSize(9)
-        doc.text(`PAY: ${invoiceData?.paymentType || order?.paymentType || "-"}`, pageWidth - margin - 5, currentY + 7, { align: "right" })
-        currentY += 15
-        doc.setFontSize(11)
-        doc.text(String(shipTo?.name || "-").toUpperCase(), margin, currentY)
-        currentY += 6
-        doc.setFontSize(10)
-        doc.setFont("helvetica", "normal")
-        const shipAddrParts = [shipTo?.address, shipTo?.city, shipTo?.state, shipTo?.pincode].filter(Boolean).join(", ")
-        const receiverLines = doc.splitTextToSize(shipAddrParts, contentWidth - 10)
-        doc.text(receiverLines, margin, currentY)
-        currentY += receiverLines.length * 5 + 5
-        doc.text(`Phone: ${shipTo?.mobileNumber || shipTo?.phone || "-"}`, margin, currentY)
-        if (shipTo?.agencyName) {
             currentY += 5
-            doc.text(`Delivery Agency: ${shipTo.agencyName}`, margin, currentY)
-        }
-
-        currentY += 10
-        doc.setLineWidth(0.1)
-        doc.line(margin, currentY, pageWidth - margin, currentY)
-        currentY += 10
-
-        // ---------- BOOKING AGENCY (replaces Return Address) ----------
-        doc.setFont("helvetica", "bold")
-        doc.setFontSize(9)
-        doc.text("BOOKING AGENCY:", margin, currentY)
-        doc.setFont("helvetica", "normal")
-        currentY += 5
-        doc.text(String(issuedByAgency?.name || issuedByAgency?.agencyName || "-"), margin, currentY)
-        currentY += 5
-        const bookingAddrParts = [issuedByAgency?.address, issuedByAgency?.city, issuedByAgency?.state, issuedByAgency?.pincode]
-            .filter(Boolean)
-            .join(", ")
-        if (bookingAddrParts) {
-            const bookingLines = doc.splitTextToSize(bookingAddrParts, contentWidth)
-            doc.text(bookingLines, margin, currentY)
-            currentY += bookingLines.length * 5
-        }
-        if (issuedByAgency?.mobileNumber) {
-            doc.text(`Phone: ${issuedByAgency.mobileNumber}`, margin, currentY)
+            doc.text(String(billTo?.name || "-"), margin, currentY)
             currentY += 5
-        }
-        if (issuedByAgency?.gstNumber) {
-            doc.text(`GSTIN: ${issuedByAgency.gstNumber}`, margin, currentY)
+            if (billTo?.mobileNumber) {
+                doc.text(`Phone: ${billTo.mobileNumber}`, margin, currentY)
+                currentY += 5
+            }
+            const senderLines = doc.splitTextToSize(String(pickupAddress || "-"), 80)
+            doc.text(senderLines, margin, currentY)
+            const fromBlockEndY = currentY + senderLines.length * 5
+
+            // ---------- Invoice meta (right column, consistently aligned) ----------
+            const infoLabelX = pageWidth - 75
+            const infoValueX = pageWidth - margin
+            let infoY = margin + 35
+            doc.setFontSize(10)
+            const infoRow = (label: string, value: string) => {
+                doc.setFont("helvetica", "bold")
+                doc.text(label, infoLabelX, infoY)
+                doc.setFont("helvetica", "normal")
+                doc.text(value, infoValueX, infoY, { align: "right" })
+                infoY += 7
+            }
+            infoRow("Invoice:", String(invoiceData?.invoiceNumber || order?.orderNumber || orderId))
+            infoRow("Date:", dateStr)
+            infoRow("LR Number:", String(order?.orderNumber || invoiceData?.orderNumber || orderId))
+            infoRow("Agency:", String(issuedByAgency?.agencyName || invoiceData?.agency?.agencyName || "-"))
+
+            currentY = Math.max(fromBlockEndY, infoY) + 10
+
+            // ---------- SHIP TO (receiver) ----------
+            // ---------- SHIP TO (receiver) ----------
+            doc.setFillColor(245, 245, 245)
+            doc.rect(margin, currentY, contentWidth, 10, "F")
+            doc.setFont("helvetica", "bold")
+            doc.setFontSize(10)
+            doc.text("SHIP TO", margin + 5, currentY + 7)
+            doc.setFontSize(9)
+            doc.text(`PAY: ${invoiceData?.paymentType || order?.paymentType || "-"}`, pageWidth - margin - 5, currentY + 7, { align: "right" })
+            currentY += 15
+            doc.setFontSize(11)
+            doc.text(String(shipTo?.name || "-").toUpperCase(), margin, currentY)
+            currentY += 6
+            doc.setFontSize(10)
+            doc.setFont("helvetica", "normal")
+
+            // Use deliveryAddressFull directly if present, else fall back to composed shipTo parts
+            const shipAddrParts = deliveryAddressFull
+                || [shipTo?.address, shipTo?.city, shipTo?.state, shipTo?.pincode].filter(Boolean).join(", ")
+
+            const receiverLines = doc.splitTextToSize(shipAddrParts, contentWidth - 10)
+            doc.text(receiverLines, margin, currentY)
+            currentY += receiverLines.length * 5 + 5
+            doc.text(`Phone: ${shipTo?.mobileNumber || shipTo?.phone || "-"}`, margin, currentY)
+            if (shipTo?.agencyName) {
+                currentY += 5
+                doc.text(`Delivery Agency: ${shipTo.agencyName}`, margin, currentY)
+            }
+
+            currentY += 10
+            doc.setLineWidth(0.1)
+            doc.line(margin, currentY, pageWidth - margin, currentY)
+            currentY += 10
+
+            // ---------- BOOKING AGENCY (replaces Return Address) ----------
+            doc.setFont("helvetica", "bold")
+            doc.setFontSize(9)
+            doc.text("BOOKING AGENCY:", margin, currentY)
+            doc.setFont("helvetica", "normal")
             currentY += 5
+            doc.text(String(issuedByAgency?.name || issuedByAgency?.agencyName || "-"), margin, currentY)
+            currentY += 5
+            const bookingAddrParts = [issuedByAgency?.address, issuedByAgency?.city, issuedByAgency?.state, issuedByAgency?.pincode]
+                .filter(Boolean)
+                .join(", ")
+            if (bookingAddrParts) {
+                const bookingLines = doc.splitTextToSize(bookingAddrParts, contentWidth)
+                doc.text(bookingLines, margin, currentY)
+                currentY += bookingLines.length * 5
+            }
+            if (issuedByAgency?.mobileNumber) {
+                doc.text(`Phone: ${issuedByAgency.mobileNumber}`, margin, currentY)
+                currentY += 5
+            }
+            if (issuedByAgency?.gstNumber) {
+                doc.text(`GSTIN: ${issuedByAgency.gstNumber}`, margin, currentY)
+                currentY += 5
+            }
+            currentY += 5
+
+            // ---------- Charges table ----------
+            doc.setDrawColor(0)
+            doc.setFillColor(50, 50, 50)
+            doc.rect(margin, currentY, contentWidth, 10, "F")
+            doc.setTextColor(255)
+            doc.setFont("helvetica", "bold")
+            doc.text("Description", margin + 5, currentY + 7)
+            doc.text("Qty", pageWidth - 70, currentY + 7, { align: "center" })
+            doc.text("Unit Price", pageWidth - 45, currentY + 7, { align: "center" })
+            doc.text("Total", pageWidth - margin - 5, currentY + 7, { align: "right" })
+            doc.setTextColor(0)
+            currentY += 10
+            doc.setFont("helvetica", "normal")
+            doc.line(margin, currentY, pageWidth - margin, currentY)
+            currentY += 8
+            doc.text(`Logistic Services - ${parcelDetails?.article || "Courier Charges"}`, margin + 5, currentY)
+            doc.text("1", pageWidth - 70, currentY, { align: "center" })
+            doc.text(`INR ${transportationCharge}`, pageWidth - 45, currentY, { align: "center" })
+            doc.text(`INR ${transportationCharge}`, pageWidth - margin - 5, currentY, { align: "right" })
+            currentY += 20
+            const totalX = pageWidth - margin - 80
+            doc.setFontSize(8)
+            doc.setFont("helvetica", "normal")
+            doc.setTextColor(90)
+            doc.text(
+                `Loading Charge: INR ${loadingCharge} | Miscellaneous Charge: INR ${miscellaneousCharge}`,
+                totalX,
+                currentY - 10
+            )
+            doc.setFont("helvetica", "bold")
+            doc.setFontSize(14)
+            doc.setTextColor(0)
+            doc.text("Total Amount:", totalX, currentY)
+            doc.setTextColor(249, 115, 22)
+            doc.text(`INR ${amount}`, pageWidth - margin - 5, currentY, { align: "right" })
+
+            const pdfUrl = doc.output("bloburl")
+            window.open(pdfUrl, "_blank", "noopener,noreferrer")
+            toast.success("Invoice generated")
+        } catch (error: any) {
+            toast.error(error?.message || "Failed to generate invoice")
+        } finally {
+            setIsGeneratingInvoice(null)
         }
-        currentY += 5
-
-        // ---------- Charges table ----------
-        doc.setDrawColor(0)
-        doc.setFillColor(50, 50, 50)
-        doc.rect(margin, currentY, contentWidth, 10, "F")
-        doc.setTextColor(255)
-        doc.setFont("helvetica", "bold")
-        doc.text("Description", margin + 5, currentY + 7)
-        doc.text("Qty", pageWidth - 70, currentY + 7, { align: "center" })
-        doc.text("Unit Price", pageWidth - 45, currentY + 7, { align: "center" })
-        doc.text("Total", pageWidth - margin - 5, currentY + 7, { align: "right" })
-        doc.setTextColor(0)
-        currentY += 10
-        doc.setFont("helvetica", "normal")
-        doc.line(margin, currentY, pageWidth - margin, currentY)
-        currentY += 8
-        doc.text(`Logistic Services - ${parcelDetails?.article || "Courier Charges"}`, margin + 5, currentY)
-        doc.text("1", pageWidth - 70, currentY, { align: "center" })
-        doc.text(`INR ${transportationCharge}`, pageWidth - 45, currentY, { align: "center" })
-        doc.text(`INR ${transportationCharge}`, pageWidth - margin - 5, currentY, { align: "right" })
-        currentY += 20
-        const totalX = pageWidth - margin - 80
-        doc.setFontSize(8)
-        doc.setFont("helvetica", "normal")
-        doc.setTextColor(90)
-        doc.text(
-            `Loading Charge: INR ${loadingCharge} | Miscellaneous Charge: INR ${miscellaneousCharge}`,
-            totalX,
-            currentY - 10
-        )
-        doc.setFont("helvetica", "bold")
-        doc.setFontSize(14)
-        doc.setTextColor(0)
-        doc.text("Total Amount:", totalX, currentY)
-        doc.setTextColor(249, 115, 22)
-        doc.text(`INR ${amount}`, pageWidth - margin - 5, currentY, { align: "right" })
-
-        const pdfUrl = doc.output("bloburl")
-        window.open(pdfUrl, "_blank", "noopener,noreferrer")
-        toast.success("Invoice generated")
-    } catch (error: any) {
-        toast.error(error?.message || "Failed to generate invoice")
-    } finally {
-        setIsGeneratingInvoice(null)
     }
-}
 
     const resolveHubValue = (hub: any) => {
         if (!hub) return { id: "", name: "" }
@@ -448,10 +455,12 @@ const ParcelManagementPage: FC = () => {
                     bookingCustomerName: item.bookingCustomer?.name || "",
                     bookingMobileNumber: item.bookingCustomer?.mobileNumber || "",
                     bookingCustomerAddress: item.bookingCustomer?.address || "",
+                    pickupAddress: item.pickupAddress || "",
+                    deliveryAddress: item.deliveryAddress || "",
                     paymentType:
                         item.paymentType === "Paid" ||
-                        item.paymentType === "To Pay" ||
-                        item.paymentType === "Credit"
+                            item.paymentType === "To Pay" ||
+                            item.paymentType === "Credit"
                             ? item.paymentType
                             : "Paid",
                     article: item.parcelDetails?.article || "",
@@ -931,7 +940,7 @@ const ParcelManagementPage: FC = () => {
                                 <tr>
                                     <th className="px-4 py-3">LR Number</th>
                                     <th className="px-4 py-3">Date</th>
-                                    {showDeliveryBranchColumn && <th className="px-4 py-3">Delivery Agency</th>}
+                                    <th className="px-4 py-3">Delivery Agency</th>
                                     <th className="px-4 py-3">Booking Customer</th>
                                     <th className="px-4 py-3">Payment Type</th>
                                     {showAmountColumn && <th className="px-4 py-3">Trans Charge</th>}
@@ -959,16 +968,40 @@ const ParcelManagementPage: FC = () => {
                                             <tr key={parcel.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{parcel.orderId}</td>
                                                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{formatDate(parcel.bookingDate || parcel.createdAt)}</td>
-                                                {showDeliveryBranchColumn && (
-                                                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{parcel.deliveryBranch || "-"}</td>
-                                                )}
+                                                {/* {showDeliveryBranchColumn && ( */}
+                                                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                                    {parcel.deliveryBranch || "-"}
+                                                    {parcel.deliveryAddress ? (
+                                                        <div
+                                                            className="mt-1 max-w-[150px] truncate text-xs text-gray-500 dark:text-gray-400"
+                                                            title={parcel.deliveryAddress}
+                                                        >
+                                                            Delivery: {parcel.deliveryAddress}
+                                                        </div>
+                                                    ) : null}
+                                                </td>
+                                                {/* )} */}
 
-                                                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{parcel.bookingCustomerName}</td>
+                                                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                                    <div>{parcel.bookingCustomerName}</div>
+
+                                                    {parcel.pickupAddress ? (
+                                                        <div
+                                                            className="mt-1 max-w-[150px] truncate text-xs text-gray-500 dark:text-gray-400"
+                                                            title={parcel.pickupAddress}
+                                                        >
+                                                            Pickup: {parcel.pickupAddress}
+                                                        </div>
+                                                    ) : null}
+                                                </td>
 
                                                 <td className="px-4 py-3 inline-block">
-                                                    <Badge className="py-2" color={paymentTypeColor[parcel.paymentType] ?? "gray"}>
-                                                        {parcel.paymentType}
-                                                    </Badge>
+                                                    <div>
+                                                        <Badge className="py-2" color={paymentTypeColor[parcel.paymentType] ?? "gray"}>
+                                                            {parcel.paymentType}
+                                                        </Badge>
+                                                    </div>
+
                                                 </td>
 
                                                 {showAmountColumn && <td className="px-4 py-3 text-gray-900 dark:text-white">{parcel.transportationCharge}</td>}
