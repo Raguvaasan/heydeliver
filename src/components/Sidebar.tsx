@@ -591,13 +591,26 @@ const Sidebar: FC<SidebarProps> = ({
 
   // Hub menu items (franchise items without Wallet / Reports / restricted tools)
   const hubMenuItems: MenuItem[] = franchiseMenuItems
+    .map((item) => {
+      if (item.title === "Orders") {
+        const filteredSubmenu = (item.submenu || []).filter(
+          (sub) =>
+            sub.title !== "Inward Orders" &&
+            sub.title !== "Outward Orders" &&
+            sub.title !== "Payout"
+        )
+        return { ...item, submenu: filteredSubmenu }
+      }
+      return item
+    })
     .filter(
       (item) =>
         item.title !== "Wallet" &&
         item.title !== "Reports" &&
         item.title !== "Rate Calculator" &&
         item.title !== "Service Availability Check" &&
-        item.title !== "Tracking"
+        item.title !== "Tracking" &&
+        item.title !== "Payout"
     )
 
   const agencyStaffMenuItems: MenuItem[] = isStaffUser && effectiveLoginType === "franchise"

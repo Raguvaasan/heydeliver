@@ -340,6 +340,60 @@ const DashboardPage: FC = () => {
       return loginType === "hub"
         ? cards.filter((card) => card.title !== "Wallet Balance")
         : cards
+    }
+
+    if (isHubLogin) {
+      const overview = dashboardData.overview || {}
+      return [
+        {
+          icon: <HiCube className="h-5 w-5" />,
+          title: "Today Orders",
+          value: resolveMetricValue(overview.todayOrders),
+          subtitle: "Orders created today",
+          percentage: undefined,
+          iconBgColor: "bg-blue-500",
+        },
+        {
+          icon: <HiCube className="h-5 w-5" />,
+          title: "Today Assigned",
+          value: resolveMetricValue(overview.todayAssigned),
+          subtitle: "Assigned today",
+          percentage: undefined,
+          iconBgColor: "bg-orange-500",
+        },
+        {
+          icon: <HiTruck className="h-5 w-5" />,
+          title: "Assigned Orders",
+          value: resolveMetricValue(overview.assignedOrders),
+          subtitle: "All assigned orders",
+          percentage: undefined,
+          iconBgColor: "bg-green-500",
+        },
+        {
+          icon: <HiCube className="h-5 w-5" />,
+          title: "Pending Orders",
+          value: resolveMetricValue(overview.pendingOrders),
+          subtitle: "Waiting to be processed",
+          percentage: undefined,
+          iconBgColor: "bg-red-500",
+        },
+        {
+          icon: <HiTruck className="h-5 w-5" />,
+          title: "In Transit",
+          value: resolveMetricValue(overview.inTransitOrders),
+          subtitle: "Currently in transit",
+          percentage: undefined,
+          iconBgColor: "bg-teal-500",
+        },
+        {
+          icon: <HiCube className="h-5 w-5" />,
+          title: "Delivered Orders",
+          value: resolveMetricValue(overview.deliveredOrders),
+          subtitle: "Successfully delivered",
+          percentage: undefined,
+          iconBgColor: "bg-purple-500",
+        },
+      ]
     } else {
       // Admin view - 6 cards with specific metrics
       const overview = dashboardData.overview || {}
@@ -378,7 +432,7 @@ const DashboardPage: FC = () => {
           subtitle: "All time orders",
           percentage: undefined,
           iconBgColor: "bg-blue-500",
-          onClick: () => navigate("/orders", { state: { status: 'all' } })
+          onClick: () => navigate("/parcel-booking", { state: { status: 'all' } })
         },
         {
           icon: <HiCurrencyRupee className="h-5 w-5" />,
@@ -387,7 +441,7 @@ const DashboardPage: FC = () => {
           subtitle: "All time revenue",
           percentage: undefined,
           iconBgColor: "bg-green-500",
-          onClick: () => navigate("/payments/revenue")
+          onClick: () => navigate("/settings/branch-wallet")
         },
         {
           icon: <HiCube className="h-5 w-5" />,
@@ -426,10 +480,10 @@ const DashboardPage: FC = () => {
   const isFranchise = loginType === "franchise" || loginType === "staff" || loginType === "hub"
   const shipmentTypeDistribution = isHubLogin
     ? (dashboardData?.shipmentType || []).map((item: any) => ({
-        type: item.mode,
-        label: item.label || item.mode,
-        count: item.count,
-      }))
+      type: item.mode,
+      label: item.label || item.mode,
+      count: item.count,
+    }))
     : (paymentTypeDistribution.length > 0 ? paymentTypeDistribution : (dashboardData?.paymentTypeDistribution || []))
   const totalShipmentTypes = shipmentTypeDistribution.reduce(
     (sum: number, item: any) => sum + (item.count || 0),
@@ -487,9 +541,34 @@ const DashboardPage: FC = () => {
           <Spinner size="xl" />
         </div>
       ) : (
-        <div className="px-4">
+        <div>
           {/* Page Header */}
           <div className="mb-6">
+            {isHubLogin && dashboardData?.hub && (
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <HiOfficeBuilding className="h-5 w-5 text-orange-500" />
+                      <p className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                        Hub Dashboard
+                      </p>
+                    </div>
+                    <h2 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">
+                      {dashboardData.hub.hubName || "Hub"}
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {[dashboardData.hub.city, dashboardData.hub.state].filter(Boolean).join(", ") || "Location unavailable"}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs font-medium">
+                    <span className="rounded-full bg-green-100 px-3 py-1 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                      {dashboardData.hub.status ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
             {isAgencyLogin && dashboardData?.agency && (
               <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -539,445 +618,374 @@ const DashboardPage: FC = () => {
           </div>
 
           {/* Charts Section */}
-          {!isAgencyLogin && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-6">
-            {/* Revenue Chart */}
-            <Card className="lg:col-span-2">
-              {revenueLoading ? (
-                <div className="flex h-[340px] items-center justify-center">
-                  <Spinner size="lg" />
-                </div>
-              ) : (
-                <>
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Revenue
-                    </h3>
-                    {isFranchise ? (
-                      <>
-                        <div className="flex items-baseline gap-4 mt-2">
-                          <p className="text-2xl font-bold text-green-600">
-                            ₹{Number(todaysRevenue).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                          <div className="flex gap-4 text-sm">
-                            <div>
-                              <span className="text-gray-600 dark:text-gray-400">COD: </span>
-                              <span className="font-semibold text-gray-900 dark:text-white">
-                                ₹{Number(codRevenue).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600 dark:text-gray-400">Shipments: </span>
-                              <span className="font-semibold text-gray-900 dark:text-white">
-                                {todaysShipments}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        {!isHubLogin && revenueData.todaysRevenue?.label && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            {revenueData.todaysRevenue.label}
-                          </p>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {/* <p className="text-2xl font-bold text-green-600 mt-2">
-                          ₹{Number(dashboardData?.overview?.revenue?.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p> */}
-                        {dashboardData?.overview?.revenue?.percentageChange && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            <span className={parseFloat(dashboardData.overview.revenue.percentageChange) >= 0 ? 'text-green-600' : 'text-red-600'}>
-                              {parseFloat(dashboardData.overview.revenue.percentageChange) >= 0 ? '+' : ''}{dashboardData.overview.revenue.percentageChange}%
-                            </span>
-                            {' '}vs last {dashboardData?.period || selectedPeriod}
-                          </p>
-                        )}
-                      </>
-                    )}
+          {!isAgencyLogin && !isHubLogin && (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-6">
+              {/* Revenue Chart */}
+              <div className="lg:col-span-2">
+                {revenueLoading ? (
+                  <div className="flex h-[340px] items-center justify-center">
+                    <Spinner size="lg" />
                   </div>
-                  {isFranchise ? (
-                    <div className="mb-4 flex gap-2">
-                      {(isHubLogin
-                        ? (["week", "thisMonth", "lastMonth", "month"] as const)
-                        : (["day", "week", "month", "year"] as const)
-                      ).map((period) => (
-                        <button
-                          key={period}
-                          type="button"
-                          onClick={() => setSelectedPeriod(period)}
-                          className={`rounded-lg px-3 py-1 text-sm capitalize ${selectedPeriod === period
-                              ? "bg-[#FFCC00] text-white"
-                              : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                            }`}
-                        >
-                          {period === "thisMonth" ? "This Month" : period === "lastMonth" ? "Last Month" : period}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                  <RevenueChart data={revenueTrend} height={240} />
-                </>
-              )}
-            </Card>
+                ) : (
+                  <>
+                    {loginType === "admin" && (
+                      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                        {/* Top Franchises */}
+                        <Card>
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              Top Agency
+                            </h3>
+                          </div>
+                          <div className="space-y-4">
+                            {topAgencies.length > 0 ? (
+                              topAgencies.map((agency: any, index: number) => (
+                                <div key={agency._id || agency.agencyId || index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold">
+                                      {index + 1}
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-gray-900 dark:text-white">
+                                        {agency.agencyName || agency.franchiseName || agency.name || "-"}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {agency.city || agency.agencyType || "Agency"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-bold text-gray-900 dark:text-white">
+                                      ₹{Number(agency.revenue || agency.totalValue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {agency.orders || agency.orderCount || 0} orders
+                                    </p>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-8 text-gray-500">
+                                No agency data available
+                              </div>
+                            )}
+                          </div>
+                        </Card>
 
-            {/* Payment Type Diagram */}
-            <Card>
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Payment Type Diagram
-                </h3>
+                        {/* Wallet Summary */}
+                        <Card className="border border-gray-200 dark:border-gray-700">
+                          <div className="mb-4 flex items-center justify-between">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                              Wallet Summary
+                            </h3>
+                            <span className="rounded-full bg-primary-100 px-2.5 py-1 text-xs font-semibold text-primary-800 dark:bg-primary-900/40 dark:text-primary-200">
+                              Live
+                            </span>
+                          </div>
+                          {walletStats ? (
+                            <div className="space-y-4 rounded-xl bg-gradient-to-br from-gray-50 to-white p-3 dark:from-gray-800 dark:to-gray-900">
+                              <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/25">
+                                <div className="flex items-center justify-between mb-1">
+                                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Total Transactions
+                                  </p>
+                                  <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800/70 dark:text-gray-300">
+                                    {walletStats.totalWallets || 0} wallets
+                                  </span>
+                                </div>
+                                <p className="text-3xl font-extrabold text-blue-600 dark:text-blue-400 tracking-tight">
+                                  {Number(walletStats.totalTransactions || ((walletStats.credits?.count || 0) + (walletStats.debits?.count || 0))).toLocaleString('en-IN')}
+                                </p>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/25">
+                                  <p className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Payment for Truecargo
+                                  </p>
+                                  <p className="text-2xl font-bold text-green-700 dark:text-green-400">
+                                    ₹{Number(walletStats.paymentForTruecargo || walletStats.credits?.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </p>
+                                </div>
+                                <div className="rounded-xl border border-primary-300 bg-primary-100 p-4 dark:border-primary-700 dark:bg-primary-900/25">
+                                  <p className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Agency Payment
+                                  </p>
+                                  <p className="text-2xl font-bold text-primary-800 dark:text-primary-300">
+                                    ₹{Number(walletStats.agencyPayment || walletStats.debits?.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300">
+                                Settled orders: {walletStats.settledOrders || 0}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-gray-500">
+                              Loading wallet statistics...
+                            </div>
+                          )}
+                        </Card>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-              <div className="flex items-center justify-center h-56 mb-4">
-                {shipmentTypeDistribution.length > 0 ? (
-                  <div className="relative w-48 h-48">
-                    <svg viewBox="0 0 200 200" className="w-full h-full">
-                      {(() => {
-                        // Filter out zero count items
-                        const activeItems = shipmentTypeDistribution.filter((item: any) => item.count > 0)
 
-                        if (activeItems.length === 1) {
-                          // Single type - show as full circle with percentage
-                          const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
-                          const percentage = 100
-                          return (
-                            <>
-                              <circle
-                                cx="100"
-                                cy="100"
-                                r="85"
-                                fill={colors[0]}
-                                className="hover:opacity-90 transition-opacity"
-                              />
-                              <text
-                                x="100"
-                                y="100"
-                                textAnchor="middle"
-                                dominantBaseline="middle"
-                                className="fill-white font-bold pointer-events-none"
-                                style={{ fontSize: '32px', fontWeight: 'bold' }}
-                              >
-                                {percentage}%
-                              </text>
-                            </>
-                          )
-                        }
+              {/* Payment Type Diagram */}
+              <Card>
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Payment Type Diagram
+                  </h3>
+                </div>
+                <div className="flex items-center justify-center h-56 mb-4">
+                  {shipmentTypeDistribution.length > 0 ? (
+                    <div className="relative w-48 h-48">
+                      <svg viewBox="0 0 200 200" className="w-full h-full">
+                        {(() => {
+                          // Filter out zero count items
+                          const activeItems = shipmentTypeDistribution.filter((item: any) => item.count > 0)
 
-                        // Multiple types - show as pie chart
-                        let currentAngle = 0
-                        const colors = [
-                          '#3b82f6', // Blue
-                          '#10b981', // Green
-                          '#f59e0b', // Amber
-                          '#ef4444', // Red
-                          '#8b5cf6', // Purple
-                          '#ec4899'  // Pink
-                        ]
-                        const cx = 100
-                        const cy = 100
-                        const radius = 85
-
-                        return activeItems.map((item: any, index: number) => {
-                          const percentage = (item.count / totalShipmentTypes) * 100
-                          const angle = (percentage / 100) * 360
-
-                          // Prevent 360 degree arcs (use 359.99 instead)
-                          const actualAngle = angle >= 360 ? 359.99 : angle
-
-                          // Convert angles to radians
-                          const startAngleRad = (currentAngle - 90) * (Math.PI / 180)
-                          const endAngleRad = (currentAngle + actualAngle - 90) * (Math.PI / 180)
-
-                          // Calculate start and end points
-                          const x1 = cx + radius * Math.cos(startAngleRad)
-                          const y1 = cy + radius * Math.sin(startAngleRad)
-                          const x2 = cx + radius * Math.cos(endAngleRad)
-                          const y2 = cy + radius * Math.sin(endAngleRad)
-
-                          // Determine if we need a large arc
-                          const largeArc = actualAngle > 180 ? 1 : 0
-
-                          // Create pie slice path
-                          const pathData = [
-                            `M ${cx} ${cy}`,           // Move to center
-                            `L ${x1} ${y1}`,           // Line to start point
-                            `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`, // Arc to end point
-                            'Z'                         // Close path
-                          ].join(' ')
-
-                          // Calculate label position (middle of the slice)
-                          const midAngle = currentAngle + (actualAngle / 2) - 90
-                          const midAngleRad = midAngle * (Math.PI / 180)
-                          const labelRadius = radius * 0.65
-                          const labelX = cx + labelRadius * Math.cos(midAngleRad)
-                          const labelY = cy + labelRadius * Math.sin(midAngleRad)
-
-                          currentAngle += actualAngle
-
-                          return (
-                            <g key={index}>
-                              <path
-                                d={pathData}
-                                fill={colors[index % colors.length]}
-                                className="hover:opacity-90 transition-opacity cursor-pointer"
-                                style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
-                              />
-                              {/* Show percentage */}
-                              {percentage >= 5 && (
+                          if (activeItems.length === 1) {
+                            // Single type - show as full circle with percentage
+                            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                            const percentage = 100
+                            return (
+                              <>
+                                <circle
+                                  cx="100"
+                                  cy="100"
+                                  r="85"
+                                  fill={colors[0]}
+                                  className="hover:opacity-90 transition-opacity"
+                                />
                                 <text
-                                  x={labelX}
-                                  y={labelY}
+                                  x="100"
+                                  y="100"
                                   textAnchor="middle"
                                   dominantBaseline="middle"
                                   className="fill-white font-bold pointer-events-none"
-                                  style={{ fontSize: percentage >= 20 ? '18px' : '14px', fontWeight: 'bold' }}
+                                  style={{ fontSize: '32px', fontWeight: 'bold' }}
                                 >
-                                  {percentage.toFixed(1)}%
+                                  {percentage}%
                                 </text>
-                              )}
-                            </g>
-                          )
-                        })
-                      })()}
-                    </svg>
-                  </div>
-                ) : (
-                  <div className="relative w-48 h-48 rounded-full border-8 border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                    <div className="text-center">
-                      <span className="text-3xl font-bold text-gray-400 dark:text-gray-500 block">0</span>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">No Data</span>
+                              </>
+                            )
+                          }
+
+                          // Multiple types - show as pie chart
+                          let currentAngle = 0
+                          const colors = [
+                            '#3b82f6', // Blue
+                            '#10b981', // Green
+                            '#f59e0b', // Amber
+                            '#ef4444', // Red
+                            '#8b5cf6', // Purple
+                            '#ec4899'  // Pink
+                          ]
+                          const cx = 100
+                          const cy = 100
+                          const radius = 85
+
+                          return activeItems.map((item: any, index: number) => {
+                            const percentage = (item.count / totalShipmentTypes) * 100
+                            const angle = (percentage / 100) * 360
+
+                            // Prevent 360 degree arcs (use 359.99 instead)
+                            const actualAngle = angle >= 360 ? 359.99 : angle
+
+                            // Convert angles to radians
+                            const startAngleRad = (currentAngle - 90) * (Math.PI / 180)
+                            const endAngleRad = (currentAngle + actualAngle - 90) * (Math.PI / 180)
+
+                            // Calculate start and end points
+                            const x1 = cx + radius * Math.cos(startAngleRad)
+                            const y1 = cy + radius * Math.sin(startAngleRad)
+                            const x2 = cx + radius * Math.cos(endAngleRad)
+                            const y2 = cy + radius * Math.sin(endAngleRad)
+
+                            // Determine if we need a large arc
+                            const largeArc = actualAngle > 180 ? 1 : 0
+
+                            // Create pie slice path
+                            const pathData = [
+                              `M ${cx} ${cy}`,           // Move to center
+                              `L ${x1} ${y1}`,           // Line to start point
+                              `A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`, // Arc to end point
+                              'Z'                         // Close path
+                            ].join(' ')
+
+                            // Calculate label position (middle of the slice)
+                            const midAngle = currentAngle + (actualAngle / 2) - 90
+                            const midAngleRad = midAngle * (Math.PI / 180)
+                            const labelRadius = radius * 0.65
+                            const labelX = cx + labelRadius * Math.cos(midAngleRad)
+                            const labelY = cy + labelRadius * Math.sin(midAngleRad)
+
+                            currentAngle += actualAngle
+
+                            return (
+                              <g key={index}>
+                                <path
+                                  d={pathData}
+                                  fill={colors[index % colors.length]}
+                                  className="hover:opacity-90 transition-opacity cursor-pointer"
+                                  style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
+                                />
+                                {/* Show percentage */}
+                                {percentage >= 5 && (
+                                  <text
+                                    x={labelX}
+                                    y={labelY}
+                                    textAnchor="middle"
+                                    dominantBaseline="middle"
+                                    className="fill-white font-bold pointer-events-none"
+                                    style={{ fontSize: percentage >= 20 ? '18px' : '14px', fontWeight: 'bold' }}
+                                  >
+                                    {percentage.toFixed(1)}%
+                                  </text>
+                                )}
+                              </g>
+                            )
+                          })
+                        })()}
+                      </svg>
                     </div>
-                  </div>
-                )}
-              </div>
-              <div className="space-y-3 px-2">
-                {shipmentTypeDistribution.length > 0 ? (
-                  shipmentTypeDistribution.map((item: any, index: number) => {
-                    const colorOptions = [
-                      { bg: 'bg-blue-500', text: 'text-blue-500' },
-                      { bg: 'bg-green-500', text: 'text-green-500' },
-                      { bg: 'bg-amber-500', text: 'text-amber-500' },
-                      { bg: 'bg-red-500', text: 'text-red-500' },
-                      { bg: 'bg-purple-500', text: 'text-purple-500' },
-                      { bg: 'bg-pink-500', text: 'text-pink-500' }
-                    ]
-                    const displayType = item.label || item.type || 'Payment Type'
-                    const percentage = totalShipmentTypes > 0
-                      ? ((item.count / totalShipmentTypes) * 100).toFixed(1)
-                      : '0.0'
-                    const colorIndex = index % colorOptions.length
-                    const colorClass = colorOptions[colorIndex]!
-
-                    return (
-                      <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-4 h-4 rounded-sm ${colorClass.bg} shadow-sm`}></div>
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {displayType}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className={`text-sm font-semibold ${colorClass.text}`}>
-                            {percentage}%
-                          </span>
-                          <span className="text-sm font-bold text-gray-900 dark:text-white min-w-[40px] text-right">
-                            {item.count || 0}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })
-                ) : (
-                  <div className="text-center text-gray-500 dark:text-gray-400 text-sm py-4">
-                    No shipment data available
-                  </div>
-                )}
-              </div>
-            </Card>
-          </div>
-          )}
-
-          {/* Recent Bookings Table */}
-          {loginType === "admin" &&(
- <Card>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Recent Bookings
-              </h3>
-              <button
-                type="button"
-                onClick={() => navigate("/orders")}
-                className="text-sm text-orange-600 hover:text-orange-700 font-medium"
-              >
-                View All
-              </button>
-            </div>
-            <div className="overflow-x-auto">
-              {recentBookings.length > 0 ? (
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-900 dark:bg-gray-800 text-xs uppercase text-white">
-                    <tr>
-                      {/* <th className="px-4 py-3">
-                        <input type="checkbox" className="rounded" />
-                      </th> */}
-                      <th className="px-4 py-3">LR Number</th>
-                      {/* {loginType === "admin" && <th className="px-4 py-3">Franchise</th>} */}
-                      <th className="px-4 py-3">Amount</th>
-                      <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {recentBookings.map((booking: any, idx: number) => {
-                      if (idx === 0) {
-                      }
-                      return (
-                        <tr
-                          key={booking._id || booking.bookingId || booking.orderId || idx}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                        >
-                          {/* <td className="px-4 py-3">
-                            <input type="checkbox" className="rounded" />
-                          </td> */}
-                          <td className="px-4 py-3 font-medium text-gray-900 dark:text-white text-xs">
-                            {booking.orderNumber}
-                          </td>
-                          {/* {loginType === "admin" && (
-                            <td className="px-4 py-3 text-gray-900 dark:text-white">
-                              {booking.franchise || booking.franchiseName || '-'}
-                            </td>
-                          )} */}
-                          <td className="px-4 py-3 text-gray-900 dark:text-white">
-                            {booking.amount ? `₹${Number(booking.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}
-                          </td>
-                          <td className="px-4 py-3 text-gray-900 dark:text-white">
-                            {formatBookingDate(booking.createdAt || booking.date)}
-                          </td>
-            
-                          <td className="px-4 py-3">
-                            <span className={`font-medium ${booking.status?.toLowerCase() === 'delivered' ? 'text-green-600' :
-                                booking.status?.toLowerCase().includes('transit') ? 'text-blue-600' :
-                                  booking.status?.toLowerCase() === 'pending' ? 'text-yellow-600' :
-                                    booking.status?.toLowerCase() === 'cancelled' ? 'text-red-600' :
-                                      'text-purple-600'
-                              }`}>
-                              {booking.status ? booking.status.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : "Pending"}
-                            </span>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No recent bookings available
-                </div>
-              )}
-            </div>
-          </Card>
-          )}
-         
-
-          {/* Admin-Only Sections */}
-          {loginType === "admin" && (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mt-6">
-              {/* Top Franchises */}
-              <Card>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Top Agency
-                  </h3>
-                </div>
-                <div className="space-y-4">
-                  {topAgencies.length > 0 ? (
-                    topAgencies.map((agency: any, index: number) => (
-                      <div key={agency._id || agency.agencyId || index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900 dark:text-white">
-                              {agency.agencyName || agency.franchiseName || agency.name || "-"}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {agency.city || agency.agencyType || "Agency"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-gray-900 dark:text-white">
-                            ₹{Number(agency.revenue || agency.totalValue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {agency.orders || agency.orderCount || 0} orders
-                          </p>
-                        </div>
-                      </div>
-                    ))
                   ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No agency data available
+                    <div className="relative w-48 h-48 rounded-full border-8 border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                      <div className="text-center">
+                        <span className="text-3xl font-bold text-gray-400 dark:text-gray-500 block">0</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">No Data</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-3 px-2">
+                  {shipmentTypeDistribution.length > 0 ? (
+                    shipmentTypeDistribution.map((item: any, index: number) => {
+                      const colorOptions = [
+                        { bg: 'bg-blue-500', text: 'text-blue-500' },
+                        { bg: 'bg-green-500', text: 'text-green-500' },
+                        { bg: 'bg-amber-500', text: 'text-amber-500' },
+                        { bg: 'bg-red-500', text: 'text-red-500' },
+                        { bg: 'bg-purple-500', text: 'text-purple-500' },
+                        { bg: 'bg-pink-500', text: 'text-pink-500' }
+                      ]
+                      const displayType = item.label || item.type || 'Payment Type'
+                      const percentage = totalShipmentTypes > 0
+                        ? ((item.count / totalShipmentTypes) * 100).toFixed(1)
+                        : '0.0'
+                      const colorIndex = index % colorOptions.length
+                      const colorClass = colorOptions[colorIndex]!
+
+                      return (
+                        <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded-sm ${colorClass.bg} shadow-sm`}></div>
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {displayType}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className={`text-sm font-semibold ${colorClass.text}`}>
+                              {percentage}%
+                            </span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-white min-w-[40px] text-right">
+                              {item.count || 0}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="text-center text-gray-500 dark:text-gray-400 text-sm py-4">
+                      No shipment data available
                     </div>
                   )}
                 </div>
               </Card>
+            </div>
+          )}
 
-              {/* Wallet Summary */}
-              <Card className="border border-gray-200 dark:border-gray-700">
-                <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Wallet Summary
-                  </h3>
-                  <span className="rounded-full bg-primary-100 px-2.5 py-1 text-xs font-semibold text-primary-800 dark:bg-primary-900/40 dark:text-primary-200">
-                    Live
-                  </span>
-                </div>
-                {walletStats ? (
-                  <div className="space-y-4 rounded-xl bg-gradient-to-br from-gray-50 to-white p-3 dark:from-gray-800 dark:to-gray-900">
-                    <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/25">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Total Transactions
-                        </p>
-                        <span className="rounded-full bg-white/80 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800/70 dark:text-gray-300">
-                          {walletStats.totalWallets || 0} wallets
-                        </span>
-                      </div>
-                        <p className="text-3xl font-extrabold text-blue-600 dark:text-blue-400 tracking-tight">
-                          {Number(walletStats.totalTransactions || ((walletStats.credits?.count || 0) + (walletStats.debits?.count || 0))).toLocaleString('en-IN')}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/25">
-                        <p className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Payment for Truecargo
-                        </p>
-                        <p className="text-2xl font-bold text-green-700 dark:text-green-400">
-                          ₹{Number(walletStats.paymentForTruecargo || walletStats.credits?.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                      <div className="rounded-xl border border-primary-300 bg-primary-100 p-4 dark:border-primary-700 dark:bg-primary-900/25">
-                        <p className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Agency Payment
-                        </p>
-                        <p className="text-2xl font-bold text-primary-800 dark:text-primary-300">
-                          ₹{Number(walletStats.agencyPayment || walletStats.debits?.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300">
-                      Settled orders: {walletStats.settledOrders || 0}
-                    </div>
-                  </div>
+          {/* Recent Bookings Table */}
+          {loginType === "admin" && (
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Recent Bookings
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => navigate("/orders")}
+                  className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                >
+                  View All
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                {recentBookings.length > 0 ? (
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-gray-900 dark:bg-gray-800 text-xs uppercase text-white">
+                      <tr>
+                        {/* <th className="px-4 py-3">
+                        <input type="checkbox" className="rounded" />
+                      </th> */}
+                        <th className="px-4 py-3">LR Number</th>
+                        {/* {loginType === "admin" && <th className="px-4 py-3">Franchise</th>} */}
+                        <th className="px-4 py-3">Amount</th>
+                        <th className="px-4 py-3">Date</th>
+                        <th className="px-4 py-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {recentBookings.map((booking: any, idx: number) => {
+                        if (idx === 0) {
+                        }
+                        return (
+                          <tr
+                            key={booking._id || booking.bookingId || booking.orderId || idx}
+                            className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                          >
+                            {/* <td className="px-4 py-3">
+                            <input type="checkbox" className="rounded" />
+                          </td> */}
+                            <td className="px-4 py-3 font-medium text-gray-900 dark:text-white text-xs">
+                              {booking.orderNumber}
+                            </td>
+                            {/* {loginType === "admin" && (
+                            <td className="px-4 py-3 text-gray-900 dark:text-white">
+                              {booking.franchise || booking.franchiseName || '-'}
+                            </td>
+                          )} */}
+                            <td className="px-4 py-3 text-gray-900 dark:text-white">
+                              {booking.amount ? `₹${Number(booking.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-gray-900 dark:text-white">
+                              {formatBookingDate(booking.createdAt || booking.date)}
+                            </td>
+
+                            <td className="px-4 py-3">
+                              <span className={`font-medium ${booking.status?.toLowerCase() === 'delivered' ? 'text-green-600' :
+                                booking.status?.toLowerCase().includes('transit') ? 'text-blue-600' :
+                                  booking.status?.toLowerCase() === 'pending' ? 'text-yellow-600' :
+                                    booking.status?.toLowerCase() === 'cancelled' ? 'text-red-600' :
+                                      'text-purple-600'
+                                }`}>
+                                {booking.status ? booking.status.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : "Pending"}
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
-                    Loading wallet statistics...
+                    No recent bookings available
                   </div>
                 )}
-              </Card>
-            </div>
+              </div>
+            </Card>
           )}
         </div>
       )}

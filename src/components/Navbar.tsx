@@ -25,7 +25,7 @@ const Navbar: FC<NavbarProps> = ({
   const [staffAssignedType, setStaffAssignedType] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [payoutSummary, setPayoutSummary] = useState<{ totalPayoutPaid?: number; totalPayoutDue?: number }>({})
+  const [payoutSummary, setPayoutSummary] = useState<{ totalProfitEarned?: number; totalPayoutDue?: number; walletBalance?:number }>({})
   const dropdownRef = useRef<HTMLDivElement>(null)
   const effectiveLoginType =
     loginType === "staff" && (staffAssignedType === "hub" || staffAssignedType === "franchise" || staffAssignedType === "head_quarter")
@@ -94,8 +94,9 @@ const Navbar: FC<NavbarProps> = ({
             .then((response) => {
               const overview = response.data?.data?.overview || response.data?.overview || {}
               setPayoutSummary({
-                totalPayoutPaid: Number(overview.totalPayoutPaid || 0),
+                totalProfitEarned: Number(overview.totalProfitEarned || 0),
                 totalPayoutDue: Number(overview.totalPayoutDue || 0),
+                walletBalance:  Number(overview.walletBalance || 0),
               })
             })
             .catch(() => {
@@ -231,13 +232,23 @@ const Navbar: FC<NavbarProps> = ({
         <div className="flex items-center gap-3">
           {/* Wallet Balance (Franchise) or Notifications (Admin) */}
           {effectiveLoginType === "franchise" || effectiveLoginType === "staff" ? (
-            <><div
+            <>
+            <div
               onClick={() => navigate("/payout")}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
             >
               <HiCurrencyRupee className="h-5 w-5" />
-              <span className="font-semibold text-sm">
-                Paid: ₹{Number(payoutSummary.totalPayoutPaid || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <span className="font-semibold text-xs">
+                Wallet Balance: ₹{Number(payoutSummary.walletBalance || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div
+              onClick={() => navigate("/payout")}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
+            >
+              <HiCurrencyRupee className="h-5 w-5" />
+              <span className="font-semibold text-xs">
+                Payout: ₹{Number(payoutSummary.totalProfitEarned || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
               <div
@@ -245,7 +256,7 @@ const Navbar: FC<NavbarProps> = ({
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
               >
                 <HiCurrencyRupee className="h-5 w-5" />
-                <span className="font-semibold text-sm">
+                <span className="font-semibold text-xs">
                   To Pay: ₹{Number(payoutSummary.totalPayoutDue || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                    
                 </span>
