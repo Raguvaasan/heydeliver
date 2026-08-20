@@ -1117,7 +1117,7 @@ const ParcelManagementPage: FC = () => {
                                                             <HiEye className="h-5 w-5" />
                                                         </button>
 
-                                                        {!isHub && (
+                                                        {!isHub && !isAdmin && (
                                                             <button onClick={() => handleEdit(parcel)} className="p-1.5 text-gray-600 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400" title={isAdmin ? "Update Charge" : "Edit"}>
                                                                 <HiPencil className="h-5 w-5" />
                                                             </button>

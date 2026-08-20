@@ -201,7 +201,7 @@ const emptyValues: ParcelFormValues = {
     remarks: "",
     numberOfParcels: "",
     approximateValue: "",
-    transportationCharge: "0",
+    transportationCharge: "",
     status: "Order Created",
 }
 
@@ -256,7 +256,7 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
             remarks: parcel.remarks || "",
             numberOfParcels: parcel.numberOfParcels || "",
             approximateValue: parcel.approximateValue || "",
-            transportationCharge: parcel.transportationCharge || "0",
+            transportationCharge: parcel.transportationCharge || "",
             status: parcel.status || "Order Created",
         }
         : emptyValues
@@ -402,6 +402,7 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                     numberOfParcels: Number(values.numberOfParcels),
                     approximateValue: Number(values.approximateValue),
                 },
+                transportationCharge: values.transportationCharge,
                 ...(values.pickupAddressEnabled && values.pickupAddress.trim()
                     ? { pickupAddress: values.pickupAddress.trim() }
                     : {}),
@@ -548,14 +549,8 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                                     label="Transportation Charge"
                                                     type="number"
                                                     required
-                                                    disabled={!isAdminUser}
                                                 />
-                                                <p className="mt-1.5 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400 bg">
-                                                    <HiInformationCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                                                    {isAdminUser
-                                                        ? "This field can be updated by admin users."
-                                                        : "The transportation charge is set by the administrator."}
-                                                </p>
+                                                
                                             </div>
 
                                             <div className="md:col-span-2">
