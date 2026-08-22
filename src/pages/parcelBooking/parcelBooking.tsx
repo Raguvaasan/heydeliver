@@ -117,6 +117,8 @@ const ParcelManagementPage: FC = () => {
 
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState("")
+    const [dateFrom, setDateFrom] = useState("")
+    const [dateTo, setDateTo] = useState("")
     const [currentPage, setCurrentPage] = useState(1)
     const [parcels, setParcels] = useState<Parcel[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -416,6 +418,8 @@ const ParcelManagementPage: FC = () => {
             })
             if (searchTerm.trim()) query.set("search", searchTerm.trim())
             if (statusFilter) query.set("status", statusFilter)
+            if (dateFrom) query.set("dateFrom", dateFrom)
+            if (dateTo) query.set("dateTo", dateTo)
 
             const response = await fetch(`${API_BASE}?${query.toString()}`, {
                 headers: { Authorization: `Bearer ${authToken}` },
@@ -443,6 +447,10 @@ const ParcelManagementPage: FC = () => {
                 const deliveryBranch = resolveDeliveryBranch(item.deliveryCustomer?.deliveryBranch)
                 const driver = resolveDriverValue(item.driver)
                 const vehicle = resolveVehicleValue(item.vehicle)
+                const charges = item.charges || item.invoice?.charges || item.invoiceData?.charges || {}
+                const loadingCharge = charges.loadingCharge ?? item.loadingCharge ?? item.loading_charge ?? 0
+                const miscellaneousCharge = charges.miscellaneousCharge ?? item.miscellaneousCharge ?? item.miscellaneous_charge ?? 0
+                const totalAmount = charges.totalAmount ?? item.totalAmount ?? item.total_amount ?? item.invoiceAmount ?? 0
                 return {
                     id: item._id,
                     orderId: item.orderNumber,
@@ -468,6 +476,14 @@ const ParcelManagementPage: FC = () => {
                     numberOfParcels: String(item.parcelDetails?.numberOfParcels ?? ""),
                     approximateValue: String(item.parcelDetails?.approximateValue ?? ""),
                     transportationCharge: String(item.transportationCharge ?? "0"),
+                    loadingCharge,
+                    miscellaneousCharge,
+                    totalAmount,
+                    charges: {
+                        loadingCharge,
+                        miscellaneousCharge,
+                        totalAmount,
+                    },
                     status: item.status,
                     branchName: item.branch?.agencyName || "",
                     hubId: hub.id,
@@ -614,7 +630,7 @@ const ParcelManagementPage: FC = () => {
     useEffect(() => {
         fetchParcels()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, searchTerm, statusFilter])
+    }, [currentPage, searchTerm, statusFilter, dateFrom, dateTo])
 
     const totalPages = pagination.totalPages || 1
     const paginatedParcels = useMemo(() => parcels, [parcels])
@@ -888,9 +904,16 @@ const ParcelManagementPage: FC = () => {
 
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                         <div className="flex-1">
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">List of Bookings</h2>
-
-                            <div className="flex flex-col md:flex-row gap-3 max-w-3xl">
+                            <div className="flex justify-between">
+                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">List of Bookings</h2>
+                                {!isAdmin && !isHub && (
+                                    <Button color="warning" onClick={() => handleAdd()} className="bg-orange-500 hover:bg-orange-600">
+                                        <HiPlus className="mr-2 h-5 w-5" />
+                                        ADD
+                                    </Button>
+                                )}
+                            </div>
+                            <div className="flex flex-col md:flex-row gap-3 mt-2">
                                 <div className="relative flex-1">
                                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                         <HiSearch className="h-5 w-5 text-gray-400" />
@@ -898,7 +921,7 @@ const ParcelManagementPage: FC = () => {
 
                                     <TextInput
                                         type="search"
-                                        placeholder="Search order ID, customer..."
+                                        placeholder="Search LR Number, Customer name, Phone number"
                                         value={searchTerm}
                                         onChange={(e) => {
                                             setCurrentPage(1)
@@ -914,7 +937,6 @@ const ParcelManagementPage: FC = () => {
                                         setCurrentPage(1)
                                         setStatusFilter(e.target.value)
                                     }}
-                                    className="md:w-56"
                                 >
                                     <option value="">All Status</option>
                                     {Object.keys(statusColor).map((status) => (
@@ -923,15 +945,28 @@ const ParcelManagementPage: FC = () => {
                                         </option>
                                     ))}
                                 </Select>
+
+                                <TextInput
+                                    type="date"
+                                    value={dateFrom}
+                                    onChange={(e) => {
+                                        setCurrentPage(1)
+                                        setDateFrom(e.target.value)
+                                    }}
+                                    aria-label="Date from"
+                                />
+
+                                <TextInput
+                                    type="date"
+                                    value={dateTo}
+                                    onChange={(e) => {
+                                        setCurrentPage(1)
+                                        setDateTo(e.target.value)
+                                    }}
+                                    aria-label="Date to"
+                                />
                             </div>
                         </div>
-
-                        {!isAdmin && !isHub && (
-                            <Button color="warning" onClick={() => handleAdd()} className="bg-orange-500 hover:bg-orange-600">
-                                <HiPlus className="mr-2 h-5 w-5" />
-                                ADD
-                            </Button>
-                        )}
                     </div>
 
                     <div className="overflow-x-auto">

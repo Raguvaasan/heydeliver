@@ -8,6 +8,7 @@ import { HiX, HiExclamationCircle } from "react-icons/hi"
 import { FormInput, FormSelect } from "../../components/FormComponents"
 import { FormSection, SaveButton } from "../../components/FormHelpers"
 import toast from "react-hot-toast"
+import { fetchAgencyDashboard } from "../../common/dashboardApi"
 
 export interface ParcelFormValues {
     deliveryCustomerName: string
@@ -84,6 +85,14 @@ export interface Parcel extends ParcelFormValues {
     }
     pickupAddress?: string
     deliveryAddress?: string
+    loadingCharge?: number | string
+    miscellaneousCharge?: number | string
+    totalAmount?: number | string
+    charges?: {
+        loadingCharge?: number | string
+        miscellaneousCharge?: number | string
+        totalAmount?: number | string
+    }
 }
 
 interface Props {
@@ -437,6 +446,12 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
             }
 
             const savedParcel: Parcel = data;
+
+            if (!isEdit) {
+                void fetchAgencyDashboard().catch(() => {
+                    // Ignore refresh failures after successful creation
+                })
+            }
 
             onSuccess?.(savedParcel);
             resetFormRef.current?.({ values: emptyValues });

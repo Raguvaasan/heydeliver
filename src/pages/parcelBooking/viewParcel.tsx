@@ -42,8 +42,8 @@ const Field: FC<{
     </div>
     <div
       className={`mt-1 truncate text-sm font-semibold ${className} ${highlight
-          ? "text-orange-600 dark:text-orange-400"
-          : "text-gray-900 dark:text-white"
+        ? "text-orange-600 dark:text-orange-400"
+        : "text-gray-900 dark:text-white"
         }`}
       title={value || "N/A"}
     >
@@ -103,6 +103,11 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
   const bookingCustomerAddress = resolveValue(parcel.bookingCustomerAddress || parcel.bookingCustomer?.address)
   const pickupAddress = resolveValue((parcel as any).pickupAddress)
   const deliveryAddress = resolveValue((parcel as any).deliveryAddress)
+  const loadingCharge = (parcel as any).loadingCharge ?? (parcel as any).charges?.loadingCharge ?? 0
+  const miscellaneousCharge = (parcel as any).miscellaneousCharge ?? (parcel as any).charges?.miscellaneousCharge ?? 0
+  const totalAmount = (parcel as any).totalAmount ?? (parcel as any).charges?.totalAmount ?? 0
+  const loadingChargePercentage = (parcel as any).loadingChargePercentage
+  const miscChargePercentage = (parcel as any).miscChargePercentage
 
   return (
     <div
@@ -212,15 +217,45 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
 
             <section className="rounded-xl border border-gray-200 bg-gradient-to-br from-amber-50 to-orange-50 p-4 dark:border-gray-700 dark:from-gray-800 dark:to-gray-800">
               <SectionTitle title="Order Summary" />
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                 <Field label="Order ID" value={parcel.orderId} />
                 <Field label="Date" value={formatDate(parcel.bookingDate)} />
+              
                 <div className="rounded-lg bg-white px-3 py-2.5 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
                   <div className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Status</div>
                   <div className="mt-1.5">
                     <Badge color={statusColor[parcel.status] ?? "gray"} className="inline-flex rounded-full px-2.5 py-1 text-xs">
                       {parcel.status}
                     </Badge>
+                  </div>
+                </div>
+                  <div className="rounded-lg bg-white px-3 py-2.5 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                    Charges Summary
+                  </div>
+                  <div className="mt-1.5 space-y-1 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-gray-500 dark:text-gray-400">
+                        Loading{loadingChargePercentage ? ` (${loadingChargePercentage}%)` : ""}
+                      </span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        ₹{Number(loadingCharge).toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-gray-500 dark:text-gray-400">
+                        Miscellaneous{miscChargePercentage ? ` (${miscChargePercentage}%)` : ""}
+                      </span>
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        ₹{Number(miscellaneousCharge).toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 border-t border-gray-100 pt-1 dark:border-gray-800">
+                      <span className="text-gray-500 dark:text-gray-400">Total</span>
+                      <span className="font-bold text-orange-600 dark:text-orange-400">
+                        ₹{Number(totalAmount).toLocaleString("en-IN")}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { HiMenu, HiSearch, HiBell, HiChevronDown, HiLogout, HiCurrencyRupee } from "react-icons/hi"
 import { useWalletStore } from "../store/walletStore"
 import http from "../common/httpRequest"
+import { fetchAgencyDashboard } from "../common/dashboardApi"
 
 interface NavbarProps {
   isMobileOpen: boolean
@@ -25,7 +26,7 @@ const Navbar: FC<NavbarProps> = ({
   const [staffAssignedType, setStaffAssignedType] = useState("")
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [payoutSummary, setPayoutSummary] = useState<{ totalProfitEarned?: number; totalPayoutDue?: number; walletBalance?:number }>({})
+  const [payoutSummary, setPayoutSummary] = useState<{ totalProfitEarned?: number; totalRevenue?: number; walletBalance?:number }>({})
   const dropdownRef = useRef<HTMLDivElement>(null)
   const effectiveLoginType =
     loginType === "staff" && (staffAssignedType === "hub" || staffAssignedType === "franchise" || staffAssignedType === "head_quarter")
@@ -90,12 +91,12 @@ const Navbar: FC<NavbarProps> = ({
         }
 
         if (effectiveType === "franchise" || effectiveType === "staff") {
-          http.get("/admin/agency/dashboard")
-            .then((response) => {
-              const overview = response.data?.data?.overview || response.data?.overview || {}
+          fetchAgencyDashboard()
+            .then((data) => {
+              const overview = data?.overview || {}
               setPayoutSummary({
                 totalProfitEarned: Number(overview.totalProfitEarned || 0),
-                totalPayoutDue: Number(overview.totalPayoutDue || 0),
+                totalRevenue: Number(overview.totalRevenue || 0),
                 walletBalance:  Number(overview.walletBalance || 0),
               })
             })
@@ -223,7 +224,7 @@ const Navbar: FC<NavbarProps> = ({
                   handleSearchNavigate()
                 }
               }}
-              className="w-64 pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-purple-500 focus:border-purple-500"
+              className="w-52 pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-purple-500 focus:border-purple-500"
             />
           </div>
         </div>
@@ -257,7 +258,7 @@ const Navbar: FC<NavbarProps> = ({
               >
                 <HiCurrencyRupee className="h-5 w-5" />
                 <span className="font-semibold text-xs">
-                  To Pay: ₹{Number(payoutSummary.totalPayoutDue || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  To be Paid: ₹{Number(payoutSummary.totalRevenue || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                    
                 </span>
               </div>

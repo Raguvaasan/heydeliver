@@ -11,6 +11,7 @@ import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import http from "../../common/httpRequest"
 import toast from "react-hot-toast"
 import RevenueChart from "../../components/RevenueChart"
+import { fetchAgencyDashboard } from "../../common/dashboardApi"
 
 interface StatCardProps {
   icon: React.ReactNode
@@ -186,8 +187,7 @@ const DashboardPage: FC = () => {
           period: revenueData.period ?? baseData.period,
         })
       } else if (isAgencyLogin) {
-        const response = await http.get("/admin/agency/dashboard")
-        const payload = response.data?.data || response.data || {}
+        const payload = await fetchAgencyDashboard()
         setDashboardData(payload)
         setPaymentTypeDistribution([])
         setTopAgencies([])
@@ -240,8 +240,7 @@ const DashboardPage: FC = () => {
           period: revenueData.period ?? baseData.period,
         })
       } else if (isAgencyLogin) {
-        const response = await http.get("/admin/agency/dashboard")
-        const data = response.data?.data || response.data || {}
+        const data = await fetchAgencyDashboard()
         setDashboardData(data)
       } else {
         const endpoint = loginType === "admin" ? "/admin/dashboard" : "/dashboard"
