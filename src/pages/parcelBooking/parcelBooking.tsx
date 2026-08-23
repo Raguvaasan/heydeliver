@@ -2,13 +2,17 @@
 import { FC, useEffect, useMemo, useState } from "react"
 import { Badge, Button, Card, Select, TextInput } from "flowbite-react"
 import toast from "react-hot-toast"
-import { HiDocumentDownload, HiEye, HiPencil, HiPlus, HiSearch, HiTrash } from "react-icons/hi"
+import { HiDocumentDownload, HiEye, HiOutlinePrinter, HiPencil, HiPlus, HiSearch, HiTrash } from "react-icons/hi"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import DeleteConfirmModal from "../AgencyManagement/DeleteConfirmModal"
 import AddEditParcel, { Parcel } from "./addEditParcel"
 import { resolveParcelAccess } from "./parcelBookingRole"
 import ViewParcelModal from "./viewParcel"
 import { jsPDF } from "jspdf"
+import { handleLabel } from "./printLabel"
+import Papa from "papaparse"
+import { saveAs } from "file-saver"
+import * as ExcelJS from "exceljs"
 
 const PAGE_SIZE = 10
 
@@ -82,8 +86,6 @@ interface VehicleOption {
     capacity: string
 }
 
-
-
 interface DriverOption {
     id: string
     name: string
@@ -139,6 +141,7 @@ const ParcelManagementPage: FC = () => {
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
     const [isGeneratingInvoice, setIsGeneratingInvoice] = useState<string | null>(null)
+    const [isExporting, setIsExporting] = useState(false)
 
     const [hubs, setHubs] = useState<Hub[]>([])
     const [driverOptions, setDriverOptions] = useState<DriverOption[]>([])
@@ -326,26 +329,36 @@ const ParcelManagementPage: FC = () => {
             doc.setFont("helvetica", "normal")
             doc.line(margin, currentY, pageWidth - margin, currentY)
             currentY += 8
-            doc.text(`Logistic Services - ${parcelDetails?.article || "Courier Charges"}`, margin + 5, currentY)
+            doc.text(`${parcelDetails?.article || "Courier Charges"}`, margin + 5, currentY)
             doc.text("1", pageWidth - 70, currentY, { align: "center" })
             doc.text(`INR ${transportationCharge}`, pageWidth - 45, currentY, { align: "center" })
             doc.text(`INR ${transportationCharge}`, pageWidth - margin - 5, currentY, { align: "right" })
-            currentY += 20
-            const totalX = pageWidth - margin - 80
-            doc.setFontSize(8)
+            currentY += 15
+            const summaryLabelX = pageWidth - margin - 80
+            const summaryValueX = pageWidth - margin - 5
+
+            doc.setFontSize(9)
             doc.setFont("helvetica", "normal")
             doc.setTextColor(90)
-            doc.text(
-                `Loading Charge: INR ${loadingCharge} | Miscellaneous Charge: INR ${miscellaneousCharge}`,
-                totalX,
-                currentY - 10
-            )
+            doc.text("Loading:", summaryLabelX, currentY)
+            doc.text(`INR ${loadingCharge}`, summaryValueX, currentY, { align: "right" })
+            currentY += 6
+
+            doc.text("Miscellaneous:", summaryLabelX, currentY)
+            doc.text(`INR ${miscellaneousCharge}`, summaryValueX, currentY, { align: "right" })
+            currentY += 4
+
+            doc.setDrawColor(200)
+            doc.setLineWidth(0.1)
+            doc.line(summaryLabelX, currentY, summaryValueX, currentY)
+            currentY += 6
+
             doc.setFont("helvetica", "bold")
-            doc.setFontSize(14)
+            doc.setFontSize(13)
             doc.setTextColor(0)
-            doc.text("Total Amount:", totalX, currentY)
+            doc.text("Total:", summaryLabelX, currentY)
             doc.setTextColor(249, 115, 22)
-            doc.text(`INR ${amount}`, pageWidth - margin - 5, currentY, { align: "right" })
+            doc.text(`INR ${amount}`, summaryValueX, currentY, { align: "right" })
 
             const pdfUrl = doc.output("bloburl")
             window.open(pdfUrl, "_blank", "noopener,noreferrer")
@@ -458,6 +471,7 @@ const ParcelManagementPage: FC = () => {
                     deliveryCustomerName: item.deliveryCustomer?.name || "",
                     deliveryCustomerMobileNumber: item.deliveryCustomer?.mobileNumber || "",
                     deliveryCustomerAddress: item.deliveryCustomer?.address || "",
+                    deliveryPincode: String(item.deliveryCustomer?.pincode || item.deliveryCustomer?.postalCode || item.deliveryPincode || item.deliveryPostalCode || ""),
                     deliveryBranch: deliveryBranch.name || item.deliveryCustomer?.deliveryBranch || "",
                     deliveryBranchId: deliveryBranch.id || "",
                     bookingCustomerName: item.bookingCustomer?.name || "",
@@ -535,6 +549,176 @@ const ParcelManagementPage: FC = () => {
             setIsLoading(false)
         }
     }
+
+const estimateLineCount = (text: string, columnWidth: number): number => {
+    if (!text) return 1
+    const charsPerLine = Math.max(Math.floor(columnWidth * 1.7), 1)
+    const segments = String(text).split("\n")
+    let totalLines = 0
+    for (const segment of segments) {
+        totalLines += Math.max(Math.ceil(segment.length / charsPerLine), 1)
+    }
+    return totalLines
+}
+
+const COLUMN_WIDTH_OVERRIDES: Record<string, number> = {
+    "Order Number": 16,
+    "Booking Date": 24,        
+    "Article": 16,
+    "No. of Parcels": 14,
+    "Delivery Customer Name": 22,
+    "Delivery Mobile": 16,
+    "Delivery Address": 34,   
+    "Delivery Agency/Branch": 22,
+    "Delivery Pincode": 16,
+    "Payment Type": 14,
+    "Total Amount": 16,
+}
+
+const handleExport = async () => {
+    setIsExporting(true)
+    try {
+        const authToken = getAuthToken()
+        const query = new URLSearchParams({ page: "1", limit: String(PAGE_SIZE) })
+        if (searchTerm.trim()) query.set("search", searchTerm.trim())
+        if (statusFilter) query.set("status", statusFilter)
+        if (dateFrom) query.set("dateFrom", dateFrom)
+        if (dateTo) query.set("dateTo", dateTo)
+
+        const response = await fetch(`${API_BASE}?${query.toString()}`, {
+            headers: { Authorization: `Bearer ${authToken}` },
+        })
+        if (!response.ok) throw new Error("Failed to export parcel bookings")
+
+        const payload = await response.json()
+        const orders = payload?.data?.orders ?? payload?.orders ?? []
+
+        if (orders.length === 0) {
+            toast.error("No parcel bookings available to export")
+            return
+        }
+
+        const rows = orders.map((item: any) => ({
+            "Order Number": item.orderNumber || "",
+            "Booking Date": formatDate(item.bookingDate || item.createdAt),
+            "Article": item.parcelDetails?.article || "",
+            "No. of Parcels": item.parcelDetails?.numberOfParcels ?? "",
+            "Delivery Customer Name": item.deliveryCustomer?.name || "",
+            "Delivery Mobile": item.deliveryCustomer?.mobileNumber || "",
+            "Delivery Address": item.deliveryCustomer?.address || item.deliveryAddress || "",
+            "Delivery Agency/Branch":
+                item.deliveryCustomer?.deliveryBranch?.agencyName ||
+                item.deliveryCustomer?.deliveryBranch?.name ||
+                item.deliveryCustomer?.deliveryBranch ||
+                "",
+            "Payment Type": item.paymentType || "",
+            "Total Amount":
+                item.charges?.totalAmount ?? item.totalAmount ?? item.total_amount ?? item.invoiceAmount ?? 0,
+        }))
+
+        const columns = Object.keys(rows[0]).map((key) => ({
+            header: key,
+            key,
+            width: COLUMN_WIDTH_OVERRIDES[key] ?? Math.max(key.length + 6, 16),
+        }))
+
+        const workbook = new ExcelJS.Workbook()
+        workbook.creator = "Parcel Bookings"
+        workbook.created = new Date()
+
+        const sheet = workbook.addWorksheet("Parcel Bookings", {
+            views: [{ state: "frozen", ySplit: 1 }],
+        })
+        sheet.columns = columns
+        sheet.addRows(rows)
+
+        // Header styling
+        const headerRow = sheet.getRow(1)
+        headerRow.eachCell((cell) => {
+            cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 }
+            cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "FF1F4E78" },
+            }
+            cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true }
+            cell.border = {
+                top: { style: "thin", color: { argb: "FFB7B7B7" } },
+                left: { style: "thin", color: { argb: "FFB7B7B7" } },
+                bottom: { style: "thin", color: { argb: "FFB7B7B7" } },
+                right: { style: "thin", color: { argb: "FFB7B7B7" } },
+            }
+        })
+        headerRow.height = 24
+
+        const amountColIndex = columns.findIndex((c) => c.key === "Total Amount") + 1
+        const BASE_LINE_HEIGHT = 16 // points per wrapped line
+        const ROW_PADDING = 10
+
+        sheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return
+
+            let maxLines = 1
+            row.eachCell((cell, colNumber) => {
+                cell.border = {
+                    top: { style: "thin", color: { argb: "FFE0E0E0" } },
+                    left: { style: "thin", color: { argb: "FFE0E0E0" } },
+                    bottom: { style: "thin", color: { argb: "FFE0E0E0" } },
+                    right: { style: "thin", color: { argb: "FFE0E0E0" } },
+                }
+                cell.alignment = {
+                    vertical: "middle",
+                    horizontal: colNumber === amountColIndex ? "right" : "left",
+                    wrapText: true,
+                }
+                if (rowNumber % 2 === 0) {
+                    cell.fill = {
+                        type: "pattern",
+                        pattern: "solid",
+                        fgColor: { argb: "FFF7F9FC" },
+                    }
+                }
+
+                const colWidth = columns[colNumber - 1]?.width ?? 16
+                const cellText = cell.value != null ? String(cell.value) : ""
+                const lines = estimateLineCount(cellText, colWidth)
+                if (lines > maxLines) maxLines = lines
+            })
+
+            row.height = maxLines * BASE_LINE_HEIGHT + ROW_PADDING
+
+            const amountCell = row.getCell(amountColIndex)
+            amountCell.numFmt = "#,##0.00"
+        })
+
+        await sheet.protect("", {
+            selectLockedCells: true,
+            selectUnlockedCells: true,
+            formatCells: false,
+            formatColumns: false,
+            formatRows: false,
+            insertRows: false,
+            insertColumns: false,
+            insertHyperlinks: false,
+            deleteRows: false,
+            deleteColumns: false,
+            sort: false,
+            autoFilter: false,
+            pivotTables: false,
+        })
+
+        const buffer = await workbook.xlsx.writeBuffer()
+        saveAs(
+            new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+            "parcel-bookings.xlsx"
+        )
+        toast.success("Parcel bookings exported successfully")
+    } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to export parcel bookings")
+    } finally {
+        setIsExporting(false)
+    }
+}
 
     const fetchHubs = async () => {
         try {
@@ -727,8 +911,6 @@ const ParcelManagementPage: FC = () => {
         }
     }
 
-    // Shared status-update handler for both branch and hub actors — only the
-    // base URL and value set differ.
     const handleStatusChange = async (parcelId: string, status: string, base: string) => {
         const previous = parcels.find((p) => p.id === parcelId)?.status
         setParcels((prev) => prev.map((p) => (p.id === parcelId ? { ...p, status } : p)))
@@ -759,8 +941,6 @@ const ParcelManagementPage: FC = () => {
         }
     }
 
-    // Shared handler for assigning/clearing a driver or vehicle on a hub order.
-    // field: "driver" | "vehicle" — value "" clears the assignment (sent as null).
     const handleAssignVehicleOrDriver = async (parcelId: string, field: "driver" | "vehicle", value: string) => {
         const target = parcels.find((p) => p.id === parcelId)
         const previousDriverId = target?.assignedDriverId ?? ""
@@ -906,12 +1086,18 @@ const ParcelManagementPage: FC = () => {
                         <div className="flex-1">
                             <div className="flex justify-between">
                                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">List of Bookings</h2>
-                                {!isAdmin && !isHub && (
-                                    <Button color="warning" onClick={() => handleAdd()} className="bg-orange-500 hover:bg-orange-600">
-                                        <HiPlus className="mr-2 h-5 w-5" />
-                                        ADD
+                                <div className="flex gap-2">
+                                    <Button color="gray" onClick={handleExport} disabled={isExporting}>
+                                        <HiDocumentDownload className="mr-2 h-5 w-5" />
+                                        {isExporting ? "EXPORTING..." : "EXPORT"}
                                     </Button>
-                                )}
+                                    {!isAdmin && !isHub && (
+                                        <Button color="warning" onClick={() => handleAdd()} className="bg-orange-500 hover:bg-orange-600">
+                                            <HiPlus className="mr-2 h-5 w-5" />
+                                            ADD
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex flex-col md:flex-row gap-3 mt-2">
                                 <div className="relative flex-1">
@@ -1147,6 +1333,13 @@ const ParcelManagementPage: FC = () => {
                                                     <div className="flex items-center justify-center gap-2">
                                                         <button onClick={() => handleGenerateInvoice(parcel.id)} className="p-1.5 text-gray-600 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400" title="Generate Invoice" disabled={isGeneratingInvoice === parcel.orderId}>
                                                             <HiDocumentDownload className="h-5 w-5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleLabel(parcel.id)}
+                                                            className="p-1.5 dark:text-gray-300 text-gray-700 hover:text-gray-900"
+                                                            title="Print Label"
+                                                        >
+                                                            <HiOutlinePrinter className="h-5 w-5" />
                                                         </button>
                                                         <button onClick={() => handleView(parcel)} className="p-1.5 text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400" title="View">
                                                             <HiEye className="h-5 w-5" />

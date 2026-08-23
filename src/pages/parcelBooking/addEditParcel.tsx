@@ -14,6 +14,7 @@ export interface ParcelFormValues {
     deliveryCustomerName: string
     deliveryCustomerMobileNumber: string
     deliveryCustomerAddress: string
+    deliveryPincode?: string
     deliveryCustomerGstNumber: string
     deliveryBranch: string
 
