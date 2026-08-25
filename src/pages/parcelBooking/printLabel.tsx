@@ -132,8 +132,8 @@ export const handleLabel = async (orderId: string): Promise<void> => {
 
         doc.setFontSize(12);
         doc.setFont("helvetica", "normal");
-        doc.text(String(shipTo?.pincode || "-"), 0.15, 1.45);
-        const routingCode = shipTo?.city;
+        doc.text(String(shipTo?.pincode || ""), 0.15, 1.45);
+        const routingCode = String(shipTo?.city || "");
         doc.setFont("helvetica", "bold");
         doc.text(routingCode, 3.85, 1.45, { align: "right" });
 
@@ -164,10 +164,10 @@ export const handleLabel = async (orderId: string): Promise<void> => {
 
         // -- Ship To Right Pane (payment + amount, mirrors invoice) --
         doc.setFontSize(11);
-        doc.text(String(paymentType), 3.35, 1.70, { align: "center" });
+        doc.text(String(paymentType || "-"), 3.35, 1.70, { align: "center" });
         doc.text(String(parcelDetails?.article || "Courier"), 3.35, 1.85, { align: "center" });
         doc.text("INR", 3.35, 2.25, { align: "center" });
-        doc.text(String(amount), 3.35, 2.40, { align: "center" });
+        doc.text(String(amount ?? 0), 3.35, 2.40, { align: "center" });
 
         // Row 4: Seller / Booking customer & Date (Y: 2.5 -> 3.3)
         doc.line(0.1, 3.3, 3.9, 3.3);
@@ -191,7 +191,7 @@ export const handleLabel = async (orderId: string): Promise<void> => {
         doc.setFont("helvetica", "bold");
         doc.text("Date: ", 2.85, 2.80);
         doc.setFont("helvetica", "normal");
-        doc.text(dateStr, doc.getTextWidth("Date: ") + 2.85, 2.80);
+        doc.text(String(dateStr || "-"), doc.getTextWidth("Date: ") + 2.85, 2.80);
 
         // Row 5: Charges table header (Y: 3.3 -> 3.5)
         doc.line(0.1, 3.5, 3.9, 3.5);
@@ -209,21 +209,21 @@ export const handleLabel = async (orderId: string): Promise<void> => {
         doc.text("Loading", 0.15, 3.80);
         doc.text("Misc", 0.15, 3.95);
 
-        doc.text(String(transportationCharge), 3.1, 3.65, { align: "center" });
-        doc.text(String(loadingCharge), 3.1, 3.80, { align: "center" });
-        doc.text(String(miscellaneousCharge), 3.1, 3.95, { align: "center" });
+        doc.text(String(transportationCharge ?? 0), 3.1, 3.65, { align: "center" });
+        doc.text(String(loadingCharge ?? 0), 3.1, 3.80, { align: "center" });
+        doc.text(String(miscellaneousCharge ?? 0), 3.1, 3.95, { align: "center" });
 
         doc.text("INR", 3.65, 3.70, { align: "center" });
-        doc.text(String(amount), 3.65, 3.90, { align: "center" });
+        doc.text(String(amount ?? 0), 3.65, 3.90, { align: "center" });
 
         // Row 7: Total row (Y: 4.1 -> 4.4)
         doc.line(0.1, 4.4, 3.9, 4.4);
         doc.setFont("helvetica", "bold");
         doc.text("Total", 0.15, 4.28);
         doc.text("INR", 3.1, 4.22, { align: "center" });
-        doc.text(String(amount), 3.1, 4.38, { align: "center" });
+        doc.text(String(amount ?? 0), 3.1, 4.38, { align: "center" });
         doc.text("INR", 3.65, 4.22, { align: "center" });
-        doc.text(String(amount), 3.65, 4.38, { align: "center" });
+        doc.text(String(amount ?? 0), 3.65, 4.38, { align: "center" });
 
         // Row 8: Bottom tracking number strip (Y: 4.4 -> 5.15) — barcode replaced with big text
         doc.line(0.1, 5.15, 3.9, 5.15);

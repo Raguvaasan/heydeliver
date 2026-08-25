@@ -56,7 +56,7 @@ const RoleAndPermissionPage: FC = () => {
 
   return (
     <NavbarSidebarLayout isFooter={false}>
-      <div className="px-4 pt-6 pb-6">
+      <div className="px-4 pb-6">
         {/* Page Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">

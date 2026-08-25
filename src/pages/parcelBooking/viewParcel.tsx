@@ -103,6 +103,10 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
   const bookingCustomerAddress = resolveValue(parcel.bookingCustomerAddress || parcel.bookingCustomer?.address)
   const pickupAddress = resolveValue((parcel as any).pickupAddress)
   const deliveryAddress = resolveValue((parcel as any).deliveryAddress)
+  const deliveryAgency = resolveValue(parcel.deliveryBranch)
+  const vehicleType = resolveValue(parcel.vehicleType)
+  const vehicleCapacity = resolveValue(parcel.vehicleCapacity)
+  const waybill = resolveValue(parcel.waybill)
   const loadingCharge = (parcel as any).loadingCharge ?? (parcel as any).charges?.loadingCharge ?? 0
   const miscellaneousCharge = (parcel as any).miscellaneousCharge ?? (parcel as any).charges?.miscellaneousCharge ?? 0
   const totalAmount = (parcel as any).totalAmount ?? (parcel as any).charges?.totalAmount ?? 0
@@ -166,7 +170,10 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
                 <Field label="Name" value={parcel.deliveryCustomerName} />
                 <Field label="Mobile Number" value={parcel.deliveryCustomerMobileNumber} />
                 <Field label="Address" value={deliveryCustomerAddress} />
-                <Field label="Delivery Agency" value={parcel.deliveryBranch} />
+                {deliveryAgency && <Field label="Delivery Agency" value={deliveryAgency} />}
+                {vehicleType && <Field label="Vehicle Type" value={vehicleType} />}
+                {vehicleCapacity && <Field label="Vehicle Capacity" value={vehicleCapacity} />}
+                {waybill && <Field label="Waybill" value={waybill} />}
               </div>
             </section>
 

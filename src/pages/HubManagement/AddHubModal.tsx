@@ -148,8 +148,6 @@ const AddHubModal: FC<AddHubModalProps> = ({ isOpen, onClose }) => {
         city: values.city,
         state: values.state,
         pincode: values.pincode,
-        username: `Hub ${hubNumber}.gmail.com`,
-        password: "Admin@123",
         status: true,
       })
 

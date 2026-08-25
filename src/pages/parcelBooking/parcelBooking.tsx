@@ -321,7 +321,7 @@ const ParcelManagementPage: FC = () => {
             doc.setTextColor(255)
             doc.setFont("helvetica", "bold")
             doc.text("Description", margin + 5, currentY + 7)
-            doc.text("Qty", pageWidth - 70, currentY + 7, { align: "center" })
+            doc.text("Parcel", pageWidth - 70, currentY + 7, { align: "center" })
             doc.text("Unit Price", pageWidth - 45, currentY + 7, { align: "center" })
             doc.text("Total", pageWidth - margin - 5, currentY + 7, { align: "right" })
             doc.setTextColor(0)
@@ -330,7 +330,7 @@ const ParcelManagementPage: FC = () => {
             doc.line(margin, currentY, pageWidth - margin, currentY)
             currentY += 8
             doc.text(`${parcelDetails?.article || "Courier Charges"}`, margin + 5, currentY)
-            doc.text("1", pageWidth - 70, currentY, { align: "center" })
+            doc.text(`${parcelDetails.numberOfParcels}`, pageWidth - 70, currentY, { align: "center" })
             doc.text(`INR ${transportationCharge}`, pageWidth - 45, currentY, { align: "center" })
             doc.text(`INR ${transportationCharge}`, pageWidth - margin - 5, currentY, { align: "right" })
             currentY += 15
@@ -509,9 +509,9 @@ const ParcelManagementPage: FC = () => {
                     assignedVehicleLabel: vehicle.label,
                     bookingCustomer: item.bookingCustomer && typeof item.bookingCustomer === "object" ? item.bookingCustomer : undefined,
                     deliveryCustomer: item.deliveryCustomer && typeof item.deliveryCustomer === "object" ? item.deliveryCustomer : undefined,
-                    // Raw objects (as returned by the API) so ViewParcelModal can
-                    // render full driver/vehicle details, not just the flattened
-                    // id/name used for the dropdowns.
+                   waybill:item.waybill,
+                   vehicleType:item.vehicleType,
+                   vehicleCapacity:item.vehicleCapacity,
                     driver: item.driver && typeof item.driver === "object" ? item.driver : undefined,
                     vehicle: item.vehicle && typeof item.vehicle === "object" ? item.vehicle : undefined,
                 }

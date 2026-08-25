@@ -15,6 +15,7 @@ const EditRolePage: FC = () => {
     selectedRole,
     modules,
     fetchModules,
+    clearSelectedRole,
     loading,
   } = useRoleStore()
 
@@ -23,12 +24,13 @@ const EditRolePage: FC = () => {
   const [permissions, setPermissions] = useState<any[]>([])
 
   useEffect(() => {
+    clearSelectedRole()
     if (id) {
       // Fetch the role data for editing
       getRoleById(id)
     }
     fetchModules()
-  }, [id, getRoleById, fetchModules])
+  }, [id, getRoleById, fetchModules, clearSelectedRole])
 
   useEffect(() => {
     if (selectedRole) {
@@ -121,11 +123,6 @@ const EditRolePage: FC = () => {
     }
   }
 
-  // If role data is still loading or not found, show loading state
-  if (!selectedRole) {
-    return <div>Loading...</div>
-  }
-
   return (
     <NavbarSidebarLayout isFooter={false}>
       <div className="p-6 space-y-8 bg-[#d5e1f759] rounded-lg shadow-lg">
@@ -152,86 +149,96 @@ const EditRolePage: FC = () => {
         </div>
 
         <div className="overflow-x-auto border rounded-lg shadow-lg bg-white">
-          <table className="min-w-full divide-y divide-gray-300 text-center text-sm dark:divide-gray-700">
-            <thead className="bg-[#272727] text-white">
-              <tr>
-                <th className="py-3 px-4">Module</th>
-                <th>View</th>
-                <th>Add</th>
-                <th>Edit</th>
-                <th>Delete</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-              {displayModules.map((moduleName, index) => {
-                const currentPerm = permissions.find(
-                  (p) => p.moduleName === moduleName
-                )
-                const allChecked =
-                  currentPerm &&
-                  Object.values(currentPerm.permission).every(
-                    (val) => val === true
+          {loading && !selectedRole ? (
+            <div className="flex items-center justify-center py-16 text-gray-600">
+              Loading role details...
+            </div>
+          ) : !selectedRole ? (
+            <div className="flex items-center justify-center py-16 text-gray-600">
+              Role not found.
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-300 text-center text-sm dark:divide-gray-700">
+              <thead className="bg-[#272727] text-white">
+                <tr>
+                  <th className="py-3 px-4">Module</th>
+                  <th>View</th>
+                  <th>Add</th>
+                  <th>Edit</th>
+                  <th>Delete</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                {displayModules.map((moduleName, index) => {
+                  const currentPerm = permissions.find(
+                    (p) => p.moduleName === moduleName
                   )
-
-                const handleSelectAllRow = () => {
-                  setPermissions((prev) => {
-                    const updated = [...prev]
-                    const idx = updated.findIndex(
-                      (p) => p.moduleName === moduleName
+                  const allChecked =
+                    currentPerm &&
+                    Object.values(currentPerm.permission).every(
+                      (val) => val === true
                     )
-                    if (idx !== -1) {
-                      updated[idx] = {
-                        ...updated[idx],
-                        permission: {
-                          view: !allChecked,
-                          add: !allChecked,
-                          edit: !allChecked,
-                          delete: !allChecked,
-                        },
-                      }
-                    } else {
-                      updated.push({
-                        moduleName,
-                        permission: {
-                          view: true,
-                          add: true,
-                          edit: true,
-                          delete: true,
-                        },
-                      })
-                    }
-                    return updated
-                  })
-                }
 
-                return (
-                  <tr key={index} className="hover:bg-gray-100">
-                    <td className="py-3 px-4 font-medium text-gray-800 flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        className="form-checkbox h-4 w-4 text-blue-600"
-                        checked={allChecked}
-                        onChange={handleSelectAllRow}
-                      />
-                      {moduleName}
-                    </td>
-                    {["view", "add", "edit", "delete"].map((action) => (
-                      <td key={action} className="py-3 px-4">
+                  const handleSelectAllRow = () => {
+                    setPermissions((prev) => {
+                      const updated = [...prev]
+                      const idx = updated.findIndex(
+                        (p) => p.moduleName === moduleName
+                      )
+                      if (idx !== -1) {
+                        updated[idx] = {
+                          ...updated[idx],
+                          permission: {
+                            view: !allChecked,
+                            add: !allChecked,
+                            edit: !allChecked,
+                            delete: !allChecked,
+                          },
+                        }
+                      } else {
+                        updated.push({
+                          moduleName,
+                          permission: {
+                            view: true,
+                            add: true,
+                            edit: true,
+                            delete: true,
+                          },
+                        })
+                      }
+                      return updated
+                    })
+                  }
+
+                  return (
+                    <tr key={index} className="hover:bg-gray-100">
+                      <td className="py-3 px-4 font-medium text-gray-800 flex items-center gap-3">
                         <input
                           type="checkbox"
-                          className="form-checkbox h-4 w-4 text-blue-600 hover:bg-blue-200"
-                          checked={currentPerm?.permission?.[action] === true}
-                          onChange={() =>
-                            handleCheckboxChange(moduleName, action)
-                          }
+                          className="form-checkbox h-4 w-4 text-blue-600"
+                          checked={allChecked}
+                          onChange={handleSelectAllRow}
                         />
+                        {moduleName}
                       </td>
-                    ))}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                      {["view", "add", "edit", "delete"].map((action) => (
+                        <td key={action} className="py-3 px-4">
+                          <input
+                            type="checkbox"
+                            className="form-checkbox h-4 w-4 text-blue-600 hover:bg-blue-200"
+                            checked={currentPerm?.permission?.[action] === true}
+                            onChange={() =>
+                              handleCheckboxChange(moduleName, action)
+                            }
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div className="flex justify-end gap-6 mt-8">

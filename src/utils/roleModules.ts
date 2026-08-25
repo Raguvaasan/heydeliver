@@ -1,30 +1,29 @@
 const adminRoleModules = [
   "Dashboard",
-  "Franchise",
-  "Collection Agency",
+  "Agency",
   "Hub",
   "Route",
+  "Orders",
+  "Vehicle",
+  "Driver",
   "Customers",
   "Access Management",
-  "Orders",
-  "Payments",
-  "Reports",
-  "Tracking",
   "Settings",
   "Careers",
 ]
 
 const franchiseRoleModules = [
-  "Dashboard",
+   "Dashboard",
+  "Agency",
+  "Hub",
+  "Route",
   "Orders",
-  "Manage Staffs",
-  "Role & Permissions",
-  "Rate Calculator",
-  "Service Availability Check",
-  "Tracking",
-  "Wallet",
-  "Reports",
-  "Profile",
+  "Vehicle",
+  "Driver",
+  "Customers",
+  "Access Management",
+  "Settings",
+  "Careers",
 ]
 
 const hubRestrictedModules = new Set(["Wallet", "Reports"])
@@ -35,7 +34,13 @@ interface GetRoleModulesArgs {
   extraModules?: string[]
 }
 
-const normalizeModuleName = (moduleName: string): string => moduleName.trim().toLowerCase()
+const normalizeModuleName = (moduleName: unknown): string => {
+  if (typeof moduleName !== "string") {
+    return ""
+  }
+
+  return moduleName.trim().toLowerCase()
+}
 
 const mergeModules = (...moduleGroups: string[][]): string[] => {
   const seenModules = new Set<string>()
@@ -43,7 +48,7 @@ const mergeModules = (...moduleGroups: string[][]): string[] => {
 
   moduleGroups.forEach((group) => {
     group.forEach((moduleName) => {
-      if (!moduleName?.trim()) return
+      if (typeof moduleName !== "string" || !moduleName.trim()) return
 
       const normalizedName = normalizeModuleName(moduleName)
       if (seenModules.has(normalizedName)) return
@@ -56,6 +61,9 @@ const mergeModules = (...moduleGroups: string[][]): string[] => {
   return mergedModules
 }
 
+const buildAllowedModuleSet = (modules: string[]): Set<string> =>
+  new Set(modules.map((moduleName) => normalizeModuleName(moduleName)).filter(Boolean))
+
 export const getRoleModules = ({
   loginType,
   apiModules = [],
@@ -64,12 +72,20 @@ export const getRoleModules = ({
   const normalizedLoginType = loginType.toLowerCase()
   const baseModules =
     normalizedLoginType === "franchise" ||
-    normalizedLoginType === "hub" ||
-    normalizedLoginType === "staff"
+      normalizedLoginType === "hub" ||
+      normalizedLoginType === "staff"
       ? franchiseRoleModules
-      : adminRoleModules
+    : adminRoleModules
 
-  const mergedModules = mergeModules(baseModules, apiModules, extraModules)
+  const allowedModules = buildAllowedModuleSet(baseModules)
+  const filteredApiModules = apiModules.filter((moduleName) =>
+    allowedModules.has(normalizeModuleName(moduleName))
+  )
+  const filteredExtraModules = extraModules.filter((moduleName) =>
+    allowedModules.has(normalizeModuleName(moduleName))
+  )
+
+  const mergedModules = mergeModules(baseModules, filteredApiModules, filteredExtraModules)
 
   if (normalizedLoginType === "hub") {
     return mergedModules.filter((moduleName) => !hubRestrictedModules.has(moduleName))

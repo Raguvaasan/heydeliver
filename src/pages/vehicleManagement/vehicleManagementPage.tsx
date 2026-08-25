@@ -138,6 +138,7 @@ const VehicleManagementPage: FC = () => {
                                     <tr>
                                         <th className="px-4 py-3 w-16">S.No</th>
                                         <th className="px-4 py-3">Type</th>
+                                        <th className="px-4 py-3">Capacity</th>
                                         <th className="px-4 py-3">Vehicle Registration Number</th>
                                         <th className="px-4 py-3">Status</th>
                                         <th className="px-4 py-3 text-center">Action</th>
@@ -150,6 +151,7 @@ const VehicleManagementPage: FC = () => {
                                             <tr key={vehicle.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                                                 <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
                                                 <td className="px-4 py-3 text-gray-900 dark:text-white">{vehicle.type}</td>
+                                                <td className="px-4 py-3 text-gray-900 dark:text-white">{vehicle.capacity}</td>
                                                 <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{vehicle.registrationNumber}</td>
                                                 <td className="px-4 py-3 inline-block">
                                                     <Badge color={vehicle.status === "Active" ? "success" : "failure"}>

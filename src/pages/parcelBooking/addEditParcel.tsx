@@ -17,6 +17,9 @@ export interface ParcelFormValues {
     deliveryPincode?: string
     deliveryCustomerGstNumber: string
     deliveryBranch: string
+    waybill: string
+    vehicleType: string
+    vehicleCapacity: string
 
     bookingCustomerName: string
     bookingMobileNumber: string
@@ -74,6 +77,9 @@ export interface Parcel extends ParcelFormValues {
         vehicleRegistrationNumber?: string
         status?: string
     }
+    waybill?: string
+    vehicleType?: string
+    vehicleCapacity?: string
     bookingCustomer?: {
         name?: string
         mobileNumber?: string
@@ -149,7 +155,7 @@ const FormRadioGroup: FC<{
     )
 }
 
-const fullSchema = Yup.object({
+const buildFullSchema = (isOwnAgency: boolean) => Yup.object({
     deliveryCustomerName: Yup.string().trim().required("Delivery customer name is required").min(2).max(100),
     deliveryCustomerMobileNumber: Yup.string().trim().required("Delivery customer mobile number is required").matches(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number"),
     deliveryCustomerAddress: Yup.string().trim().required("Delivery customer address is required").min(5).max(250),
@@ -158,7 +164,12 @@ const fullSchema = Yup.object({
         .optional()
         .transform((value) => (value ? value.toUpperCase() : ""))
         .matches(/^$|^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/, "Enter a valid GSTIN"),
-    deliveryBranch: Yup.string().trim().required("Delivery branch is required").min(2),
+    deliveryBranch: isOwnAgency
+        ? Yup.string().trim().notRequired()
+        : Yup.string().trim().required("Delivery branch is required").min(2),
+    waybill: Yup.string().trim().required("Waybill is required").min(2).max(50),
+    vehicleType: Yup.string().trim().required("Vehicle type is required").min(2).max(50),
+    vehicleCapacity: Yup.string().trim().required("Vehicle capacity is required").min(1).max(50),
     bookingCustomerName: Yup.string().trim().required("Booking customer name is required").min(2).max(100),
     bookingMobileNumber: Yup.string().trim().required("Booking customer mobile number is required").matches(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number"),
     bookingCustomerAddress: Yup.string().trim().required("Booking customer address is required").min(5).max(250),
@@ -198,6 +209,9 @@ const emptyValues: ParcelFormValues = {
     deliveryCustomerAddress: "",
     deliveryCustomerGstNumber: "",
     deliveryBranch: "",
+    waybill: "",
+    vehicleType: "",
+    vehicleCapacity: "",
     bookingCustomerName: "",
     bookingMobileNumber: "",
     bookingCustomerAddress: "",
@@ -227,6 +241,14 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
     const [deliveryBranches, setDeliveryBranches] = useState<DeliveryBranchOption[]>([])
     const [deliveryBranchesLoading, setDeliveryBranchesLoading] = useState(false)
     const resetFormRef = useRef<null | ((nextState?: { values: ParcelFormValues }) => void)>(null)
+    const profileData = (() => {
+        try {
+            return JSON.parse(sessionStorage.getItem("profileData") || "{}")
+        } catch {
+            return {}
+        }
+    })()
+    const isOwnAgency = String(profileData?.type || profileData?.data?.type || "").toLowerCase() === "own"
 
     const resolveDeliveryBranchValue = () => {
         if (!isEdit || !parcel) return ""
@@ -253,6 +275,9 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
             deliveryCustomerAddress: parcel.deliveryCustomerAddress || "",
             deliveryCustomerGstNumber: parcel.deliveryCustomerGstNumber || "",
             deliveryBranch: resolveDeliveryBranchValue(),
+            waybill: parcel.waybill || "",
+            vehicleType: parcel.vehicleType || parcel.vehicle?.vehicleType || "",
+            vehicleCapacity: parcel.vehicleCapacity || parcel.vehicle?.capacity || "",
             bookingCustomerName: parcel.bookingCustomerName || "",
             bookingMobileNumber: parcel.bookingMobileNumber || "",
             bookingCustomerAddress: parcel.bookingCustomerAddress || "",
@@ -404,7 +429,6 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                 .toUpperCase(),
                         }
                         : {}),
-                    deliveryBranch: values.deliveryBranch.trim(),
                 },
                 parcelDetails: {
                     article: values.article.trim(),
@@ -413,6 +437,15 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                     approximateValue: Number(values.approximateValue),
                 },
                 transportationCharge: values.transportationCharge,
+                ...(isOwnAgency
+                    ? {
+                        waybill: values.waybill.trim(),
+                        vehicleType: values.vehicleType.trim(),
+                        vehicleCapacity: values.vehicleCapacity.trim(),
+                    }
+                    : {
+                        deliveryBranch: values.deliveryBranch.trim(),
+                    }),
                 ...(values.pickupAddressEnabled && values.pickupAddress.trim()
                     ? { pickupAddress: values.pickupAddress.trim() }
                     : {}),
@@ -503,7 +536,7 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                     <Formik
                         initialValues={initialValues}
                         enableReinitialize
-                        validationSchema={chargeOnly ? chargeSchema : fullSchema}
+                        validationSchema={chargeOnly ? chargeSchema : buildFullSchema(isOwnAgency)}
                         onSubmit={handleSubmit}
                     >
                         {({ isSubmitting, resetForm, values, setFieldValue }) => {
@@ -516,17 +549,25 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                             <FormInput name="deliveryCustomerMobileNumber" label="Mobile Number" required disabled={fieldsDisabled} />
                                             <FormInput name="deliveryCustomerAddress" label="Address" required disabled={fieldsDisabled} />
                                             <FormInput name="deliveryCustomerGstNumber" label="GST Number" disabled={fieldsDisabled} helperText="Optional, must be a valid GSTIN if provided" />
-                                            <FormSelect
-                                                name="deliveryBranch"
-                                                label="Delivery Agency"
-                                                required
-                                                disabled={fieldsDisabled || deliveryBranchesLoading}
-                                                options={deliveryBranches.map((branch) => ({
-                                                    value: branch.id,
-                                                    label: branch.agencyName,
-                                                }))}
-                                                helperText={deliveryBranchesLoading ? "Loading delivery branches..." : undefined}
-                                            />
+                                            {isOwnAgency ? (
+                                                <>
+                                                    <FormInput name="waybill" label="Waybill" required disabled={fieldsDisabled} />
+                                                    <FormInput name="vehicleType" label="Vehicle Type" required disabled={fieldsDisabled} />
+                                                    <FormInput name="vehicleCapacity" label="Vehicle Capacity" required disabled={fieldsDisabled} />
+                                                </>
+                                            ) : (
+                                                <FormSelect
+                                                    name="deliveryBranch"
+                                                    label="Delivery Agency"
+                                                    required
+                                                    disabled={fieldsDisabled || deliveryBranchesLoading}
+                                                    options={deliveryBranches.map((branch) => ({
+                                                        value: branch.id,
+                                                        label: branch.agencyName,
+                                                    }))}
+                                                    helperText={deliveryBranchesLoading ? "Loading delivery branches..." : undefined}
+                                                />
+                                            )}
                                         </div>
                                     </FormSection>
 

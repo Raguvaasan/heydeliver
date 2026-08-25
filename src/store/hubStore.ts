@@ -11,7 +11,6 @@ interface Hub {
   city: string
   state: string
   pincode: string
-  username: string
   status: boolean
   createdAt?: string
   updatedAt?: string

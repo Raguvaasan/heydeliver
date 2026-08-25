@@ -112,88 +112,98 @@ const AddRolePage: FC = () => {
         </div>
 
         <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
-          <table className="min-w-full divide-y divide-gray-300 text-center text-sm dark:divide-gray-700">
-            <thead className="bg-[#272727] text-white">
-              <tr>
-                <th className="py-3 px-4">Module</th>
-                <th>View</th>
-                <th>Add</th>
-                <th>Edit</th>
-                <th>Delete</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-              {displayModules.map((moduleName, index) => {
-                const currentPerm = permissions.find(
-                  (p) => p.moduleName === moduleName
-                )
-                const allChecked =
-                  currentPerm &&
-                  Object.values(currentPerm.permission).every(
-                    (val) => val === true
+          {loading && displayModules.length === 0 ? (
+            <div className="flex items-center justify-center py-16 text-gray-600 dark:text-gray-300">
+              Loading modules...
+            </div>
+          ) : displayModules.length === 0 ? (
+            <div className="flex items-center justify-center py-16 text-gray-600 dark:text-gray-300">
+              No modules available for the current account.
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-300 text-center text-sm dark:divide-gray-700">
+              <thead className="bg-[#272727] text-white">
+                <tr>
+                  <th className="py-3 px-4">Module</th>
+                  <th>View</th>
+                  <th>Add</th>
+                  <th>Edit</th>
+                  <th>Delete</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                {displayModules.map((moduleName, index) => {
+                  const currentPerm = permissions.find(
+                    (p) => p.moduleName === moduleName
                   )
-
-                const handleSelectAllRow = () => {
-                  setPermissions((prevPermissions) => {
-                    const updated = [...prevPermissions]
-                    const moduleIndex = updated.findIndex(
-                      (p) => p.moduleName === moduleName
+                  const allChecked =
+                    currentPerm &&
+                    Object.values(currentPerm.permission).every(
+                      (val) => val === true
                     )
 
-                    if (moduleIndex !== -1) {
-                      updated[moduleIndex] = {
-                        ...updated[moduleIndex],
-                        permission: {
-                          view: !allChecked,
-                          add: !allChecked,
-                          edit: !allChecked,
-                          delete: !allChecked,
-                        },
+                  const handleSelectAllRow = () => {
+                    setPermissions((prevPermissions) => {
+                      const updated = [...prevPermissions]
+                      const moduleIndex = updated.findIndex(
+                        (p) => p.moduleName === moduleName
+                      )
+
+                      if (moduleIndex !== -1) {
+                        updated[moduleIndex] = {
+                          ...updated[moduleIndex],
+                          permission: {
+                            view: !allChecked,
+                            add: !allChecked,
+                            edit: !allChecked,
+                            delete: !allChecked,
+                          },
+                        }
+                      } else {
+                        updated.push({
+                          moduleName,
+                          permission: {
+                            view: true,
+                            add: true,
+                            edit: true,
+                            delete: true,
+                          },
+                        })
                       }
-                    } else {
-                      updated.push({
-                        moduleName,
-                        permission: {
-                          view: true,
-                          add: true,
-                          edit: true,
-                          delete: true,
-                        },
-                      })
-                    }
 
-                    return updated
-                  })
-                }
+                      return updated
+                    })
+                  }
 
-                return (
-                  <tr key={index} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <td className="py-3 px-4 font-medium text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        className="form-checkbox h-4 w-4 text-primary-600 dark:text-primary-400"
-                        checked={allChecked}
-                        onChange={handleSelectAllRow}
-                      />
-                      {moduleName}
-                    </td>
-                    {["view", "add", "edit", "delete"].map((action) => (
-                      <td key={action} className="py-3 px-4">
+                  return (
+                    <tr key={index} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <td className="py-3 px-4 font-medium text-gray-800 dark:text-gray-100 flex items-center gap-2">
                         <input
                           type="checkbox"
-                          className="form-checkbox h-4 w-4 text-primary-600 hover:bg-primary-100 dark:text-primary-400 dark:hover:bg-primary-900/20"
-                          checked={currentPerm?.permission?.[action] === true}
-                          onChange={() =>
-                            handleCheckboxChange(moduleName, action)
-                          }
+                          className="form-checkbox h-4 w-4 text-primary-600 dark:text-primary-400"
+                          checked={allChecked}
+                          onChange={handleSelectAllRow}
                         />
+                        {moduleName}
                       </td>
-                    ))}
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                      {["view", "add", "edit", "delete"].map((action) => (
+                        <td key={action} className="py-3 px-4">
+                          <input
+                            type="checkbox"
+                            className="form-checkbox h-4 w-4 text-primary-600 hover:bg-primary-100 dark:text-primary-400 dark:hover:bg-primary-900/20"
+                            checked={currentPerm?.permission?.[action] === true}
+                            onChange={() =>
+                              handleCheckboxChange(moduleName, action)
+                            }
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div className="flex justify-end gap-6 mt-8">
