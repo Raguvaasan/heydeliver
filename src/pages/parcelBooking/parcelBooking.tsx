@@ -193,6 +193,9 @@ const ParcelManagementPage: FC = () => {
             const dateStr = dObj.toLocaleDateString()
             const pickupAddress = invoiceData?.pickupAddress || order?.pickupAddress || billTo?.address || ""
             const deliveryAddressFull = invoiceData?.deliveryAddress || order?.deliveryAddress || shipTo?.address || ""
+            const waybill = order?.waybill || invoiceData?.waybill || ""
+            const vehicleType = order?.vehicleType || ""
+            const vehicleCapacity = order?.vehicleCapacity || ""
 
             const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
             const margin = 20
@@ -250,6 +253,13 @@ const ParcelManagementPage: FC = () => {
             infoRow("Invoice:", String(invoiceData?.invoiceNumber || order?.orderNumber || orderId))
             infoRow("Date:", dateStr)
             infoRow("LR Number:", String(order?.orderNumber || invoiceData?.orderNumber || orderId))
+            if (waybill) {
+    infoRow("Waybill:", String(waybill))
+}
+if (vehicleType || vehicleCapacity) {
+    const vehicleParts = [vehicleType, vehicleCapacity ? `${vehicleCapacity} kg` : ""].filter(Boolean).join(" - ")
+    infoRow("Vehicle:", vehicleParts)
+}
             infoRow("Agency:", String(issuedByAgency?.agencyName || invoiceData?.agency?.agencyName || "-"))
 
             currentY = Math.max(fromBlockEndY, infoY) + 10
@@ -509,9 +519,9 @@ const ParcelManagementPage: FC = () => {
                     assignedVehicleLabel: vehicle.label,
                     bookingCustomer: item.bookingCustomer && typeof item.bookingCustomer === "object" ? item.bookingCustomer : undefined,
                     deliveryCustomer: item.deliveryCustomer && typeof item.deliveryCustomer === "object" ? item.deliveryCustomer : undefined,
-                   waybill:item.waybill,
-                   vehicleType:item.vehicleType,
-                   vehicleCapacity:item.vehicleCapacity,
+                    waybill: item.waybill,
+                    vehicleType: item.vehicleType,
+                    vehicleCapacity: item.vehicleCapacity,
                     driver: item.driver && typeof item.driver === "object" ? item.driver : undefined,
                     vehicle: item.vehicle && typeof item.vehicle === "object" ? item.vehicle : undefined,
                 }
@@ -550,175 +560,175 @@ const ParcelManagementPage: FC = () => {
         }
     }
 
-const estimateLineCount = (text: string, columnWidth: number): number => {
-    if (!text) return 1
-    const charsPerLine = Math.max(Math.floor(columnWidth * 1.7), 1)
-    const segments = String(text).split("\n")
-    let totalLines = 0
-    for (const segment of segments) {
-        totalLines += Math.max(Math.ceil(segment.length / charsPerLine), 1)
-    }
-    return totalLines
-}
-
-const COLUMN_WIDTH_OVERRIDES: Record<string, number> = {
-    "Order Number": 16,
-    "Booking Date": 24,        
-    "Article": 16,
-    "No. of Parcels": 14,
-    "Delivery Customer Name": 22,
-    "Delivery Mobile": 16,
-    "Delivery Address": 34,   
-    "Delivery Agency/Branch": 22,
-    "Delivery Pincode": 16,
-    "Payment Type": 14,
-    "Total Amount": 16,
-}
-
-const handleExport = async () => {
-    setIsExporting(true)
-    try {
-        const authToken = getAuthToken()
-        const query = new URLSearchParams({ page: "1", limit: String(PAGE_SIZE) })
-        if (searchTerm.trim()) query.set("search", searchTerm.trim())
-        if (statusFilter) query.set("status", statusFilter)
-        if (dateFrom) query.set("dateFrom", dateFrom)
-        if (dateTo) query.set("dateTo", dateTo)
-
-        const response = await fetch(`${API_BASE}?${query.toString()}`, {
-            headers: { Authorization: `Bearer ${authToken}` },
-        })
-        if (!response.ok) throw new Error("Failed to export parcel bookings")
-
-        const payload = await response.json()
-        const orders = payload?.data?.orders ?? payload?.orders ?? []
-
-        if (orders.length === 0) {
-            toast.error("No parcel bookings available to export")
-            return
+    const estimateLineCount = (text: string, columnWidth: number): number => {
+        if (!text) return 1
+        const charsPerLine = Math.max(Math.floor(columnWidth * 1.7), 1)
+        const segments = String(text).split("\n")
+        let totalLines = 0
+        for (const segment of segments) {
+            totalLines += Math.max(Math.ceil(segment.length / charsPerLine), 1)
         }
+        return totalLines
+    }
 
-        const rows = orders.map((item: any) => ({
-            "Order Number": item.orderNumber || "",
-            "Booking Date": formatDate(item.bookingDate || item.createdAt),
-            "Article": item.parcelDetails?.article || "",
-            "No. of Parcels": item.parcelDetails?.numberOfParcels ?? "",
-            "Delivery Customer Name": item.deliveryCustomer?.name || "",
-            "Delivery Mobile": item.deliveryCustomer?.mobileNumber || "",
-            "Delivery Address": item.deliveryCustomer?.address || item.deliveryAddress || "",
-            "Delivery Agency/Branch":
-                item.deliveryCustomer?.deliveryBranch?.agencyName ||
-                item.deliveryCustomer?.deliveryBranch?.name ||
-                item.deliveryCustomer?.deliveryBranch ||
-                "",
-            "Payment Type": item.paymentType || "",
-            "Total Amount":
-                item.charges?.totalAmount ?? item.totalAmount ?? item.total_amount ?? item.invoiceAmount ?? 0,
-        }))
+    const COLUMN_WIDTH_OVERRIDES: Record<string, number> = {
+        "Order Number": 16,
+        "Booking Date": 24,
+        "Article": 16,
+        "No. of Parcels": 14,
+        "Delivery Customer Name": 22,
+        "Delivery Mobile": 16,
+        "Delivery Address": 34,
+        "Delivery Agency/Branch": 22,
+        "Delivery Pincode": 16,
+        "Payment Type": 14,
+        "Total Amount": 16,
+    }
 
-        const columns = Object.keys(rows[0]).map((key) => ({
-            header: key,
-            key,
-            width: COLUMN_WIDTH_OVERRIDES[key] ?? Math.max(key.length + 6, 16),
-        }))
+    const handleExport = async () => {
+        setIsExporting(true)
+        try {
+            const authToken = getAuthToken()
+            const query = new URLSearchParams({ page: "1", limit: String(PAGE_SIZE) })
+            if (searchTerm.trim()) query.set("search", searchTerm.trim())
+            if (statusFilter) query.set("status", statusFilter)
+            if (dateFrom) query.set("dateFrom", dateFrom)
+            if (dateTo) query.set("dateTo", dateTo)
 
-        const workbook = new ExcelJS.Workbook()
-        workbook.creator = "Parcel Bookings"
-        workbook.created = new Date()
+            const response = await fetch(`${API_BASE}?${query.toString()}`, {
+                headers: { Authorization: `Bearer ${authToken}` },
+            })
+            if (!response.ok) throw new Error("Failed to export parcel bookings")
 
-        const sheet = workbook.addWorksheet("Parcel Bookings", {
-            views: [{ state: "frozen", ySplit: 1 }],
-        })
-        sheet.columns = columns
-        sheet.addRows(rows)
+            const payload = await response.json()
+            const orders = payload?.data?.orders ?? payload?.orders ?? []
 
-        // Header styling
-        const headerRow = sheet.getRow(1)
-        headerRow.eachCell((cell) => {
-            cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 }
-            cell.fill = {
-                type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "FF1F4E78" },
+            if (orders.length === 0) {
+                toast.error("No parcel bookings available to export")
+                return
             }
-            cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true }
-            cell.border = {
-                top: { style: "thin", color: { argb: "FFB7B7B7" } },
-                left: { style: "thin", color: { argb: "FFB7B7B7" } },
-                bottom: { style: "thin", color: { argb: "FFB7B7B7" } },
-                right: { style: "thin", color: { argb: "FFB7B7B7" } },
-            }
-        })
-        headerRow.height = 24
 
-        const amountColIndex = columns.findIndex((c) => c.key === "Total Amount") + 1
-        const BASE_LINE_HEIGHT = 16 // points per wrapped line
-        const ROW_PADDING = 10
+            const rows = orders.map((item: any) => ({
+                "Order Number": item.orderNumber || "",
+                "Booking Date": formatDate(item.bookingDate || item.createdAt),
+                "Article": item.parcelDetails?.article || "",
+                "No. of Parcels": item.parcelDetails?.numberOfParcels ?? "",
+                "Delivery Customer Name": item.deliveryCustomer?.name || "",
+                "Delivery Mobile": item.deliveryCustomer?.mobileNumber || "",
+                "Delivery Address": item.deliveryCustomer?.address || item.deliveryAddress || "",
+                "Delivery Agency/Branch":
+                    item.deliveryCustomer?.deliveryBranch?.agencyName ||
+                    item.deliveryCustomer?.deliveryBranch?.name ||
+                    item.deliveryCustomer?.deliveryBranch ||
+                    "",
+                "Payment Type": item.paymentType || "",
+                "Total Amount":
+                    item.charges?.totalAmount ?? item.totalAmount ?? item.total_amount ?? item.invoiceAmount ?? 0,
+            }))
 
-        sheet.eachRow((row, rowNumber) => {
-            if (rowNumber === 1) return
+            const columns = Object.keys(rows[0]).map((key) => ({
+                header: key,
+                key,
+                width: COLUMN_WIDTH_OVERRIDES[key] ?? Math.max(key.length + 6, 16),
+            }))
 
-            let maxLines = 1
-            row.eachCell((cell, colNumber) => {
+            const workbook = new ExcelJS.Workbook()
+            workbook.creator = "Parcel Bookings"
+            workbook.created = new Date()
+
+            const sheet = workbook.addWorksheet("Parcel Bookings", {
+                views: [{ state: "frozen", ySplit: 1 }],
+            })
+            sheet.columns = columns
+            sheet.addRows(rows)
+
+            // Header styling
+            const headerRow = sheet.getRow(1)
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 }
+                cell.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FF1F4E78" },
+                }
+                cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true }
                 cell.border = {
-                    top: { style: "thin", color: { argb: "FFE0E0E0" } },
-                    left: { style: "thin", color: { argb: "FFE0E0E0" } },
-                    bottom: { style: "thin", color: { argb: "FFE0E0E0" } },
-                    right: { style: "thin", color: { argb: "FFE0E0E0" } },
+                    top: { style: "thin", color: { argb: "FFB7B7B7" } },
+                    left: { style: "thin", color: { argb: "FFB7B7B7" } },
+                    bottom: { style: "thin", color: { argb: "FFB7B7B7" } },
+                    right: { style: "thin", color: { argb: "FFB7B7B7" } },
                 }
-                cell.alignment = {
-                    vertical: "middle",
-                    horizontal: colNumber === amountColIndex ? "right" : "left",
-                    wrapText: true,
-                }
-                if (rowNumber % 2 === 0) {
-                    cell.fill = {
-                        type: "pattern",
-                        pattern: "solid",
-                        fgColor: { argb: "FFF7F9FC" },
-                    }
-                }
+            })
+            headerRow.height = 24
 
-                const colWidth = columns[colNumber - 1]?.width ?? 16
-                const cellText = cell.value != null ? String(cell.value) : ""
-                const lines = estimateLineCount(cellText, colWidth)
-                if (lines > maxLines) maxLines = lines
+            const amountColIndex = columns.findIndex((c) => c.key === "Total Amount") + 1
+            const BASE_LINE_HEIGHT = 16 // points per wrapped line
+            const ROW_PADDING = 10
+
+            sheet.eachRow((row, rowNumber) => {
+                if (rowNumber === 1) return
+
+                let maxLines = 1
+                row.eachCell((cell, colNumber) => {
+                    cell.border = {
+                        top: { style: "thin", color: { argb: "FFE0E0E0" } },
+                        left: { style: "thin", color: { argb: "FFE0E0E0" } },
+                        bottom: { style: "thin", color: { argb: "FFE0E0E0" } },
+                        right: { style: "thin", color: { argb: "FFE0E0E0" } },
+                    }
+                    cell.alignment = {
+                        vertical: "middle",
+                        horizontal: colNumber === amountColIndex ? "right" : "left",
+                        wrapText: true,
+                    }
+                    if (rowNumber % 2 === 0) {
+                        cell.fill = {
+                            type: "pattern",
+                            pattern: "solid",
+                            fgColor: { argb: "FFF7F9FC" },
+                        }
+                    }
+
+                    const colWidth = columns[colNumber - 1]?.width ?? 16
+                    const cellText = cell.value != null ? String(cell.value) : ""
+                    const lines = estimateLineCount(cellText, colWidth)
+                    if (lines > maxLines) maxLines = lines
+                })
+
+                row.height = maxLines * BASE_LINE_HEIGHT + ROW_PADDING
+
+                const amountCell = row.getCell(amountColIndex)
+                amountCell.numFmt = "#,##0.00"
             })
 
-            row.height = maxLines * BASE_LINE_HEIGHT + ROW_PADDING
+            await sheet.protect("", {
+                selectLockedCells: true,
+                selectUnlockedCells: true,
+                formatCells: false,
+                formatColumns: false,
+                formatRows: false,
+                insertRows: false,
+                insertColumns: false,
+                insertHyperlinks: false,
+                deleteRows: false,
+                deleteColumns: false,
+                sort: false,
+                autoFilter: false,
+                pivotTables: false,
+            })
 
-            const amountCell = row.getCell(amountColIndex)
-            amountCell.numFmt = "#,##0.00"
-        })
-
-        await sheet.protect("", {
-            selectLockedCells: true,
-            selectUnlockedCells: true,
-            formatCells: false,
-            formatColumns: false,
-            formatRows: false,
-            insertRows: false,
-            insertColumns: false,
-            insertHyperlinks: false,
-            deleteRows: false,
-            deleteColumns: false,
-            sort: false,
-            autoFilter: false,
-            pivotTables: false,
-        })
-
-        const buffer = await workbook.xlsx.writeBuffer()
-        saveAs(
-            new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
-            "parcel-bookings.xlsx"
-        )
-        toast.success("Parcel bookings exported successfully")
-    } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to export parcel bookings")
-    } finally {
-        setIsExporting(false)
+            const buffer = await workbook.xlsx.writeBuffer()
+            saveAs(
+                new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+                "parcel-bookings.xlsx"
+            )
+            toast.success("Parcel bookings exported successfully")
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Failed to export parcel bookings")
+        } finally {
+            setIsExporting(false)
+        }
     }
-}
 
     const fetchHubs = async () => {
         try {

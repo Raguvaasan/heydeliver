@@ -72,7 +72,9 @@ export const handleLabel = async (orderId: string): Promise<void> => {
             order?.orderNumber || invoiceData?.invoiceNumber || invoiceData?.orderNumber || orderId
         )
         const paymentType = invoiceData?.paymentType || order?.paymentType || "-"
-
+        const waybill = order?.waybill || invoiceData?.waybill || ""
+        const vehicleType = order?.vehicleType || ""
+        const vehicleCapacity = order?.vehicleCapacity || ""
         const franchiseName = String(issuedByAgency?.agencyName || issuedByAgency?.name || "TrueCargo")
 
         const returnAdd = [
@@ -192,6 +194,30 @@ export const handleLabel = async (orderId: string): Promise<void> => {
         doc.text("Date: ", 2.85, 2.80);
         doc.setFont("helvetica", "normal");
         doc.text(String(dateStr || "-"), doc.getTextWidth("Date: ") + 2.85, 2.80);
+
+        // -- Waybill / Vehicle (new) --
+        let nextY = 2.80;
+        if (waybill) {
+            nextY += 0.15;
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "bold");
+            doc.text("Waybill: ", 2.85, nextY);
+            doc.setFont("helvetica", "normal");
+            const waybillLabelW = doc.getTextWidth("Waybill: ");
+            const waybillLines = doc.splitTextToSize(String(waybill), 3.9 - (2.85 + waybillLabelW));
+            doc.text(waybillLines, 2.85 + waybillLabelW, nextY);
+            nextY += (waybillLines.length - 1) * 0.12; // only add for extra wrapped lines
+        }
+        if (vehicleType || vehicleCapacity) {
+            nextY += 0.13; // smaller gap since we're already past the last line's baseline
+            doc.setFont("helvetica", "bold");
+            doc.text("Vehicle: ", 2.85, nextY);
+            const vehicleLabelW = doc.getTextWidth("Vehicle: ");
+            doc.setFont("helvetica", "normal");
+            doc.text(String(vehicleType), 2.85 + vehicleLabelW, nextY);
+            nextY += 0.13;
+            doc.text(`(${vehicleCapacity} kg)`, 2.25 + vehicleLabelW + doc.getTextWidth(String(vehicleType)) + 0.05, nextY);
+        }
 
         // Row 5: Charges table header (Y: 3.3 -> 3.5)
         doc.line(0.1, 3.5, 3.9, 3.5);
