@@ -4,14 +4,20 @@ import toast from "react-hot-toast"
 
 export interface B2BCustomer {
   id: string
-  firstName: string
-  lastName: string
-  email: string
+  name: string
   mobileNumber: string
-  gst?: string
-  status: "Active" | "Inactive"
+  address?: string
+  state?: string
+  pincode?: string
+  gstNumber?: string
+  status: string
   createdAt?: string
   updatedAt?: string
+  // Kept optional for the existing add/edit forms until their API is migrated.
+  firstName?: string
+  lastName?: string
+  email?: string
+  gst?: string
 }
 
 interface Pagination {
@@ -52,22 +58,27 @@ export const useB2BCustomerStore = create<B2BCustomerState>((set) => ({
       const params: Record<string, string | number> = { page, limit }
       if (search) params.search = search
       if (status) params.status = status
-      const res = await http.get("/admin/customers", { params })
+      const res = await http.get("/admin/b2b/users", { params })
       const data = res.data?.data || res.data
-      const list = data?.customers || data || []
+      const list = data?.users || data?.customers || data || []
       set({
         customers: (Array.isArray(list) ? list : []).map((i: any) => ({
           id: i._id || i.id,
+          name: i.name || `${i.firstName || ""} ${i.lastName || ""}`.trim(),
           firstName: i.firstName || "",
           lastName: i.lastName || "",
           email: i.email || "",
           mobileNumber: i.mobileNumber || i.phone || "",
+          address: i.address,
+          state: i.state,
+          pincode: i.pincode,
+          gstNumber: i.gstNumber || i.gst,
           gst: i.gst,
           status: i.status || "Inactive",
           createdAt: i.createdAt,
           updatedAt: i.updatedAt,
         })),
-        pagination: data?.pagination ?? null,
+        pagination: data?.pagination ?? data?.meta?.pagination ?? null,
         loading: false,
       })
     } catch (error: any) {
@@ -82,6 +93,7 @@ export const useB2BCustomerStore = create<B2BCustomerState>((set) => ({
       set((state) => ({
         customers: [...state.customers, {
           id: i._id || i.id,
+          name: i.name || `${i.firstName || customer.firstName} ${i.lastName || customer.lastName}`.trim(),
           firstName: i.firstName || customer.firstName,
           lastName: i.lastName || customer.lastName,
           email: i.email || customer.email,

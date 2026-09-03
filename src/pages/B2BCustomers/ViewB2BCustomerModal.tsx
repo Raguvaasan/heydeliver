@@ -1,7 +1,7 @@
 import { FC } from "react"
 import { Modal, Badge, Button } from "flowbite-react"
 import { useB2BCustomerStore } from "../../store/b2bCustomerStore"
-import { HiOutlineMail, HiOutlinePhone, HiOutlineReceiptTax, HiOutlineStatusOnline } from "react-icons/hi";
+import { HiOutlineLocationMarker, HiOutlinePhone, HiOutlineReceiptTax, HiOutlineStatusOnline } from "react-icons/hi";
 
 interface ViewB2BCustomerModalProps { isOpen: boolean; onClose: () => void }
 
@@ -9,8 +9,7 @@ const ViewB2BCustomerModal: FC<ViewB2BCustomerModalProps> = ({ isOpen, onClose }
   const { selectedCustomer } = useB2BCustomerStore()
   if (!selectedCustomer) return null
 
-  const initials = `${selectedCustomer.firstName?.[0] ?? ""}${selectedCustomer.lastName?.[0] ?? ""}`.toUpperCase()
-  const fullName = `${selectedCustomer.firstName} ${selectedCustomer.lastName}`.trim()
+  const initials = selectedCustomer.name?.slice(0, 2).toUpperCase() || "B2"
   const isActive = selectedCustomer.status === "Active"
 
   return (
@@ -21,7 +20,7 @@ const ViewB2BCustomerModal: FC<ViewB2BCustomerModalProps> = ({ isOpen, onClose }
             {initials}
           </div>
           <div>
-            <p className="text-base font-semibold text-gray-900">{fullName}</p>
+            <p className="text-base font-semibold text-gray-900">{selectedCustomer.name}</p>
             <p className="text-xs text-gray-500">B2B Customer</p>
           </div>
         </div>
@@ -30,27 +29,41 @@ const ViewB2BCustomerModal: FC<ViewB2BCustomerModalProps> = ({ isOpen, onClose }
       <Modal.Body>
         <div className="divide-y divide-gray-100">
           <div className="flex items-center gap-3 py-3">
-            <HiOutlineMail className="h-5 w-5 shrink-0 text-gray-400" />
+            <HiOutlinePhone className="h-5 w-5 shrink-0 text-gray-400" />
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-gray-400">Email</p>
-              <p className="text-sm text-gray-800">{selectedCustomer.email}</p>
+              <p className="text-[11px] uppercase tracking-wide text-gray-400">Mobile Number</p>
+              <p className="text-sm text-gray-800">{selectedCustomer.mobileNumber || "-"}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 py-3">
-            <HiOutlinePhone className="h-5 w-5 shrink-0 text-gray-400" />
+            <HiOutlineLocationMarker className="h-5 w-5 shrink-0 text-gray-400" />
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-gray-400">Mobile</p>
-              <p className="text-sm text-gray-800">{selectedCustomer.mobileNumber}</p>
+              <p className="text-[11px] uppercase tracking-wide text-gray-400">Address</p>
+              <p className="text-sm text-gray-800">{selectedCustomer.address || "-"}</p>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 py-3 sm:grid-cols-2">
+            <div><p className="text-[11px] uppercase tracking-wide text-gray-400">State</p><p className="text-sm text-gray-800">{selectedCustomer.state || "-"}</p></div>
+            <div><p className="text-[11px] uppercase tracking-wide text-gray-400">Pincode</p><p className="text-sm text-gray-800">{selectedCustomer.pincode || "-"}</p></div>
           </div>
 
           <div className="flex items-center gap-3 py-3">
             <HiOutlineReceiptTax className="h-5 w-5 shrink-0 text-gray-400" />
             <div>
               <p className="text-[11px] uppercase tracking-wide text-gray-400">GST Number</p>
-              <p className="font-mono text-sm text-gray-800">{selectedCustomer.gst || "N/A"}</p>
+              <p className="font-mono text-sm text-gray-800">{selectedCustomer.gstNumber || "-"}</p>
             </div>
+          </div>
+
+          <div className="py-3">
+            <p className="text-[11px] uppercase tracking-wide text-gray-400">Created Date</p>
+            <p className="text-sm text-gray-800">
+              {selectedCustomer.createdAt
+                ? new Date(selectedCustomer.createdAt).toLocaleString("en-IN")
+                : "-"}
+            </p>
           </div>
 
           <div className="flex items-center gap-3 py-3">

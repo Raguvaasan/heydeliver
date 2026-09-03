@@ -35,6 +35,7 @@ export const routePermissionMap: Record<string, RoutePermission> = {
 
   // Customers
   "/customers": { module: "Customers", action: "view" },
+  "/b2b-customers": { module: "Customers", action: "view" },
 
   // Access Management (Staff & Roles) — admin side
   "/role/roleform": { module: "Access Management", action: "add" },

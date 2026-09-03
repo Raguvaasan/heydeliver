@@ -13,9 +13,11 @@ import ProtectedLogin from "./protectedRoutes/ProtectedLogin"
 import { ThemeProvider } from "./context/ThemeContext"
 import { Toaster } from "react-hot-toast"
 import VehicleManagementPage from "./pages/vehicleManagement/vehicleManagementPage"
+import B2BVehiclesPage from "./pages/B2BVehicles/B2BVehiclesPage"
 import DriverManagementPage from "./pages/driverManagement/driverManagementPage"
 import ParcelManagementPage from "./pages/parcelBooking/parcelBooking"
 import AgencyParcelOrdersPage from "./pages/AgencyOrders/AgencyParcelOrdersPage"
+import B2BOrdersPage from "./pages/B2BOrders/B2BOrdersPage"
 
 // Lazy load all page components for better performance
 // Authentication
@@ -243,11 +245,29 @@ root.render(
             }
           />
 
-           <Route
+          <Route
+            path="/b2b-orders"
+            element={
+              <PermissionRoute>
+                <B2BOrdersPage />
+              </PermissionRoute>
+            }
+          />
+
+          <Route
             path="/vehicle"
             element={
               <PermissionRoute>
                 <VehicleManagementPage />
+              </PermissionRoute>
+            }
+          />
+
+          <Route
+            path="/b2b-vehicles"
+            element={
+              <PermissionRoute>
+                <B2BVehiclesPage />
               </PermissionRoute>
             }
           />

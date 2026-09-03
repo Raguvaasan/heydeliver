@@ -7,6 +7,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "")
   const apiProxyTarget =
     env["VITE_API_PROXY_TARGET"] || "https://truecargos.com/api/"
+  const b2bApiProxyTarget =
+    env["VITE_B2B_API_PROXY_TARGET"] || "https://freightrekapi.vercel.app"
   const invoiceProxyTarget =
     env["VITE_INVOICE_PROXY_TARGET"] || "http://localhost:3000"
   const delhiveryToken =
@@ -31,44 +33,51 @@ export default defineConfig(({ mode }) => {
             path === "/api/shipment/create"
               ? "/api/shipment/order"
               : path,
-          secure: true,
+          secure: false,
         },
         "/api/settings": {
           target: apiProxyTarget,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ""),
-          secure: true,
+          secure: false,
         },
         "/api/wallet": {
           target: apiProxyTarget,
           changeOrigin: true,
           // Wallet endpoints on backend are mounted under /api/wallet.
           rewrite: (path) => path,
-          secure: true,
+          secure: false,
         },
         "/api/admin": {
           target: apiProxyTarget,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ""),
-          secure: true,
+          secure: false,
         },
         "/api/dashboard": {
           target: apiProxyTarget,
           changeOrigin: true,
           rewrite: (path) => path,
-          secure: true,
+          secure: false,
         },
         "/api/customers": {
           target: apiProxyTarget,
           changeOrigin: true,
           rewrite: (path) => path,
-          secure: true,
+          secure: false,
+        },
+        "/api/b2b": {
+          target: b2bApiProxyTarget,
+          changeOrigin: true,
+          // The B2B backend is mounted at /b2b, without the /api prefix.
+          rewrite: (path) => path.replace(/^\/api/, ""),
+          secure: false,
         },
         "/api/hub": {
           target: "https://freightrekapi.vercel.app/hub",
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/hub/, ""),
-          secure: true,
+          secure: false,
         },
         "/delhivery-api": {
           target: "https://track.delhivery.com",
@@ -82,7 +91,7 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target: apiProxyTarget,
           changeOrigin: true,
-          secure: true,
+          secure: false,
           // Keep the "/api" prefix for backend routes like /api/customers.
           rewrite: (path) => path,
         },

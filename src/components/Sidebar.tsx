@@ -249,15 +249,23 @@ const Sidebar: FC<SidebarProps> = ({
       icon: <HiMap className="h-5 w-5" />,
       path: "/routes",
     },
-    {
+     {
       title: "Orders",
       icon: <HiCube className="h-5 w-5" />,
-      path: "/parcel-booking",
+      path: "/orders",
+      submenu: [
+        { title: "Agency Orders", path: "/parcel-booking" },
+        { title: "B2B Orders", path: "/b2b-orders" },
+      ],
     },
     {
       title: "Vehicle",
       icon: <HiTruck className="h-5 w-5" />,
       path: "/vehicle",
+      submenu: [
+        { title: "Agency vehicle", path: "/vehicle" },
+        { title: "B2B Vehicle", path: "/b2b-vehicles" },
+      ],
     },
      {
       title: "Driver",
@@ -268,12 +276,11 @@ const Sidebar: FC<SidebarProps> = ({
       title: "Customers",
       icon: <HiUserGroup className="h-5 w-5" />,
       path: "/customers",
+      submenu: [
+        { title: "Agency Customers", path: "/customers" },
+        { title: "B2B Customers", path: "/b2b-customers" },
+      ],
     },
-    // {
-    //   title: "B2B Customer",
-    //   icon: <HiUserGroup className="h-5 w-5" />,
-    //   path: "/b2b-customers",
-    // },
     {
       title: "Access Management",
       icon: <HiUserGroup className="h-5 w-5" />,
