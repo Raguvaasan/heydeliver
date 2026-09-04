@@ -1,8 +1,32 @@
 import { create } from "zustand"
 import toast from "react-hot-toast"
-import http from "../common/httpRequest"
+import axios from "axios"
 
 const VEHICLE_API_PATH = "/b2b/vehicles"
+const B2B_API_BASE_URL = import.meta.env.DEV
+  ? "/api"
+  : import.meta.env.VITE_B2B_API_URL ||
+    import.meta.env.VITE_B2B_API_PROXY_TARGET ||
+    "https://freightrekapi.vercel.app"
+
+const http = axios.create({
+  baseURL: B2B_API_BASE_URL,
+  timeout: 15000,
+  headers: {
+    "Content-Type": "application/json",
+  },
+})
+
+http.interceptors.request.use(
+  (config) => {
+    const token = sessionStorage.getItem("authToken")
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
 
 export interface B2BVehicleFormValues {
   vehicleType: string
