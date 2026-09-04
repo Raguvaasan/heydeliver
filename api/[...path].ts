@@ -802,6 +802,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(backendResponse.status).json(backendResponse.data)
     }
 
+    // B2B endpoints are mounted at /b2b on the backend, without /api.
+    if (segments[0] === 'b2b') {
+      const b2bPath = segments.join('/')
+      const authHeader = req.headers.authorization
+      const qs = parsedUrl.search || ''
+      const backendUrl = `${BACKEND_API_URL}/${b2bPath}${qs}`
+      const axiosConfig: any = {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000,
+        validateStatus: (status: number) => status < 600,
+      }
+      if (authHeader) axiosConfig.headers.Authorization = authHeader
+
+      const backendResponse = await axios({
+        method: req.method || 'GET',
+        url: backendUrl,
+        data: req.method !== 'GET' && req.method !== 'DELETE' ? req.body : undefined,
+        ...axiosConfig,
+      })
+      return res.status(backendResponse.status).json(backendResponse.data)
+    }
+
     // ── Generic catch-all proxy ─────────────────────────────────────────────
     // Forward any unmatched /api/* request to the backend so routes like
     // /api/careers, /api/applications, etc. work without
