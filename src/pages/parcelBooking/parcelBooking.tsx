@@ -217,7 +217,7 @@ const ParcelManagementPage: FC = () => {
             doc.setTextColor(0)
             doc.setFontSize(24)
             doc.setFont("helvetica", "bold")
-            doc.text("INVOICE", pageWidth - margin, margin + 10, { align: "right" })
+            doc.text("TAX INVOICE", pageWidth - margin, margin + 10, { align: "right" })
             doc.setDrawColor(200)
             doc.line(margin, margin + 25, pageWidth - margin, margin + 25)
 

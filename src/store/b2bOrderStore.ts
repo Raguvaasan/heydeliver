@@ -45,6 +45,7 @@ const normalizeOrder = (item: any): B2BOrder => ({
   approximateWeight: item?.shipment?.approximateWeight ?? item?.approximateWeight ?? "-",
   vehicleType: item?.selectedVehicle?.vehicleType || item?.selectedVehicleId?.vehicleType || item?.vehicleType || "-",
   status: item?.status || "-",
+  driverId: item?.driverId || item?.driver?._id || item?.driver?.id || "",
 })
 
 export const useB2BOrderStore = create<B2BOrderState>((set) => ({
