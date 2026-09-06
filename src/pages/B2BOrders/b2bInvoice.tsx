@@ -32,6 +32,7 @@ interface B2BInvoiceCharges {
 
 interface B2BInvoiceData {
     _id?: string
+    lrNo: string
     invoiceNumber?: string
     order?: string
     orderNumber?: string
@@ -156,6 +157,7 @@ export async function generateB2BInvoice(orderId: string, authToken: string): Pr
     }
     infoRow("Invoice:", String(invoiceData.invoiceNumber || invoiceData.orderNumber || orderId))
     infoRow("Date:", dateStr)
+    infoRow("LR Number:", String(invoiceData.lrNo))
     if (vehicle.vehicleType || vehicle.capacityKg) {
         const vehicleParts = [vehicle.vehicleType, vehicle.capacityKg ? `${vehicle.capacityKg} kg` : ""]
             .filter(Boolean)

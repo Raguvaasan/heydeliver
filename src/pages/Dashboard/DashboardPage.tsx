@@ -401,9 +401,13 @@ const DashboardPage: FC = () => {
       const totalFranchiseCount = resolveMetricValue(overview.totalAgencies)
       const totalHubsCount = resolveMetricValue(overview.totalHubs)
       const totalOrdersCount = resolveMetricValue(overview.totalOrders)
+      const totalb2bOrdersCount = resolveMetricValue(overview.totalB2bOrders)
       const totalRevenueCount = resolveMetricValue(overview.totalRevenue)
+      const totalb2bRevenueCount = resolveMetricValue(overview.totalB2bRevenue)
       const todayOrderCount = resolveMetricValue(overview.todayOrders)
+      const todayb2bOrderCount = resolveMetricValue(overview.todayB2bOrders)
       const todayRevenueCount = resolveMetricValue(overview.todayRevenue)
+      const todayb2bRevenueCount = resolveMetricValue(overview.todayB2bRevenue)
 
       return [
         {
@@ -433,6 +437,15 @@ const DashboardPage: FC = () => {
           iconBgColor: "bg-blue-500",
           onClick: () => navigate("/parcel-booking", { state: { status: 'all' } })
         },
+         {
+          icon: <HiCube className="h-5 w-5" />,
+          title: "Total B2B Orders",
+          value: totalb2bOrdersCount,
+          subtitle: "All time b2b orders",
+          percentage: undefined,
+          iconBgColor: "bg-blue-500",
+          onClick: () => navigate("/b2b-orders", { state: { status: 'all' } })
+        },
         {
           icon: <HiCurrencyRupee className="h-5 w-5" />,
           title: "Total Revenue",
@@ -443,6 +456,15 @@ const DashboardPage: FC = () => {
           onClick: () => navigate("/settings/branch-wallet")
         },
         {
+          icon: <HiCurrencyRupee className="h-5 w-5" />,
+          title: "Total B2B Revenue",
+          value: `₹${Number(totalb2bRevenueCount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          subtitle: "All time B2B revenue",
+          percentage: undefined,
+          iconBgColor: "bg-green-500",
+          // onClick: () => navigate("/settings/branch-wallet")
+        },
+        {
           icon: <HiCube className="h-5 w-5" />,
           title: "Today's Order",
           value: todayOrderCount,
@@ -451,10 +473,26 @@ const DashboardPage: FC = () => {
           iconBgColor: "bg-orange-500",
         },
         {
+          icon: <HiCube className="h-5 w-5" />,
+          title: "Today's B2B Order",
+          value: todayb2bOrderCount,
+          subtitle: `Today's B2B orders`,
+          percentage: undefined,
+          iconBgColor: "bg-orange-500",
+        },
+        {
           icon: <HiCurrencyRupee className="h-5 w-5" />,
           title: "Today's Revenue",
           value: `₹${Number(todayRevenueCount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           subtitle: `Today's revenue`,
+          percentage: undefined,
+          iconBgColor: "bg-teal-500",
+        },
+        {
+          icon: <HiCurrencyRupee className="h-5 w-5" />,
+          title: "Today's B2B Revenue",
+          value: `₹${Number(todayb2bRevenueCount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          subtitle: `Today's B2B revenue`,
           percentage: undefined,
           iconBgColor: "bg-teal-500",
         },
@@ -601,7 +639,7 @@ const DashboardPage: FC = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6 ${loginType === 'admin' ? 'xl:grid-cols-6' : ''}`}>
+          <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6 ${loginType === 'admin' ? 'xl:grid-cols-5' : ''}`}>
             {stats.map((stat, index) => (
               <StatCard
                 key={index}

@@ -57,12 +57,12 @@ const B2BOrdersPage: FC = () => {
     const [isGeneratingInvoice, setIsGeneratingInvoice] = useState<string | null>(null)
     const [ordersLocal, setOrdersLocal] = useState<B2BOrder[]>([])
 
-     const getAuthToken = () => {
+    const getAuthToken = () => {
         const authToken = sessionStorage.getItem("authToken")
         if (!authToken) throw new Error("Authorization token missing")
         return authToken
     }
-    
+
     useEffect(() => {
         fetchOrders({ page, limit: PAGE_SIZE, search, startDate, endDate })
     }, [fetchOrders, page, search, startDate, endDate])
@@ -154,24 +154,25 @@ const B2BOrdersPage: FC = () => {
     }, [orders])
 
     const handleGenerateInvoice = async (orderId: string) => {
-    setIsGeneratingInvoice(orderId)
-    try {
-        const authToken = getAuthToken()
-        await generateB2BInvoice(orderId, authToken)
-        toast.success("Invoice generated")
-    } catch (error: any) {
-        toast.error(error?.message || "Failed to generate invoice")
-    } finally {
-        setIsGeneratingInvoice(null)
+        setIsGeneratingInvoice(orderId)
+        try {
+            const authToken = getAuthToken()
+            await generateB2BInvoice(orderId, authToken)
+            toast.success("Invoice generated")
+        } catch (error: any) {
+            toast.error(error?.message || "Failed to generate invoice")
+        } finally {
+            setIsGeneratingInvoice(null)
+        }
     }
-}
 
     const renderOrder = (order: B2BOrder, index: number) => (
         <tr key={order.id || order.orderNumber} className="hover:bg-gray-50 dark:hover:bg-gray-700">
             <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{(page - 1) * PAGE_SIZE + index + 1}</td>
-            <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(order.bookingDate)}</td>
+            <td className="w-8 px-4 py-3 font-medium text-gray-900 dark:text-white">{order.lrNum}</td>
+            <td className="w-24 px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(order.bookingDate)}</td>
             <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{order.customerName}</td>
-            <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{order.approximateWeight}</td>
+            <td className="w-28 px-4 py-3 text-gray-700 dark:text-gray-300">{order.approximateWeight}</td>
             <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{order.vehicleType}</td>
             <td className="px-4 py-3">
                 <Select
@@ -248,9 +249,19 @@ const B2BOrdersPage: FC = () => {
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
-                            <thead className="bg-gray-800 text-xs uppercase text-white"><tr>
-                                <th className="px-4 py-3">S.No.</th><th className="px-4 py-3">Date</th><th className="px-4 py-3">Booking Customer</th><th className="px-4 py-3">Approx. Weight</th><th className="px-4 py-3">Vehicle Type</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Assign Driver</th><th className="px-4 py-3">Action</th>
-                            </tr></thead>
+                            <thead className="bg-gray-800 text-xs uppercase text-white">
+                                <tr>
+                                    <th className="px-4 py-3">S.No.</th>
+                                    <th className="px-4 py-3">LR Num</th>
+                                    <th className="px-4 py-3">Date</th>
+                                    <th className="px-4 py-3">Booking Customer</th>
+                                    <th className="px-4 py-3">Approx. Weight</th>
+                                    <th className="px-4 py-3">Vehicle Type</th>
+                                    <th className="px-4 py-3">Status</th>
+                                    <th className="px-4 py-3">Assign Driver</th>
+                                    <th className="px-4 py-3">Action</th>
+                                </tr>
+                            </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                 {loading ? <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-500">Loading orders...</td></tr> : ordersLocal.length === 0 ? <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-500">No B2B orders found</td></tr> : ordersLocal.map(renderOrder)}
                             </tbody>
@@ -282,7 +293,7 @@ const B2BOrdersPage: FC = () => {
                                     <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
                                         <SectionTitle title="Order Summary" />
                                         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-
+                                            <Field label="LR Number" value={selectedOrder.lrNum} />
                                             <Field label="Created At" value={formatDate(selectedOrder.bookingDate)} />
                                             <div className="rounded-lg bg-white px-3 py-2.5 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
                                                 <div className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Status</div>

@@ -53,6 +53,7 @@ const RouteManagementPage = lazy(() => import("./pages/RouteManagement/RouteMana
 const CustomersPage = lazy(() => import("./pages/Customers/CustomersPage"))
 const CustomerDetailsPage = lazy(() => import("./pages/Customers/CustomerDetailsPage"))
 const B2BCustomersPage = lazy(() => import("./pages/B2BCustomers/B2BCustomersPage"))
+const B2BCustomerDetailsPage = lazy(() => import("./pages/B2BCustomers/B2BCustomerDetailsPage"))
 
 // Staff Management
 const FranchiseStaffPage = lazy(() => import("./pages/Staff/FranchiseStaffPage"))
@@ -304,6 +305,15 @@ root.render(
             element={
               <PermissionRoute>
                 <B2BCustomersPage />
+              </PermissionRoute>
+            }
+          />
+
+          <Route
+            path="/b2b-customers/:customerId"
+            element={
+              <PermissionRoute>
+                <B2BCustomerDetailsPage />
               </PermissionRoute>
             }
           />

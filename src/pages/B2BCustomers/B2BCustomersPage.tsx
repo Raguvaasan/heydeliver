@@ -1,23 +1,22 @@
 import { FC, useEffect, useState } from "react"
 import { Card, TextInput, Spinner, Select } from "flowbite-react"
-import { HiEye, HiSearch, HiChevronLeft, HiChevronRight } from "react-icons/hi"
+import { HiSearch, HiChevronLeft, HiChevronRight } from "react-icons/hi"
+import { useNavigate } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
-import { useB2BCustomerStore, B2BCustomer } from "../../store/b2bCustomerStore"
-import ViewB2BCustomerModal from "./ViewB2BCustomerModal"
+import { useB2BCustomerStore } from "../../store/b2bCustomerStore"
 
 const B2BCustomersPage: FC = () => {
+  const navigate = useNavigate()
   const {
     customers,
     loading,
     pagination,
     fetchCustomers,
-    setSelectedCustomer,
   } = useB2BCustomerStore()
 
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
 
   // Reset to page 1 when search/filter changes
   useEffect(() => {
@@ -27,11 +26,6 @@ const B2BCustomersPage: FC = () => {
   useEffect(() => {
     fetchCustomers(currentPage, 10, searchTerm, statusFilter)
   }, [fetchCustomers, currentPage, searchTerm, statusFilter])
-
-  const handleView = (customer: B2BCustomer) => {
-    setSelectedCustomer(customer)
-    setIsViewModalOpen(true)
-  }
 
   const totalPages = pagination?.totalPages || 1
 
@@ -72,7 +66,7 @@ const B2BCustomersPage: FC = () => {
                     className="pl-10"
                   />
                 </div>
-                <Select
+                {/* <Select
                   value={statusFilter}
                   onChange={(e) => {
                     setCurrentPage(1)
@@ -83,7 +77,7 @@ const B2BCustomersPage: FC = () => {
                   <option value="">All Status</option>
                   <option value="Active">Active</option>
                   <option value="Pending">Pending</option>
-                </Select>
+                </Select> */}
               </div>
             </div>
             {/* <div>
@@ -113,7 +107,6 @@ const B2BCustomersPage: FC = () => {
                     <th className="px-4 py-3">Created Date</th>
                     <th className="px-4 py-3">Phone Number</th>
                     <th className="px-4 py-3">GST</th>
-                    <th className="px-4 py-3 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -121,7 +114,8 @@ const B2BCustomersPage: FC = () => {
                     customers.map((customer, index) => (
                       <tr
                         key={customer.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                        className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                        onClick={() => navigate(`/b2b-customers/${encodeURIComponent(customer.id)}`)}
                       >
                         <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">
                           {(currentPage - 1) * 10 + index + 1}
@@ -142,23 +136,12 @@ const B2BCustomersPage: FC = () => {
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           {customer.gstNumber || "-"}
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleView(customer)}
-                              className="p-1.5 text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
-                              title="View"
-                            >
-                              <HiEye className="h-5 w-5" />
-                            </button>
-                          </div>
-                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={5}
                         className="px-4 py-8 text-center text-gray-500"
                       >
                         No B2B customers found
@@ -224,10 +207,6 @@ const B2BCustomersPage: FC = () => {
         </Card>
       </div>
 
-      <ViewB2BCustomerModal
-        isOpen={isViewModalOpen}
-        onClose={() => setIsViewModalOpen(false)}
-      />
     </NavbarSidebarLayout>
   )
 }

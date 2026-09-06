@@ -4,6 +4,7 @@ import http from "../common/httpRequest"
 
 export interface B2BOrder {
   id: string
+  lrNum: string
   orderNumber: string
   bookingDate: string
   customerName: string
@@ -38,6 +39,7 @@ interface B2BOrderState {
 const normalizeOrder = (item: any): B2BOrder => ({
   ...item,
   id: item?._id || item?.id || item?.orderId || "",
+  lrNum: item?.lrNo || "-",
   orderNumber: item?.orderNumber || item?.bookingId || item?.orderId || item?.lrNumber || "-",
   bookingDate: item?.bookingDate || item?.createdAt || item?.orderDate || item?.date || "",
   customerName: item?.bookingCustomer?.name || item?.customerName || item?.customer?.name || item?.consigneeName || item?.name || "-",
