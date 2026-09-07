@@ -13,11 +13,6 @@ export interface B2BCustomer {
   status: string
   createdAt?: string
   updatedAt?: string
-  // Kept optional for the existing add/edit forms until their API is migrated.
-  firstName?: string
-  lastName?: string
-  email?: string
-  gst?: string
 }
 
 interface Pagination {
@@ -28,12 +23,12 @@ interface Pagination {
 }
 
 export type B2BCustomerPayload = {
-  firstName: string
-  lastName: string
-  email: string
-  password?: string
+  name: string
   mobileNumber: string
-  gst?: string
+  address?: string
+  state?: string
+  pincode?: string
+  gstNumber?: string
   status?: "Active" | "Inactive"
 }
 
@@ -65,15 +60,11 @@ export const useB2BCustomerStore = create<B2BCustomerState>((set) => ({
         customers: (Array.isArray(list) ? list : []).map((i: any) => ({
           id: i._id || i.id,
           name: i.name || `${i.firstName || ""} ${i.lastName || ""}`.trim(),
-          firstName: i.firstName || "",
-          lastName: i.lastName || "",
-          email: i.email || "",
           mobileNumber: i.mobileNumber || i.phone || "",
           address: i.address,
           state: i.state,
           pincode: i.pincode,
           gstNumber: i.gstNumber || i.gst,
-          gst: i.gst,
           status: i.status || "Inactive",
           createdAt: i.createdAt,
           updatedAt: i.updatedAt,
@@ -88,21 +79,21 @@ export const useB2BCustomerStore = create<B2BCustomerState>((set) => ({
   addCustomer: async (customer) => {
     set({ loading: true, error: null })
     try {
-      const res = await http.post("/customer/email-auth/signup", customer)
+      const res = await http.post("/b2b/auth/register", customer)
       const i = res.data?.data || res.data
       set((state) => ({
-        customers: [...state.customers, {
+        customers: [{
           id: i._id || i.id,
-          name: i.name || `${i.firstName || customer.firstName} ${i.lastName || customer.lastName}`.trim(),
-          firstName: i.firstName || customer.firstName,
-          lastName: i.lastName || customer.lastName,
-          email: i.email || customer.email,
+          name: i.name || customer.name,
           mobileNumber: i.mobileNumber || customer.mobileNumber,
-          gst: i.gst || customer.gst,
+          address: i.address || customer.address,
+          state: i.state || customer.state,
+          pincode: i.pincode || customer.pincode,
+          gstNumber: i.gstNumber || customer.gstNumber,
           status: i.status || "Active",
           createdAt: i.createdAt,
           updatedAt: i.updatedAt,
-        }],
+        }, ...state.customers],
         loading: false,
       }))
       toast.success("B2B customer added successfully!")
@@ -114,16 +105,17 @@ export const useB2BCustomerStore = create<B2BCustomerState>((set) => ({
   updateCustomer: async (id, customer) => {
     set({ loading: true, error: null })
     try {
-      const res = await http.put(`/admin/customers/${encodeURIComponent(id)}`, customer)
+      const res = await http.put(`/admin/b2b/users/${encodeURIComponent(id)}`, customer)
       const i = res.data?.data || res.data
       set((state) => ({
         customers: state.customers.map((c) => c.id === id ? {
           ...c,
-          firstName: i.firstName ?? c.firstName,
-          lastName: i.lastName ?? c.lastName,
-          email: i.email ?? c.email,
+          name: i.name ?? c.name,
           mobileNumber: i.mobileNumber ?? c.mobileNumber,
-          gst: i.gst ?? c.gst,
+          address: i.address ?? c.address,
+          state: i.state ?? c.state,
+          pincode: i.pincode ?? c.pincode,
+          gstNumber: i.gstNumber ?? c.gstNumber,
           status: i.status ?? c.status,
           updatedAt: i.updatedAt ?? c.updatedAt,
         } : c),
@@ -138,7 +130,7 @@ export const useB2BCustomerStore = create<B2BCustomerState>((set) => ({
   deleteCustomer: async (id) => {
     set({ loading: true, error: null })
     try {
-      await http.delete(`/admin/customers/${encodeURIComponent(id)}`)
+      await http.delete(`/admin/b2b/users/${encodeURIComponent(id)}`)
       set((state) => ({ customers: state.customers.filter((c) => c.id !== id), loading: false }))
       toast.success("B2B customer deleted successfully!")
     } catch (error: any) {

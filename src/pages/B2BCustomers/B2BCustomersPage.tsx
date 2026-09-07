@@ -1,9 +1,11 @@
 import { FC, useEffect, useState } from "react"
-import { Card, TextInput, Spinner, Select } from "flowbite-react"
-import { HiSearch, HiChevronLeft, HiChevronRight } from "react-icons/hi"
+import { Badge, Button, Card, TextInput, Spinner, Select } from "flowbite-react"
+import { HiChevronLeft, HiChevronRight, HiEye, HiPencil, HiPlus, HiSearch } from "react-icons/hi"
 import { useNavigate } from "react-router-dom"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { useB2BCustomerStore } from "../../store/b2bCustomerStore"
+import AddEditB2BCustomerModal from "./AddEditB2BCustomerModal"
+import ViewB2BCustomerModal from "./ViewB2BCustomerModal"
 
 const B2BCustomersPage: FC = () => {
   const navigate = useNavigate()
@@ -12,11 +14,16 @@ const B2BCustomersPage: FC = () => {
     loading,
     pagination,
     fetchCustomers,
+    setSelectedCustomer,
+    selectedCustomer,
   } = useB2BCustomerStore()
 
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
+  const [isAddEditModalOpen, setIsAddEditModalOpen] = useState(false)
+  const [modalMode, setModalMode] = useState<"add" | "edit">("add")
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
 
   // Reset to page 1 when search/filter changes
   useEffect(() => {
@@ -28,6 +35,22 @@ const B2BCustomersPage: FC = () => {
   }, [fetchCustomers, currentPage, searchTerm, statusFilter])
 
   const totalPages = pagination?.totalPages || 1
+  const handleAdd = () => {
+    setModalMode("add")
+    setSelectedCustomer(null)
+    setIsAddEditModalOpen(true)
+  }
+  const handleView = (customerId: string) => {
+    const customer = customers.find((item) => item.id === customerId) || null
+    setSelectedCustomer(customer)
+    setIsViewModalOpen(true)
+  }
+  const handleEdit = (customerId: string) => {
+    const customer = customers.find((item) => item.id === customerId) || null
+    setModalMode("edit")
+    setSelectedCustomer(customer)
+    setIsAddEditModalOpen(true)
+  }
 
   return (
     <NavbarSidebarLayout>
@@ -80,16 +103,12 @@ const B2BCustomersPage: FC = () => {
                 </Select> */}
               </div>
             </div>
-            {/* <div>
-              <Button
-                color="warning"
-                onClick={() => setIsAddModalOpen(true)}
-                className="bg-orange-500 hover:bg-orange-600"
-              >
+            <div>
+              <Button color="warning" onClick={handleAdd} className="bg-orange-500 hover:bg-orange-600">
                 <HiPlus className="mr-2 h-5 w-5" />
                 ADD B2B CUSTOMER
               </Button>
-            </div> */}
+            </div>
           </div>
 
           {/* Table */}
@@ -107,6 +126,8 @@ const B2BCustomersPage: FC = () => {
                     <th className="px-4 py-3">Created Date</th>
                     <th className="px-4 py-3">Phone Number</th>
                     <th className="px-4 py-3">GST</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3 text-center">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -122,9 +143,9 @@ const B2BCustomersPage: FC = () => {
                         </td>
                         <td className="px-4 py-3">
                           <span className="font-medium text-gray-900 dark:text-white">
-                          {customer.name || "-"}
-                        </span>
-                      </td>
+                            {customer.name || "-"}
+                          </span>
+                        </td>
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           {customer.createdAt
                             ? new Date(customer.createdAt).toLocaleDateString("en-IN")
@@ -136,12 +157,43 @@ const B2BCustomersPage: FC = () => {
                         <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                           {customer.gstNumber || "-"}
                         </td>
+                        <td className="px-4 py-3">
+                          <Badge color={customer.status === "Active" ? "success" : "failure"} className="inline-flex w-fit">
+                            {customer.status || "Inactive"}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                handleView(customer.id)
+                              }}
+                              className="p-1.5 text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                              title="View"
+                            >
+                              <HiEye className="h-5 w-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                handleEdit(customer.id)
+                              }}
+                              className="p-1.5 text-gray-600 hover:text-green-600 dark:text-gray-400 dark:hover:text-green-400"
+                              title="Edit"
+                            >
+                              <HiPencil className="h-5 w-5" />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={7}
                         className="px-4 py-8 text-center text-gray-500"
                       >
                         No B2B customers found
@@ -207,10 +259,24 @@ const B2BCustomersPage: FC = () => {
         </Card>
       </div>
 
+      <AddEditB2BCustomerModal
+        isOpen={isAddEditModalOpen}
+        onClose={() => {
+          setIsAddEditModalOpen(false)
+          setSelectedCustomer(null)
+        }}
+        mode={modalMode}
+        customer={selectedCustomer}
+      />
+      <ViewB2BCustomerModal
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false)
+          setSelectedCustomer(null)
+        }}
+      />
     </NavbarSidebarLayout>
   )
 }
 
 export default B2BCustomersPage
-
-
