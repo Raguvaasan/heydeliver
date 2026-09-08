@@ -1,58 +1,35 @@
 import { FC, useEffect, useState } from "react"
-import { Badge, Card, Label, Select, TextInput } from "flowbite-react"
-import { HiDocumentDownload, HiEye, HiSearch, HiX } from "react-icons/hi"
+import { Card, Label, Select, TextInput } from "flowbite-react"
+import { HiDocumentDownload, HiEye, HiOutlinePrinter, HiSearch, HiTruck } from "react-icons/hi"
 import toast from "react-hot-toast"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import { B2BOrder, useB2BOrderStore } from "../../store/b2bOrderStore"
 import http from "../../common/httpRequest"
 import { generateB2BInvoice } from "./b2bInvoice"
+import { formatDate } from "./b2bOrderUtils"
+import AssignmentModal from "./assignmentmodal"
+import OrderDetailsModal from "./orderDetails"
+import { handleB2BLabel } from "./b2bPrintLabel"
+
 
 const PAGE_SIZE = 10
 const B2B_ORDERS_BASE = "/admin/b2b/orders"
+const DRAFT_STATUS = "DRAFT"
+// Negation convention for the active tab: send everything except drafts.
+// Adjust this if your backend expects a different syntax (e.g. status[ne]=DRAFT).
+const NOT_DRAFT_STATUS = "!DRAFT"
 
-interface DriverOption {
-    id: string
-    driverName: string
-}
-
-const getStatusColor = (status?: string) => {
-    switch (status) {
-        case "CONFIRMED":
-            return "success"
-        case "IN_TRANSIT":
-            return "info"
-        case "DELIVERED":
-            return "success"
-        default:
-            return "warning"
-    }
-}
-
-const formatStatus = (status?: string) => (status ? status.replace(/_/g, " ") : "N/A")
-
-const SectionTitle: FC<{ title: string }> = ({ title }) => (
-    <h4 className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-400">{title}</h4>
-)
-
-const Field: FC<{ label: string; value?: unknown; wide?: boolean }> = ({ label, value, wide = false }) => {
-    const displayValue = value === undefined || value === null || value === "" ? "N/A" : String(value)
-    return (
-        <div className={`rounded-lg bg-white px-3 py-2.5 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700 ${wide ? "sm:col-span-2" : ""}`}>
-            <div className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">{label}</div>
-            <div className="mt-1 break-words text-sm font-semibold text-gray-900 dark:text-white">{displayValue}</div>
-        </div>
-    )
-}
+type OrderTab = "active" | "pending"
 
 const B2BOrdersPage: FC = () => {
     const { orders, loading, error, pagination, fetchOrders } = useB2BOrderStore()
+    const [tab, setTab] = useState<OrderTab>("active")
     const [page, setPage] = useState(1)
     const [search, setSearch] = useState("")
     const [startDate, setStartDate] = useState("")
     const [endDate, setEndDate] = useState("")
     const [selectedOrder, setSelectedOrder] = useState<B2BOrder | null>(null)
-    const [drivers, setDrivers] = useState<DriverOption[]>([])
-    const [driversLoading, setDriversLoading] = useState(false)
+    const [assignmentOrder, setAssignmentOrder] = useState<B2BOrder | null>(null)
     const [rowActionLoading, setRowActionLoading] = useState<Record<string, boolean>>({})
     const [isGeneratingInvoice, setIsGeneratingInvoice] = useState<string | null>(null)
     const [ordersLocal, setOrdersLocal] = useState<B2BOrder[]>([])
@@ -63,72 +40,33 @@ const B2BOrdersPage: FC = () => {
         return authToken
     }
 
-    useEffect(() => {
-        fetchOrders({ page, limit: PAGE_SIZE, search, startDate, endDate })
-    }, [fetchOrders, page, search, startDate, endDate])
+    // Pending tab: ?status=DRAFT. Active tab: ?status=!DRAFT (everything except drafts).
+    // Both filters are applied server-side now, so pagination totals stay accurate.
+    const buildFetchParams = (targetPage: number, targetTab: OrderTab) => ({
+        page: targetPage,
+        limit: PAGE_SIZE,
+        search,
+        startDate,
+        endDate,
+        status: targetTab === "pending" ? DRAFT_STATUS : NOT_DRAFT_STATUS,
+    })
 
     useEffect(() => {
-        const fetchDrivers = async () => {
-            setDriversLoading(true)
-            try {
-                const response = await http.get(`${B2B_ORDERS_BASE}/drivers`)
-                const payload = response.data
-                const items = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : []
-                const mapped: DriverOption[] = items
-                    .map((item: any) => ({
-                        id: String(item?._id || item?.id || "").trim(),
-                        driverName: item?.driverName || item?.name || "Unnamed driver",
-                    }))
-                    .filter((item: DriverOption) => item.id)
+        fetchOrders(buildFetchParams(page, tab))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [fetchOrders, page, search, startDate, endDate, tab])
 
-                // dedupe by id in case the API returns duplicates
-                const uniqueDrivers = Array.from(new Map(mapped.map((driver) => [driver.id, driver])).values())
-                setDrivers(uniqueDrivers)
-            } catch (error) {
-                const message = error instanceof Error ? error.message : "Failed to fetch drivers"
-                toast.error(message)
-            } finally {
-                setDriversLoading(false)
-            }
-        }
+    useEffect(() => {
+        setOrdersLocal(orders)
+    }, [orders])
 
-        fetchDrivers()
-    }, [])
-
-    const formatDate = (value: string) => {
-        if (!value) return "-"
-        const date = new Date(value)
-        return Number.isNaN(date.getTime())
-            ? value
-            : date.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" })
+    const handleTabChange = (nextTab: OrderTab) => {
+        if (nextTab === tab) return
+        setTab(nextTab)
+        setPage(1)
     }
 
     const statusOptions = ["IN_TRANSIT", "DELIVERED"]
-
-    const handleAssignDriver = async (orderId: string, driverId: string) => {
-        const previousOrder = ordersLocal.find((order) => order.id === orderId) as any
-        const previous = previousOrder?.driverId ?? ""
-        setRowActionLoading((state) => ({ ...state, [orderId]: true }))
-        setOrdersLocal((prev) => prev.map((order) => (order.id === orderId ? { ...order, driverId } : order)))
-
-        try {
-            const response = await http.patch(`${B2B_ORDERS_BASE}/${orderId}/assign-driver`, { driver: driverId })
-            const assignedOrder = response.data?.data
-            const assignedDriverId = assignedOrder?.driverId || driverId
-            setOrdersLocal((prev) => prev.map((order) => (order.id === orderId ? {
-                ...order,
-                driverId: assignedDriverId,
-                driver: assignedOrder?.driver || (order as any).driver,
-            } : order)))
-            toast.success("Driver assigned")
-        } catch (error) {
-            setOrdersLocal((prev) => prev.map((order) => (order.id === orderId ? { ...order, driverId: previous } : order)))
-            const message = error instanceof Error ? error.message : "Failed to assign driver"
-            toast.error(message)
-        } finally {
-            setRowActionLoading((state) => ({ ...state, [orderId]: false }))
-        }
-    }
 
     const handleStatusChange = async (orderId: string, status: string) => {
         const previous = orders.find((order) => order.id === orderId)?.status ?? ""
@@ -139,7 +77,7 @@ const B2BOrdersPage: FC = () => {
             await http.patch(`${B2B_ORDERS_BASE}/${orderId}/status`, { status })
 
             toast.success("Status updated")
-            fetchOrders({ page, limit: PAGE_SIZE, search, startDate, endDate })
+            fetchOrders(buildFetchParams(page, tab))
         } catch (error) {
             setOrdersLocal((prev) => prev.map((order) => (order.id === orderId ? { ...order, status: previous } : order)))
             const message = error instanceof Error ? error.message : "Failed to update status"
@@ -148,10 +86,6 @@ const B2BOrdersPage: FC = () => {
             setRowActionLoading((state) => ({ ...state, [orderId]: false }))
         }
     }
-
-    useEffect(() => {
-        setOrdersLocal(orders)
-    }, [orders])
 
     const handleGenerateInvoice = async (orderId: string) => {
         setIsGeneratingInvoice(orderId)
@@ -166,11 +100,19 @@ const B2BOrdersPage: FC = () => {
         }
     }
 
+    const handleVehicleAssigned = (orderId: string, vehicleType: string, vehicle: { id: string; vehicleType: string }) => {
+        setOrdersLocal((currentOrders) => currentOrders.map((order) => (
+            order.id === orderId
+                ? { ...order, vehicleType, selectedVehicle: vehicle }
+                : order
+        )))
+    }
+
     const renderOrder = (order: B2BOrder, index: number) => (
         <tr key={order.id || order.orderNumber} className="hover:bg-gray-50 dark:hover:bg-gray-700">
             <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{(page - 1) * PAGE_SIZE + index + 1}</td>
-            <td className="w-8 px-4 py-3 font-medium text-gray-900 dark:text-white">{order.lrNum}</td>
-            <td className="w-24 px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(order.bookingDate)}</td>
+            <td className="w-12 px-4 py-3 font-medium text-gray-900 dark:text-white">{order.lrNum}</td>
+            <td className="w-22 px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(order.bookingDate)}</td>
             <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{order.customerName}</td>
             <td className="w-28 px-4 py-3 text-gray-700 dark:text-gray-300">{order.approximateWeight}</td>
             <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{order.vehicleType}</td>
@@ -186,37 +128,24 @@ const B2BOrdersPage: FC = () => {
                 </Select>
             </td>
             <td className="px-4 py-3">
-                {(() => {
-                    const selectedDriverId = String((order as any).driverId || "").trim()
-                    const selectedDriver = (order as any).driver
-                    const hasSelectedDriverOption = drivers.some(
-                        (driver) => driver.id.trim().toLowerCase() === selectedDriverId.toLowerCase()
-                    )
-                    return (
-                        <Select
-                            value={selectedDriverId}
-                            disabled={driversLoading || rowActionLoading[order.id] || loading}
-                            onChange={(event) => handleAssignDriver(order.id, event.target.value)}
-                        >
-                            <option value="">{driversLoading ? "Loading drivers..." : "Select driver"}</option>
-                            {selectedDriverId && !hasSelectedDriverOption && (
-                                <option value={selectedDriverId}>
-                                    {selectedDriver?.driverName || "Selected driver"}
-                                </option>
-                            )}
-                            {drivers.map((driver) => (
-                                <option key={driver.id} value={driver.id}>
-                                    {driver.driverName}
-                                </option>
-                            ))}
-                        </Select>
-                    )
-                })()}
-            </td>
-            <td className="px-4 py-3">
+                <button
+                    className="p-1.5 text-gray-600 hover:text-orange-600 disabled:opacity-50 dark:text-gray-400 dark:hover:text-orange-400"
+                    onClick={() => setAssignmentOrder(order)}
+                    title="Assign driver and vehicle"
+                    disabled={rowActionLoading[order.id] || loading}
+                >
+                    <HiTruck className="h-5 w-5" />
+                </button>
                 <button onClick={() => handleGenerateInvoice(order.id)} className="p-1.5 text-gray-600 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400" title="Generate Invoice" disabled={isGeneratingInvoice === order.id}>
                     <HiDocumentDownload className="h-5 w-5" />
                 </button>
+                <button
+    onClick={() => handleB2BLabel(order.id)}
+    className="p-1.5 dark:text-gray-300 text-gray-700 hover:text-gray-900"
+    title="Print Label"
+>
+    <HiOutlinePrinter className="h-5 w-5" />
+</button>
                 <button className="p-1.5 text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400" onClick={() => setSelectedOrder(order)} title="View order details"><HiEye className="h-5 w-5" /></button></td>
         </tr>
     )
@@ -232,6 +161,28 @@ const B2BOrdersPage: FC = () => {
                 </div>
                 <Card>
                     {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+                    <div className="mb-4 flex gap-2 border-b border-gray-200 dark:border-gray-700">
+                        <button
+                            className={`border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${
+                                tab === "active"
+                                    ? "border-orange-600 text-orange-600 dark:text-orange-400"
+                                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            }`}
+                            onClick={() => handleTabChange("active")}
+                        >
+                            Active Orders
+                        </button>
+                        <button
+                            className={`border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${
+                                tab === "pending"
+                                    ? "border-orange-600 text-orange-600 dark:text-orange-400"
+                                    : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            }`}
+                            onClick={() => handleTabChange("pending")}
+                        >
+                            Pending Orders
+                        </button>
+                    </div>
                     <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
                         <div className="relative">
                             <Label htmlFor="b2b-order-search" className="mb-1 block text-xs">Search</Label>
@@ -258,12 +209,11 @@ const B2BOrdersPage: FC = () => {
                                     <th className="px-4 py-3">Approx. Weight</th>
                                     <th className="px-4 py-3">Vehicle Type</th>
                                     <th className="px-4 py-3">Status</th>
-                                    <th className="px-4 py-3">Assign Driver</th>
                                     <th className="px-4 py-3">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {loading ? <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-500">Loading orders...</td></tr> : ordersLocal.length === 0 ? <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-500">No B2B orders found</td></tr> : ordersLocal.map(renderOrder)}
+                                {loading ? <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-500">Loading orders...</td></tr> : ordersLocal.length === 0 ? <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-500">No B2B orders found</td></tr> : ordersLocal.map(renderOrder)}
                             </tbody>
                         </table>
                     </div>
@@ -276,78 +226,16 @@ const B2BOrdersPage: FC = () => {
                         </div>
                     </div>
                 </Card>
+                {assignmentOrder && (
+                    <AssignmentModal
+                        order={assignmentOrder}
+                        onClose={() => setAssignmentOrder(null)}
+                        onAssigned={() => fetchOrders(buildFetchParams(page, tab))}
+                        onVehicleAssigned={handleVehicleAssigned}
+                    />
+                )}
                 {selectedOrder && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm" onClick={() => setSelectedOrder(null)}>
-                        <div className="flex h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900" onClick={(event) => event.stopPropagation()}>
-                            <div className="flex shrink-0 items-start justify-between gap-4 bg-trans_main px-5 py-4 text-white">
-                                <div className="min-w-0">
-                                    <div className="inline-flex rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]">B2B Order</div>
-
-                                </div>
-                                <button onClick={() => setSelectedOrder(null)} className="rounded-full p-1.5 text-white/80 hover:bg-white/15 hover:text-white" aria-label="Close">
-                                    <HiX className="h-5 w-5" />
-                                </button>
-                            </div>
-                            <div className="flex-1 overflow-y-auto px-5 py-4">
-                                <div className="space-y-3">
-                                    <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
-                                        <SectionTitle title="Order Summary" />
-                                        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                                            <Field label="LR Number" value={selectedOrder.lrNum} />
-                                            <Field label="Created At" value={formatDate(selectedOrder.bookingDate)} />
-                                            <div className="rounded-lg bg-white px-3 py-2.5 ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
-                                                <div className="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Status</div>
-                                                <div className="mt-1.5">
-                                                    <Badge color={getStatusColor(selectedOrder.status)} className="inline-flex w-fit">
-                                                        {formatStatus(selectedOrder.status)}
-                                                    </Badge>
-                                                </div>
-                                            </div>
-                                            <Field label="Distance" value={(selectedOrder as any)["distanceKm"] ? `${(selectedOrder as any)["distanceKm"]} km` : undefined} />
-                                            <Field label="Rate Per Km" value={(selectedOrder as any)["ratePerKm"] ? `₹${(selectedOrder as any)["ratePerKm"]}` : undefined} />
-                                            <Field label="Total Amount" value={(selectedOrder as any)["totalAmount"] ? `₹${(selectedOrder as any)["totalAmount"]}` : undefined} />
-                                        </div>
-                                    </section>
-                                    <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
-                                        <SectionTitle title="Booking Customer" />
-                                        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                                            <Field label="Name" value={(selectedOrder as any)["bookingCustomer"]?.name || selectedOrder.customerName} />
-                                            <Field label="Phone" value={(selectedOrder as any)["bookingCustomer"]?.phoneNumber} />
-                                            <Field label="Address" value={(selectedOrder as any)["bookingCustomer"]?.address} wide />
-                                            <Field label="Pincode" value={(selectedOrder as any)["bookingCustomer"]?.pincode} />
-                                        </div>
-                                    </section>
-                                    <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
-                                        <SectionTitle title="Delivery Customer" />
-                                        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                                            <Field label="Name" value={(selectedOrder as any)["deliveryCustomer"]?.name} />
-                                            <Field label="Phone" value={(selectedOrder as any)["deliveryCustomer"]?.phoneNumber} />
-                                            <Field label="Address" value={(selectedOrder as any)["deliveryCustomer"]?.address} wide />
-                                            <Field label="Pincode" value={(selectedOrder as any)["deliveryCustomer"]?.pincode} />
-                                        </div>
-                                    </section>
-                                    <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
-                                        <SectionTitle title="Shipment & Vehicle" />
-                                        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                                            <Field label="Approx. Weight" value={(selectedOrder as any)["shipment"]?.approximateWeight} />
-                                            <Field label="Vehicle Type" value={(selectedOrder as any)["selectedVehicle"]?.vehicleType || selectedOrder.vehicleType} />
-                                            <Field label="Capacity" value={(selectedOrder as any)["selectedVehicle"]?.capacityKg} />
-                                        </div>
-                                    </section>
-                                    {(selectedOrder as any)["driver"] && (
-                                        <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
-                                            <SectionTitle title="Driver Details" />
-                                            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-                                                <Field label="Name" value={(selectedOrder as any)["driver"]?.driverName} />
-                                                <Field label="Phone" value={(selectedOrder as any)["driver"]?.phoneNumber} />
-                                                <Field label="License Number" value={(selectedOrder as any)["driver"]?.licenseNumber} />
-                                            </div>
-                                        </section>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
                 )}
             </div>
         </NavbarSidebarLayout>

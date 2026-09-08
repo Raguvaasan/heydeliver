@@ -26,6 +26,9 @@ http.interceptors.request.use(
 
 export interface B2BVehicleFormValues {
   vehicleType: string
+  registrationNumber: string
+  insuranceNumber: string
+  rcNumber: string
   capacityKg: string
   ratePerKm: number | string
   status: "Active" | "Inactive"
@@ -67,6 +70,9 @@ interface B2BVehicleState {
 const normalizeVehicle = (item: any): B2BVehicle => ({
   id: item?._id || item?.id || "",
   vehicleType: item?.vehicleType || "",
+  registrationNumber: item?.registrationNumber || item?.vehicleRegistrationNumber || "",
+  insuranceNumber: item?.insuranceNumber || "",
+  rcNumber: item?.rcNumber || "",
   capacityKg: item?.capacityKg ?? item?.capacity ?? "",
   ratePerKm: item?.ratePerKm ?? "",
   status: item?.status || "Inactive",
@@ -135,6 +141,9 @@ export const useB2BVehicleStore = create<B2BVehicleState>((set, get) => ({
     try {
       const response = await http.post(VEHICLE_API_PATH, {
         vehicleType: vehicle.vehicleType,
+        registrationNumber: vehicle.registrationNumber,
+        insuranceNumber: vehicle.insuranceNumber,
+        rcNumber: vehicle.rcNumber,
         capacity: vehicle.capacityKg,
         ratePerKm: Number(vehicle.ratePerKm),
         status: vehicle.status,
@@ -157,6 +166,9 @@ export const useB2BVehicleStore = create<B2BVehicleState>((set, get) => ({
     try {
       const payload: any = {}
       if (vehicle.vehicleType !== undefined) payload.vehicleType = vehicle.vehicleType
+      if (vehicle.registrationNumber !== undefined) payload.registrationNumber = vehicle.registrationNumber
+      if (vehicle.insuranceNumber !== undefined) payload.insuranceNumber = vehicle.insuranceNumber
+      if (vehicle.rcNumber !== undefined) payload.rcNumber = vehicle.rcNumber
       if (vehicle.capacityKg !== undefined) payload.capacity = vehicle.capacityKg
       if (vehicle.ratePerKm !== undefined) payload.ratePerKm = Number(vehicle.ratePerKm)
       if (vehicle.status !== undefined) payload.status = vehicle.status

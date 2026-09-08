@@ -33,6 +33,7 @@ interface B2BOrderState {
     search?: string
     startDate?: string
     endDate?: string
+    status?: string
   }) => Promise<void>
 }
 
@@ -56,7 +57,7 @@ export const useB2BOrderStore = create<B2BOrderState>((set) => ({
   error: null,
   pagination: null,
 
-  fetchOrders: async ({ page = 1, limit = 10, search, startDate, endDate } = {}) => {
+  fetchOrders: async ({ page = 1, limit = 10, search, startDate, endDate, status } = {}) => {
     set({ loading: true, error: null })
     try {
       const response = await http.get("/admin/b2b/orders", {
@@ -66,6 +67,7 @@ export const useB2BOrderStore = create<B2BOrderState>((set) => ({
           ...(search?.trim() ? { search: search.trim() } : {}),
           ...(startDate ? { startDate } : {}),
           ...(endDate ? { endDate } : {}),
+          ...(status ? { status } : {}),
         },
       })
 
