@@ -66,7 +66,16 @@ const B2BOrdersPage: FC = () => {
         setPage(1)
     }
 
-    const statusOptions = ["IN_TRANSIT", "DELIVERED"]
+    // Add near your other constants, after DRAFT_STATUS
+const STATUS_FLOW = ["DRAFT", "VEHICLE_ASSIGNED", "IN_TRANSIT", "DELIVERED", "CANCELED"]
+
+// Replace the old `const statusOptions = ["IN_TRANSIT", "DELIVERED"]` line with this helper
+const getNextStatusOptions = (currentStatus: string) => {
+    const currentIndex = STATUS_FLOW.indexOf(currentStatus)
+    // Unknown/legacy status value -> fall back to showing everything after DRAFT
+    if (currentIndex === -1) return STATUS_FLOW.slice(1)
+    return STATUS_FLOW.slice(currentIndex + 1)
+}
 
     const handleStatusChange = async (orderId: string, status: string) => {
         const previous = orders.find((order) => order.id === orderId)?.status ?? ""
@@ -116,17 +125,22 @@ const B2BOrdersPage: FC = () => {
             <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{order.customerName}</td>
             <td className="w-28 px-4 py-3 text-gray-700 dark:text-gray-300">{order.approximateWeight}</td>
             <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{order.vehicleType}</td>
-            <td className="px-4 py-3">
-                <Select
-                    value={order.status || ""}
-                    disabled={rowActionLoading[order.id] || loading}
-                    onChange={(event) => handleStatusChange(order.id, event.target.value)}
-                >
-                    {order.status && !statusOptions.includes(order.status) && <option value={order.status}>{order.status}</option>}
-                    <option value="IN_TRANSIT">IN TRANSIT</option>
-                    <option value="DELIVERED">DELIVERED</option>
-                </Select>
-            </td>
+           <td className="px-4 py-3">
+    <Select
+        value={order.status || ""}
+        disabled={rowActionLoading[order.id] || loading}
+        onChange={(event) => handleStatusChange(order.id, event.target.value)}
+    >
+        <option value={order.status || ""} disabled hidden>
+            {(order.status || "Select status").replace(/_/g, " ")}
+        </option>
+        {getNextStatusOptions(order.status).map((status) => (
+            <option key={status} value={status}>
+                {status.replace(/_/g, " ")}
+            </option>
+        ))}
+    </Select>
+</td>
             <td className="px-4 py-3">
                 <button
                     className="p-1.5 text-gray-600 hover:text-orange-600 disabled:opacity-50 dark:text-gray-400 dark:hover:text-orange-400"

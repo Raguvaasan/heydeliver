@@ -59,10 +59,21 @@ const OrderDetailsModal: FC<OrderDetailsModalProps> = ({ order, onClose }) => {
                                 <Field label="Pincode" value={(order as any)["deliveryCustomer"]?.pincode} />
                             </div>
                         </section>
-                        <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
+                         <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
                             <SectionTitle title="Shipment & Vehicle" />
                             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                                 <Field label="Approx. Weight" value={(order as any)["shipment"]?.approximateWeight} />
+                                <Field label="Vehicle Type" value={(order as any)["userSelectedVehicle"]?.vehicleType || order.vehicleType} />
+                                <Field label="Registration Number" value={(order as any)["userSelectedVehicle"]?.registrationNumber} />
+                                <Field label="Insurance Number" value={(order as any)["userSelectedVehicle"]?.insuranceNumber} />
+                                <Field label="RC Number" value={(order as any)["userSelectedVehicle"]?.rcNumber} />
+                                <Field label="Capacity" value={(order as any)["userSelectedVehicle"]?.capacityKg} />
+                            </div>
+                        </section>
+                        {(order as any)["selectedVehicleId"] && (
+                        <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
+                            <SectionTitle title="Assigned Vehicle" />
+                            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                                 <Field label="Vehicle Type" value={(order as any)["selectedVehicleId"]?.vehicleType || order.vehicleType} />
                                 <Field label="Registration Number" value={(order as any)["selectedVehicleId"]?.registrationNumber} />
                                 <Field label="Insurance Number" value={(order as any)["selectedVehicleId"]?.insuranceNumber} />
@@ -70,6 +81,7 @@ const OrderDetailsModal: FC<OrderDetailsModalProps> = ({ order, onClose }) => {
                                 <Field label="Capacity" value={(order as any)["selectedVehicleId"]?.capacityKg} />
                             </div>
                         </section>
+                        )}
                         {(order as any)["driver"] && (
                             <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/60">
                                 <SectionTitle title="Driver Details" />
