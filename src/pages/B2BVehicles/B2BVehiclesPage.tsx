@@ -65,7 +65,7 @@ const B2BVehiclesPage: FC = () => {
                   <tr>
                     <th className="px-4 py-3 w-16">S.No</th>
                     <th className="px-4 py-3">Vehicle Type</th>
-                    <th className="px-4 py-3">Capacity by kg</th>
+                    <th className="px-4 py-3">Capacity by Ton</th>
                     <th className="px-4 py-3">Rate / Km</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3 text-center">Action</th>

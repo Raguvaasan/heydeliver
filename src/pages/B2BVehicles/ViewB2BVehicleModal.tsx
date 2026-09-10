@@ -20,11 +20,11 @@ const ViewB2BVehicleModal: FC<Props> = ({ isOpen, onClose, vehicle }) => {
     <Modal show={isOpen} onClose={onClose} size="lg">
       <Modal.Header><h3 className="text-xl font-semibold text-gray-900 dark:text-white">B2B Vehicle Details</h3></Modal.Header>
       <Modal.Body>
-        <InfoRow label="Vehicle ID" value={vehicle.id} />
+        {/* <InfoRow label="Vehicle ID" value={vehicle.id} /> */}
         <InfoRow label="Vehicle Type" value={vehicle.vehicleType} />
-        <InfoRow label="Vehicle Registration Number" value={vehicle.registrationNumber} />
+        {/* <InfoRow label="Vehicle Registration Number" value={vehicle.registrationNumber} />
         <InfoRow label="Insurance Number" value={vehicle.insuranceNumber} />
-        <InfoRow label="RC Number" value={vehicle.rcNumber} />
+        <InfoRow label="RC Number" value={vehicle.rcNumber} /> */}
         <InfoRow label="Capacity" value={vehicle.capacityKg} />
         <InfoRow label="Rate Per Km" value={vehicle.ratePerKm} />
         <div className="flex flex-col md:flex-row md:items-center py-3 border-b border-gray-200 dark:border-gray-700">

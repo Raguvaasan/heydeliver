@@ -263,8 +263,8 @@ const Sidebar: FC<SidebarProps> = ({
       icon: <HiTruck className="h-5 w-5" />,
       path: "/vehicle",
       submenu: [
-        { title: "Agency vehicle", path: "/vehicle" },
-        { title: "B2B Vehicle", path: "/b2b-vehicles" },
+        { title: "Vehicle management", path: "/vehicle" },
+        { title: "Vehicle Type", path: "/b2b-vehicles" },
       ],
     },
      {

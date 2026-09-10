@@ -17,9 +17,9 @@ interface Props {
 
 const schema = Yup.object({
   vehicleType: Yup.string().trim().required("Vehicle type is required").min(2).max(50),
-  registrationNumber: Yup.string().trim().required("Vehicle registration number is required").min(3).max(30),
-  insuranceNumber: Yup.string().trim().required("Insurance number is required").min(3).max(50),
-  rcNumber: Yup.string().trim().required("RC number is required").min(3).max(50),
+  // registrationNumber: Yup.string().trim().required("Vehicle registration number is required").min(3).max(30),
+  // insuranceNumber: Yup.string().trim().required("Insurance number is required").min(3).max(50),
+  // rcNumber: Yup.string().trim().required("RC number is required").min(3).max(50),
   capacityKg: Yup.string().trim().required("Capacity is required").min(1).max(50),
   ratePerKm: Yup.number().typeError("Rate per km must be a number").required("Rate per km is required").min(0),
   status: Yup.string().oneOf(["Active", "Inactive"]).required("Status is required"),
@@ -27,9 +27,9 @@ const schema = Yup.object({
 
 const emptyValues: B2BVehicleFormValues = {
   vehicleType: "",
-  registrationNumber: "",
-  insuranceNumber: "",
-  rcNumber: "",
+  // registrationNumber: "",
+  // insuranceNumber: "",
+  // rcNumber: "",
   capacityKg: "",
   ratePerKm: "",
   status: "Active",
@@ -43,9 +43,9 @@ const AddEditB2BVehicleModal: FC<Props> = ({ isOpen, onClose, mode, vehicle, onS
   const initialValues: B2BVehicleFormValues = isEdit && vehicle
     ? {
         vehicleType: vehicle.vehicleType,
-        registrationNumber: vehicle.registrationNumber,
-        insuranceNumber: vehicle.insuranceNumber,
-        rcNumber: vehicle.rcNumber,
+        // registrationNumber: vehicle.registrationNumber,
+        // insuranceNumber: vehicle.insuranceNumber,
+        // rcNumber: vehicle.rcNumber,
         capacityKg: vehicle.capacityKg,
         ratePerKm: vehicle.ratePerKm,
         status: vehicle.status,
@@ -82,10 +82,10 @@ const AddEditB2BVehicleModal: FC<Props> = ({ isOpen, onClose, mode, vehicle, onS
                 <FormSection title="Vehicle Information" description={isEdit ? "Update B2B vehicle details" : "Enter B2B vehicle details"} icon={<HiOutlineTruck className="w-5 h-5" />}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormInput name="vehicleType" label="Vehicle Type" required />
-                    <FormInput name="registrationNumber" label="Vehicle Registration Number" required />
+                    {/* <FormInput name="registrationNumber" label="Vehicle Registration Number" required />
                     <FormInput name="insuranceNumber" label="Insurance Number" required />
-                    <FormInput name="rcNumber" label="RC Number" required />
-                    <FormInput name="capacityKg" label="Capacity (Kg)" required />
+                    <FormInput name="rcNumber" label="RC Number" required /> */}
+                    <FormInput name="capacityKg" label="Capacity (Ton)" required />
                     <FormInput name="ratePerKm" label="Rate Per Km" type="number" required />
                     <FormSelect name="status" label="Status" required options={[{ value: "Active", label: "Active" }, { value: "Inactive", label: "Inactive" }]} />
                   </div>

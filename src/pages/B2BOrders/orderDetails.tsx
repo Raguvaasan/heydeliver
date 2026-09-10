@@ -64,9 +64,9 @@ const OrderDetailsModal: FC<OrderDetailsModalProps> = ({ order, onClose }) => {
                             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                                 <Field label="Approx. Weight" value={(order as any)["shipment"]?.approximateWeight} />
                                 <Field label="Vehicle Type" value={(order as any)["userSelectedVehicle"]?.vehicleType || order.vehicleType} />
-                                <Field label="Registration Number" value={(order as any)["userSelectedVehicle"]?.registrationNumber} />
+                                {/* <Field label="Registration Number" value={(order as any)["userSelectedVehicle"]?.registrationNumber} />
                                 <Field label="Insurance Number" value={(order as any)["userSelectedVehicle"]?.insuranceNumber} />
-                                <Field label="RC Number" value={(order as any)["userSelectedVehicle"]?.rcNumber} />
+                                <Field label="RC Number" value={(order as any)["userSelectedVehicle"]?.rcNumber} /> */}
                                 <Field label="Capacity" value={(order as any)["userSelectedVehicle"]?.capacityKg} />
                             </div>
                         </section>
@@ -75,10 +75,10 @@ const OrderDetailsModal: FC<OrderDetailsModalProps> = ({ order, onClose }) => {
                             <SectionTitle title="Assigned Vehicle" />
                             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
                                 <Field label="Vehicle Type" value={(order as any)["selectedVehicleId"]?.vehicleType || order.vehicleType} />
-                                <Field label="Registration Number" value={(order as any)["selectedVehicleId"]?.registrationNumber} />
+                                <Field label="Registration Number" value={(order as any)["selectedVehicleId"]?.vehicleRegistrationNumber} />
                                 <Field label="Insurance Number" value={(order as any)["selectedVehicleId"]?.insuranceNumber} />
                                 <Field label="RC Number" value={(order as any)["selectedVehicleId"]?.rcNumber} />
-                                <Field label="Capacity" value={(order as any)["selectedVehicleId"]?.capacityKg} />
+                                <Field label="Capacity" value={(order as any)["selectedVehicleId"]?.capacity} />
                             </div>
                         </section>
                         )}

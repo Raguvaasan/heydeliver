@@ -1,11 +1,13 @@
 import { FC, useEffect, useState } from "react"
-import { Label, Select } from "flowbite-react"
+import { Label, Select, TextInput } from "flowbite-react"
 import { HiX } from "react-icons/hi"
 import toast from "react-hot-toast"
 import http from "../../common/httpRequest"
 import { B2BOrder } from "../../store/b2bOrderStore"
 
 const B2B_ORDERS_BASE = "/admin/b2b/orders"
+const VEHICLES_ENDPOINT = "/admin/vehicle"
+const VEHICLES_PAGE_LIMIT = 10
 
 interface DriverOption {
     id: string
@@ -15,6 +17,7 @@ interface DriverOption {
 interface VehicleOption {
     id: string
     vehicleType: string
+    vehicleRegistrationNumber: string
 }
 
 interface AssignmentModalProps {
@@ -32,11 +35,15 @@ const AssignmentModal: FC<AssignmentModalProps> = ({ order, onClose, onAssigned,
     const [vehicles, setVehicles] = useState<VehicleOption[]>([])
     const [driversLoading, setDriversLoading] = useState(false)
     const [vehiclesLoading, setVehiclesLoading] = useState(false)
+    const [vehiclesLoadingMore, setVehiclesLoadingMore] = useState(false)
+    const [vehiclesPage, setVehiclesPage] = useState(1)
+    const [vehiclesTotalPages, setVehiclesTotalPages] = useState(1)
     const [assignmentLoading, setAssignmentLoading] = useState(false)
 
     const assignedDriver = (order as any).driverId || (order as any).driver
     const assignedVehicle = (order as any).selectedVehicle || (order as any).vehicleId || (order as any).vehicle
     const initialVehicleLabel = assignedVehicle?.vehicleType || (typeof order.vehicleType === "string" ? order.vehicleType : "")
+    const initialVehicleRegistration = assignedVehicle?.vehicleRegistrationNumber || ""
 
     const [assignmentDriverId, setAssignmentDriverId] = useState(String(assignedDriver?._id || assignedDriver?.id || assignedDriver || "").trim())
     const [assignmentVehicleId, setAssignmentVehicleId] = useState(String(assignedVehicle?._id || assignedVehicle?.id || assignedVehicle || "").trim())
@@ -44,6 +51,8 @@ const AssignmentModal: FC<AssignmentModalProps> = ({ order, onClose, onAssigned,
     // fallback <option> so the Select shows a selection even before/without the
     // vehicles list containing it.
     const [assignmentVehicleLabel] = useState(initialVehicleLabel)
+    // Registration number, auto-derived from the selected vehicle. Read-only in the UI.
+    const [assignmentVehicleRegistration, setAssignmentVehicleRegistration] = useState(initialVehicleRegistration)
 
     useEffect(() => {
         const fetchDrivers = async () => {
@@ -73,37 +82,51 @@ const AssignmentModal: FC<AssignmentModalProps> = ({ order, onClose, onAssigned,
         fetchDrivers()
     }, [])
 
-    useEffect(() => {
-        const fetchVehicles = async () => {
-            setVehiclesLoading(true)
-            try {
-                const response = await http.get(`${B2B_ORDERS_BASE}/vehicles`)
-                const payload = response.data
-                const items = Array.isArray(payload?.data)
-                    ? payload.data
-                    : Array.isArray(payload?.data?.vehicles)
-                        ? payload.data.vehicles
-                        : Array.isArray(payload?.vehicles)
-                            ? payload.vehicles
-                            : Array.isArray(payload)
-                                ? payload
-                                : []
-                const mapped: VehicleOption[] = items
-                    .map((item: any) => ({
-                        id: String(item?._id || item?.id || item?.vehicleId || "").trim(),
-                        vehicleType: item?.vehicleType || item?.type || item?.name || "Unnamed vehicle",
-                    }))
-                    .filter((item: VehicleOption) => item.id)
-                setVehicles(Array.from(new Map(mapped.map((vehicle) => [vehicle.id, vehicle])).values()))
-            } catch (error) {
-                const message = error instanceof Error ? error.message : "Failed to fetch vehicles"
-                toast.error(message)
-            } finally {
-                setVehiclesLoading(false)
-            }
-        }
+    const fetchVehicles = async (page: number, replace: boolean) => {
+        if (replace) setVehiclesLoading(true)
+        else setVehiclesLoadingMore(true)
 
-        fetchVehicles()
+        try {
+            const response = await http.get(`${VEHICLES_ENDPOINT}?page=${page}&limit=${VEHICLES_PAGE_LIMIT}`)
+            const payload = response.data
+            const items = Array.isArray(payload?.data?.vehicles)
+                ? payload.data.vehicles
+                : Array.isArray(payload?.data)
+                    ? payload.data
+                    : Array.isArray(payload?.vehicles)
+                        ? payload.vehicles
+                        : Array.isArray(payload)
+                            ? payload
+                            : []
+
+            const mapped: VehicleOption[] = items
+                .map((item: any) => ({
+                    id: String(item?._id || item?.id || item?.vehicleId || "").trim(),
+                    vehicleType: item?.vehicleType || item?.type || item?.name || "Unnamed vehicle",
+                    vehicleRegistrationNumber: item?.vehicleRegistrationNumber || "",
+                }))
+                .filter((item: VehicleOption) => item.id)
+
+            setVehicles((prev) => {
+                const combined = replace ? mapped : [...prev, ...mapped]
+                return Array.from(new Map(combined.map((vehicle) => [vehicle.id, vehicle])).values())
+            })
+
+            const totalPages = payload?.data?.pagination?.totalPages ?? 1
+            setVehiclesTotalPages(totalPages)
+            setVehiclesPage(page)
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to fetch vehicles"
+            toast.error(message)
+        } finally {
+            setVehiclesLoading(false)
+            setVehiclesLoadingMore(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchVehicles(1, true)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     // If the vehicle id captured when opening the modal doesn't match anything in the
@@ -120,6 +143,18 @@ const AssignmentModal: FC<AssignmentModalProps> = ({ order, onClose, onAssigned,
             setAssignmentVehicleId(matchByName.id)
         }
     }, [vehicles, assignmentVehicleId, assignmentVehicleLabel])
+
+    // Keep the registration number field in sync with whichever vehicle is selected.
+    useEffect(() => {
+        if (!assignmentVehicleId) {
+            setAssignmentVehicleRegistration("")
+            return
+        }
+        const selected = vehicles.find((vehicle) => vehicle.id === assignmentVehicleId)
+        if (selected) {
+            setAssignmentVehicleRegistration(selected.vehicleRegistrationNumber)
+        }
+    }, [assignmentVehicleId, vehicles])
 
     const handleAssignment = async () => {
         if (!assignmentDriverId && !assignmentVehicleId) {
@@ -149,6 +184,8 @@ const AssignmentModal: FC<AssignmentModalProps> = ({ order, onClose, onAssigned,
             setAssignmentLoading(false)
         }
     }
+
+    const canLoadMoreVehicles = vehiclesPage < vehiclesTotalPages
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm" onClick={() => !assignmentLoading && onClose()}>
@@ -185,6 +222,26 @@ const AssignmentModal: FC<AssignmentModalProps> = ({ order, onClose, onAssigned,
                             )}
                             {vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.vehicleType}</option>)}
                         </Select>
+                        {!vehiclesLoading && canLoadMoreVehicles && (
+                            <button
+                                type="button"
+                                onClick={() => fetchVehicles(vehiclesPage + 1, false)}
+                                disabled={vehiclesLoadingMore || assignmentLoading}
+                                className="mt-1.5 text-xs font-medium text-orange-600 hover:underline disabled:opacity-50"
+                            >
+                                {vehiclesLoadingMore ? "Loading more..." : "Load more vehicles"}
+                            </button>
+                        )}
+                    </div>
+                    <div>
+                        <Label htmlFor="assign-vehicle-registration" className="mb-1 block text-sm">Vehicle Registration Number</Label>
+                        <TextInput
+                            id="assign-vehicle-registration"
+                            value={assignmentVehicleRegistration}
+                            readOnly
+                            disabled
+                            placeholder="Auto-filled on vehicle selection"
+                        />
                     </div>
                     <button type="button" onClick={handleAssignment} disabled={assignmentLoading || driversLoading || vehiclesLoading} className="w-full rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50">
                         {assignmentLoading ? "Assigning..." : "Assign"}
