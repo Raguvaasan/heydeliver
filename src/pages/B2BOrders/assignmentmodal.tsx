@@ -18,6 +18,7 @@ interface VehicleOption {
     id: string
     vehicleType: string
     vehicleRegistrationNumber: string
+    capacity: string
 }
 
 interface AssignmentModalProps {
@@ -41,10 +42,14 @@ const AssignmentModal: FC<AssignmentModalProps> = ({ order, onClose, onAssigned,
     const [assignmentLoading, setAssignmentLoading] = useState(false)
 
     const assignedDriver = (order as any).driverId || (order as any).driver
-    const assignedVehicle = (order as any).selectedVehicle || (order as any).vehicleId || (order as any).vehicle
+    // The orders endpoint may return the populated assigned vehicle under either
+    // `selectedVehicle` or `selectedVehicleId`. Include both so reopening this
+    // modal after assignment preserves all vehicle details.
+    const assignedVehicle = (order as any).selectedVehicle || (order as any).selectedVehicleId || (order as any).vehicleId || (order as any).vehicle
     const initialVehicleLabel = assignedVehicle?.vehicleType || (typeof order.vehicleType === "string" ? order.vehicleType : "")
-    const initialVehicleRegistration = assignedVehicle?.vehicleRegistrationNumber || ""
-
+    const initialVehicleRegistration = assignedVehicle?.vehicleRegistrationNumber || assignedVehicle?.registrationNumber || ""
+    const initialVehicleCapacity = assignedVehicle?.capacity || assignedVehicle?.capacityKg || ""
+    const [assignmentVehicleCapacity, setAssignmentVehicleCapacity] = useState(initialVehicleCapacity)
     const [assignmentDriverId, setAssignmentDriverId] = useState(String(assignedDriver?._id || assignedDriver?.id || assignedDriver || "").trim())
     const [assignmentVehicleId, setAssignmentVehicleId] = useState(String(assignedVehicle?._id || assignedVehicle?.id || assignedVehicle || "").trim())
     // Human-readable label for the order's currently assigned vehicle, used as a
@@ -103,7 +108,8 @@ const AssignmentModal: FC<AssignmentModalProps> = ({ order, onClose, onAssigned,
                 .map((item: any) => ({
                     id: String(item?._id || item?.id || item?.vehicleId || "").trim(),
                     vehicleType: item?.vehicleType || item?.type || item?.name || "Unnamed vehicle",
-                    vehicleRegistrationNumber: item?.vehicleRegistrationNumber || "",
+                    vehicleRegistrationNumber: item?.vehicleRegistrationNumber || item?.registrationNumber || "",
+                    capacity: item?.capacity || item?.capacityKg || "",
                 }))
                 .filter((item: VehicleOption) => item.id)
 
@@ -144,15 +150,16 @@ const AssignmentModal: FC<AssignmentModalProps> = ({ order, onClose, onAssigned,
         }
     }, [vehicles, assignmentVehicleId, assignmentVehicleLabel])
 
-    // Keep the registration number field in sync with whichever vehicle is selected.
     useEffect(() => {
         if (!assignmentVehicleId) {
             setAssignmentVehicleRegistration("")
+            setAssignmentVehicleCapacity("")
             return
         }
         const selected = vehicles.find((vehicle) => vehicle.id === assignmentVehicleId)
         if (selected) {
             setAssignmentVehicleRegistration(selected.vehicleRegistrationNumber)
+            setAssignmentVehicleCapacity(selected.capacity)
         }
     }, [assignmentVehicleId, vehicles])
 
@@ -218,8 +225,8 @@ const AssignmentModal: FC<AssignmentModalProps> = ({ order, onClose, onAssigned,
                                 vehicle.id === assignmentVehicleId
                                 || (!!assignmentVehicleLabel && vehicle.vehicleType.trim().toLowerCase() === assignmentVehicleLabel.trim().toLowerCase())
                             )) && (
-                                <option value={assignmentVehicleId}>{assignmentVehicleLabel || "Current vehicle"}</option>
-                            )}
+                                    <option value={assignmentVehicleId}>{assignmentVehicleLabel || "Current vehicle"}</option>
+                                )}
                             {vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.vehicleType}</option>)}
                         </Select>
                         {!vehiclesLoading && canLoadMoreVehicles && (
@@ -238,6 +245,16 @@ const AssignmentModal: FC<AssignmentModalProps> = ({ order, onClose, onAssigned,
                         <TextInput
                             id="assign-vehicle-registration"
                             value={assignmentVehicleRegistration}
+                            readOnly
+                            disabled
+                            placeholder="Auto-filled on vehicle selection"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="assign-vehicle-capacity" className="mb-1 block text-sm">Capacity</Label>
+                        <TextInput
+                            id="assign-vehicle-capacity"
+                            value={assignmentVehicleCapacity}
                             readOnly
                             disabled
                             placeholder="Auto-filled on vehicle selection"
