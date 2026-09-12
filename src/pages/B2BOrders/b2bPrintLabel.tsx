@@ -134,23 +134,77 @@ export const handleB2BLabel = async (orderId: string): Promise<void> => {
         // -- Ship To Left Pane --
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
+
         doc.text("Ship To:", 0.15, 1.65);
-        doc.text(String(shipTo?.name || "-").toUpperCase(), 0.15, 1.80);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+
+        doc.text(
+            String(shipTo?.name || "-").toUpperCase(),
+            0.15,
+            1.80
+        );
+
+        let shipToY = 1.95;
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+
+        const companyGstParts = [];
+
+        if (shipTo?.companyName) {
+            companyGstParts.push(`Company: ${shipTo.companyName}`);
+        }
+
+        if (shipTo?.gstNumber) {
+            companyGstParts.push(`GSTIN: ${shipTo.gstNumber}`);
+        }
+
+        if (companyGstParts.length > 0) {
+            doc.text(
+                companyGstParts.join(" | "),
+                0.15,
+                shipToY
+            );
+
+            shipToY += 0.15;
+        }
 
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
-        const fullShipAddr = deliveryAddressFull || shipTo?.address || "-"
-        const shipLines = doc.splitTextToSize(fullShipAddr, 2.6);
-        doc.text(shipLines, 0.15, 1.95);
+
+        const fullShipAddr = deliveryAddressFull || shipTo?.address || "-";
+
+        const shipLines = doc.splitTextToSize(
+            fullShipAddr,
+            2.6
+        );
+
+        doc.text(
+            shipLines,
+            0.15,
+            shipToY
+        );
 
         const addrHeight = shipLines.length * 0.15;
+        shipToY += addrHeight;
+
+        // PIN
         doc.setFont("helvetica", "bold");
-        const shipToPinPhone = `PIN:${shipTo?.pincode || "-"}`
-        doc.text(shipToPinPhone, 0.15, 1.95 + addrHeight);
+        doc.setFontSize(8);
+
+        const shipToPinPhone = `PIN:${shipTo?.pincode || "-"}`;
+
+        doc.text(
+            shipToPinPhone,
+            0.15,
+            shipToY
+        );
 
         // -- Ship To Right Pane (weight + amount, b2b has no paymentType/article) --
         doc.setFontSize(11);
-        doc.text(weight != null ? `${weight} kg` : "-", 3.35, 1.70, { align: "center" });
+        doc.text(weight != null ? `${weight} Ton` : "-", 3.35, 1.70, { align: "center" });
         // doc.text(String(invoiceData?.orderStatus || "-").replace(/_/g, " "), 3.35, 1.85, { align: "center" });
         doc.text("INR", 3.35, 2.25, { align: "center" });
         doc.text(String(amount ?? 0), 3.35, 2.40, { align: "center" });
@@ -173,7 +227,7 @@ export const handleB2BLabel = async (orderId: string): Promise<void> => {
         doc.text(sellerLines, doc.getTextWidth("Address: ") + 0.15, 2.85);
 
         // -- Date Right Pane --
-        doc.setFontSize(10);
+        doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
         doc.text("Date: ", 2.85, 2.80);
         doc.setFont("helvetica", "normal");

@@ -125,6 +125,7 @@ const getNextStatusOptions = (currentStatus: string) => {
             <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{order.customerName}</td>
             <td className="w-28 px-4 py-3 text-gray-700 dark:text-gray-300">{order.approximateWeight}</td>
             <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{order.vehicleType}</td>
+            <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{order.assignedVehicle}</td>
            <td className="px-4 py-3">
     <Select
         value={order.status || ""}
@@ -218,10 +219,11 @@ const getNextStatusOptions = (currentStatus: string) => {
                                 <tr>
                                     <th className="px-4 py-3">S.No.</th>
                                     <th className="px-4 py-3">LR Num</th>
-                                    <th className="px-4 py-3">Date</th>
+                                    <th className="px-4 py-3 w-24">Date</th>
                                     <th className="px-4 py-3">Booking Customer</th>
                                     <th className="px-4 py-3">Approx. Weight</th>
-                                    <th className="px-4 py-3">Vehicle Type</th>
+                                    <th className="px-4 py-3 w-10">Vehicle Type</th>
+                                    <th className="px-4 py-3">Assigned Vehicle</th>
                                     <th className="px-4 py-3">Status</th>
                                     <th className="px-4 py-3">Action</th>
                                 </tr>

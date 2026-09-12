@@ -8,6 +8,7 @@ interface B2BInvoiceParty {
     state?: string
     pincode?: string
     gstNumber?: string
+    companyName?: string
 }
 
 interface B2BInvoiceDriver {
@@ -49,6 +50,7 @@ interface B2BInvoiceData {
     vehicle?: B2BInvoiceVehicle
     shipment?: B2BInvoiceShipment
     charges?: B2BInvoiceCharges
+    waybill?: string
 }
 
 const loadImage = (src: string): Promise<HTMLImageElement> =>
@@ -158,8 +160,9 @@ export async function generateB2BInvoice(orderId: string, authToken: string): Pr
     infoRow("Invoice:", String(invoiceData.invoiceNumber || invoiceData.orderNumber || orderId))
     infoRow("Date:", dateStr)
     infoRow("LR Number:", String(invoiceData.lrNo))
+    infoRow("Eway bill:", String(invoiceData.waybill))
     if (vehicle.vehicleType || vehicle.capacityKg) {
-        const vehicleParts = [vehicle.vehicleType, vehicle.capacityKg ? `${vehicle.capacityKg} kg` : ""]
+        const vehicleParts = [vehicle.vehicleType, vehicle.capacityKg ? `${vehicle.capacityKg} Ton` : ""]
             .filter(Boolean)
             .join(" - ")
         infoRow("Vehicle:", vehicleParts)
@@ -168,23 +171,47 @@ export async function generateB2BInvoice(orderId: string, authToken: string): Pr
     currentY = Math.max(fromBlockEndY, infoY) + 10
 
     // ---------- SHIP TO ----------
+    // ---------- SHIP TO ----------
     doc.setFillColor(245, 245, 245)
     doc.rect(margin, currentY, contentWidth, 10, "F")
     doc.setFont("helvetica", "bold")
     doc.setFontSize(10)
     doc.text("SHIP TO", margin + 5, currentY + 7)
     currentY += 15
+
     doc.setFontSize(11)
     doc.text(String(shipTo.name || "-").toUpperCase(), margin, currentY)
     currentY += 6
+
     doc.setFontSize(10)
     doc.setFont("helvetica", "normal")
 
-    const shipAddrParts = invoiceData.deliveryAddress || [shipTo.address, shipTo.pincode].filter(Boolean).join(", ")
-    const receiverLines = doc.splitTextToSize(shipAddrParts || "-", contentWidth - 10)
+    // Company Name
+    if (shipTo.companyName) {
+        doc.text(`Company: ${shipTo.companyName}`, margin, currentY)
+        currentY += 5
+    }
+
+    // GST Number
+    if (shipTo.gstNumber) {
+        doc.text(`GSTIN: ${shipTo.gstNumber}`, margin, currentY)
+        currentY += 5
+    }
+
+    // Address
+    const shipAddrParts =
+        invoiceData.deliveryAddress ||
+        [shipTo.address, shipTo.pincode].filter(Boolean).join(", ")
+
+    const receiverLines = doc.splitTextToSize(
+        shipAddrParts || "-",
+        contentWidth - 10
+    )
+
     doc.text(receiverLines, margin, currentY)
     currentY += receiverLines.length * 5 + 5
 
+    // Phone
     const shipPhone = shipTo.mobileNumber || shipTo.phone
     if (shipPhone) {
         doc.text(`Phone: ${shipPhone}`, margin, currentY)
@@ -233,7 +260,7 @@ export async function generateB2BInvoice(orderId: string, authToken: string): Pr
     doc.line(margin, currentY, pageWidth - margin, currentY)
     currentY += 8
     doc.text("Transportation Charges", margin + 5, currentY)
-    doc.text(shipment.approximateWeight ? `${shipment.approximateWeight} kg` : "-", pageWidth - 70, currentY, { align: "center" })
+    doc.text(shipment.approximateWeight ? `${shipment.approximateWeight} Ton` : "-", pageWidth - 70, currentY, { align: "center" })
     doc.text(`INR ${transportationCharge}`, pageWidth - margin - 5, currentY, { align: "right" })
     currentY += 12
 

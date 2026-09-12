@@ -46,8 +46,9 @@ const normalizeOrder = (item: any): B2BOrder => ({
   customerName: item?.bookingCustomer?.name || item?.customerName || item?.customer?.name || item?.consigneeName || item?.name || "-",
   customerPhone: item?.customerPhone || item?.bookingCustomer?.phoneNumber || item?.customer?.phone || item?.customerNumber || item?.phone || "-",
   approximateWeight: item?.shipment?.approximateWeight ?? item?.approximateWeight ?? "-",
-  vehicleType: item?.selectedVehicle?.vehicleType || item?.selectedVehicleId?.vehicleType || item?.vehicleType || "-",
+  vehicleType: item?.userSelectedVehicle?.vehicleType || "-",
   status: item?.status || "-",
+  assignedVehicle: item?.selectedVehicle?.vehicleType || item?.selectedVehicleId?.vehicleType || item?.vehicleType || "-",
   driverId: item?.driverId || item?.driver?._id || item?.driver?.id || "",
 })
 
@@ -82,11 +83,11 @@ export const useB2BOrderStore = create<B2BOrderState>((set) => ({
         orders,
         pagination: meta
           ? {
-              total: Number(meta.total || orders.length),
-              page: Number(meta.page || page),
-              limit: Number(meta.limit || limit),
-              totalPages: Number(meta.totalPages || 1),
-            }
+            total: Number(meta.total || orders.length),
+            page: Number(meta.page || page),
+            limit: Number(meta.limit || limit),
+            totalPages: Number(meta.totalPages || 1),
+          }
           : { total: orders.length, page, limit, totalPages: Math.max(1, Math.ceil(orders.length / limit)) },
         loading: false,
       })
