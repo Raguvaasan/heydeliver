@@ -404,25 +404,33 @@ if (vehicleType || vehicleCapacity) {
                 receipt.setDrawColor(75)
                 receipt.setLineWidth(0.35)
                 receipt.roundedRect(left, pad, w - pad * 2, h - pad * 2, 3, 3)
-                // Company block mirrors the supplied paper form.
-                receipt.setFont("helvetica", "bold")
-                receipt.setFontSize(15)
-                receipt.setTextColor(35, 45, 65)
-                receipt.text("TRUECARGO", left + 5, 20)
-                receipt.setFontSize(8)
-                receipt.text("TRUECARGO PRIVATE LIMITED", left + 5, 25)
-                receipt.text("COURIER | CARGO | LOGISTICS", left + 5, 29)
+                // Use the same local brand asset as the invoice and label.
+                try {
+                    const logo = await loadImage("/images/logo.png")
+                    const logoWidth = 42
+                    const logoHeight = Math.min(logoWidth * logo.height / logo.width, 25)
+                    receipt.addImage(logo, "PNG", left + 5, 12, logoWidth, logoHeight)
+                } catch {
+                    receipt.setFont("helvetica", "bold")
+                    receipt.setFontSize(15)
+                    receipt.setTextColor(35, 45, 65)
+                    receipt.text("TRUECARGO", left + 5, 20)
+                }
                 receipt.setFont("helvetica", "normal")
                 receipt.setFontSize(8)
                 receipt.text("L: ____    B: ____    H: ____", left + 5, 35)
 
                 const infoX = 68
                 const infoY = 8
-                const infoW = 72
+                const infoW = 50
+                const weightW = 32
+                const numbersX = infoX + infoW + weightW
+                const numbersW = right - numbersX - pad
                 cell(infoX, infoY, infoW, 22, "DATE", date)
                 cell(infoX, infoY + 22, infoW, 18, "NO. OF PIECES", pieces)
-                cell(infoX + infoW, infoY, 28, 40, "WEIGHT Kg. / Grm.", weight)
-                cell(infoX + infoW + 28, infoY, right - (infoX + infoW + 28) - pad, 40, "CONSIGNMENT NO.", consignee)
+                cell(infoX + infoW, infoY, weightW, 40, "WEIGHT (Kg/Grm)", weight)
+                cell(numbersX, infoY, numbersW, 22, "CONSIGNMENT NO.", consignee)
+                cell(numbersX, infoY + 22, numbersW, 18, "WAYBILL NO.", String(waybill || "-"))
 
                 let y = 48
                 const modeW = 84
