@@ -194,7 +194,7 @@ const ParcelManagementPage: FC = () => {
             const dateStr = dObj.toLocaleDateString()
             const pickupAddress = invoiceData?.pickupAddress || order?.pickupAddress || billTo?.address || ""
             const deliveryAddressFull = invoiceData?.deliveryAddress || order?.deliveryAddress || shipTo?.address || ""
-            const waybill = order?.waybill || invoiceData?.waybill || ""
+                const waybill = order?.waybill || invoiceData?.waybill || ""
             const vehicleType = order?.vehicleType || ""
             const vehicleCapacity = order?.vehicleCapacity || ""
 
@@ -400,6 +400,18 @@ if (vehicleType || vehicleCapacity) {
                     receipt.setFontSize(10)
                     receipt.text(fit(value, width - 4), valueX, y + 12)
                 }
+                const formatWaybillNumbers = (value: unknown): string => {
+                    const values = Array.isArray(value)
+                        ? value
+                        : String(value || "").split(/[\n,;|]+/)
+                    const numbers = values
+                        .map((item: any) => typeof item === "object" && item !== null
+                            ? item.waybillNumber || item.waybill || item.number || item.value || ""
+                            : item)
+                        .map((item: unknown) => String(item || "").trim())
+                        .filter(Boolean)
+                    return numbers.length ? numbers.join(", ") : "-"
+                }
 
                 receipt.setDrawColor(75)
                 receipt.setLineWidth(0.35)
@@ -430,7 +442,19 @@ if (vehicleType || vehicleCapacity) {
                 cell(infoX, infoY + 22, infoW, 18, "NO. OF PIECES", pieces)
                 cell(infoX + infoW, infoY, weightW, 40, "WEIGHT (Kg/Grm)", weight)
                 cell(numbersX, infoY, numbersW, 22, "CONSIGNMENT NO.", consignee)
-                cell(numbersX, infoY + 22, numbersW, 18, "WAYBILL NO.", String(waybill || "-"))
+                const waybillBoxY = infoY + 22
+                const waybillBoxHeight = 18
+                receipt.rect(numbersX, waybillBoxY, numbersW, waybillBoxHeight)
+                receipt.setFont("helvetica", "bold")
+                receipt.setFontSize(8)
+                receipt.text("WAYBILL NO.", numbersX + 2, waybillBoxY + 5)
+                const waybillText = formatWaybillNumbers(waybill)
+                const waybillLines = receipt.splitTextToSize(waybillText, numbersW - 4)
+                const waybillFontSize = waybillLines.length > 1 ? 7 : 10
+                receipt.setFont("helvetica", "normal")
+                receipt.setFontSize(waybillFontSize)
+                const availableWaybillLines = 2
+                receipt.text(waybillLines.slice(0, availableWaybillLines), numbersX + 2, waybillBoxY + 12)
 
                 let y = 48
                 const modeW = 84
