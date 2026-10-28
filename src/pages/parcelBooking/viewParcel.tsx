@@ -183,6 +183,9 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
                 <Field label="Name" value={parcel.bookingCustomerName} />
                 <Field label="Mobile Number" value={parcel.bookingMobileNumber} />
                 <Field label="Address" value={bookingCustomerAddress} />
+                {/* {parcel.invoiceReceiptNumber && (
+                  <Field label="Invoice Receipt Number" value={parcel.invoiceReceiptNumber} />
+                )} */}
               </div>
               <div className="mt-2.5">
                 <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
