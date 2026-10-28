@@ -2,7 +2,8 @@
 import { FC, useEffect, useMemo, useState } from "react"
 import { Badge, Button, Card, Select, TextInput } from "flowbite-react"
 import toast from "react-hot-toast"
-import { HiDocumentDownload, HiEye, HiOutlinePrinter, HiPencil, HiPlus, HiSearch, HiTrash } from "react-icons/hi"
+import { HiDocument, HiDocumentDownload, HiEye, HiOutlinePrinter, HiPencil, HiPlus, HiSearch, HiTrash } from "react-icons/hi"
+import { HiOutlineReceiptPercent } from "react-icons/hi2"
 import NavbarSidebarLayout from "../../layouts/navbar-sidebar"
 import DeleteConfirmModal from "../AgencyManagement/DeleteConfirmModal"
 import AddEditParcel, { Parcel } from "./addEditParcel"
@@ -159,7 +160,7 @@ const ParcelManagementPage: FC = () => {
         return type === "agency" || type === "collection-agency" || type === "collectionagency"
     })()
 
-    const handleGenerateInvoice = async (orderId: string) => {
+    const handleGenerateInvoice = async (orderId: string, documentType: "invoice" | "lr" = "invoice") => {
         setIsGeneratingInvoice(orderId)
         try {
             const authToken = getAuthToken()
@@ -217,7 +218,7 @@ const ParcelManagementPage: FC = () => {
             doc.setTextColor(0)
             doc.setFontSize(24)
             doc.setFont("helvetica", "bold")
-            doc.text("TAX INVOICE", pageWidth - margin, margin + 10, { align: "right" })
+            doc.text(documentType === "lr" ? "LR RECEIPT" : "INVOICE", pageWidth - margin, margin + 10, { align: "right" })
             doc.setDrawColor(200)
             doc.line(margin, margin + 25, pageWidth - margin, margin + 25)
 
@@ -370,6 +371,137 @@ if (vehicleType || vehicleCapacity) {
             doc.setTextColor(249, 115, 22)
             doc.text(`INR ${amount}`, summaryValueX, currentY, { align: "right" })
 
+            if (documentType === "lr") {
+                // Rebuild the invoice content as a compact LR receipt, using the
+                // exact same invoice endpoint and response data.
+                const receipt = new jsPDF({ orientation: "landscape", unit: "mm", format: [210, 148] })
+                const w = receipt.internal.pageSize.getWidth()
+                const h = receipt.internal.pageSize.getHeight()
+                const pad = 5
+                const left = pad
+                const right = w - pad
+                const center = w * 0.47
+                const date = dateStr
+                const consignee = String(order?.orderNumber || invoiceData?.orderNumber || orderId)
+                const sender = String(billTo?.name || "-")
+                const receiver = String(shipTo?.name || "-")
+                const pieces = String(parcelDetails?.numberOfParcels ?? "-")
+                const weight = String(parcelDetails?.weight ?? order?.weight ?? "")
+                const content = String(parcelDetails?.article || "")
+                const branchCode = String(issuedByAgency?.branchCode || issuedByAgency?.agencyCode || "")
+                const paymentType = String(invoiceData?.paymentType || order?.paymentType || "-")
+                const fit = (value: string, max: number) => receipt.splitTextToSize(value, max)
+                const cell = (x: number, y: number, width: number, height: number, label: string, value: string, valueX = x + 2) => {
+                    receipt.rect(x, y, width, height)
+                    receipt.setFont("helvetica", "bold")
+                    receipt.setFontSize(8)
+                    receipt.text(label, x + 2, y + 5)
+                    receipt.setFont("helvetica", "normal")
+                    receipt.setFontSize(10)
+                    receipt.text(fit(value, width - 4), valueX, y + 12)
+                }
+
+                receipt.setDrawColor(75)
+                receipt.setLineWidth(0.35)
+                receipt.roundedRect(left, pad, w - pad * 2, h - pad * 2, 3, 3)
+                // Company block mirrors the supplied paper form.
+                receipt.setFont("helvetica", "bold")
+                receipt.setFontSize(15)
+                receipt.setTextColor(35, 45, 65)
+                receipt.text("TRUECARGO", left + 5, 20)
+                receipt.setFontSize(8)
+                receipt.text("TRUECARGO PRIVATE LIMITED", left + 5, 25)
+                receipt.text("COURIER | CARGO | LOGISTICS", left + 5, 29)
+                receipt.setFont("helvetica", "normal")
+                receipt.setFontSize(8)
+                receipt.text("L: ____    B: ____    H: ____", left + 5, 35)
+
+                const infoX = 68
+                const infoY = 8
+                const infoW = 72
+                cell(infoX, infoY, infoW, 22, "DATE", date)
+                cell(infoX, infoY + 22, infoW, 18, "NO. OF PIECES", pieces)
+                cell(infoX + infoW, infoY, 28, 40, "WEIGHT Kg. / Grm.", weight)
+                cell(infoX + infoW + 28, infoY, right - (infoX + infoW + 28) - pad, 40, "CONSIGNMENT NO.", consignee)
+
+                let y = 48
+                const modeW = 84
+                const contentsW = 48
+                receipt.rect(left, y, modeW, 34)
+                receipt.setFont("helvetica", "bold")
+                receipt.setFontSize(9)
+                receipt.text("Mode of Transport", left + 2, y + 5)
+                receipt.text("Cash", left + 42, y + 5)
+                receipt.text("Credit", left + 62, y + 5)
+                receipt.setFont("helvetica", "normal")
+                receipt.setFontSize(9)
+                const checkbox = (x: number, baseline: number, checked: boolean) => {
+                    const boxSize = 4
+                    receipt.rect(x, baseline - 3.5, boxSize, boxSize)
+                    if (checked) {
+                        receipt.setLineWidth(0.6)
+                        receipt.line(x + 0.7, baseline - 1.5, x + 1.7, baseline - 0.5)
+                        receipt.line(x + 1.7, baseline - 0.5, x + 3.5, baseline - 3)
+                        receipt.setLineWidth(0.35)
+                    }
+                }
+                checkbox(left + 3, y + 16, false)
+                receipt.text("AIR", left + 10, y + 16)
+                checkbox(left + 3, y + 27, true)
+                receipt.text("SURFACE", left + 10, y + 27)
+                receipt.text(paymentType, left + 42, y + 19)
+                receipt.rect(left + modeW, y, contentsW, 34)
+                receipt.setFont("helvetica", "bold")
+                receipt.text("Contents & Quantity", left + modeW + 2, y + 5)
+                receipt.setFont("helvetica", "normal")
+                receipt.text(fit(content || "-", contentsW - 4), left + modeW + 2, y + 13)
+                receipt.rect(left + modeW + contentsW, y, right - (left + modeW + contentsW) - pad, 34)
+                receipt.setFont("helvetica", "bold")
+                receipt.text("BRANCH / CUSTOMER CODE", left + modeW + contentsW + 2, y + 5)
+                receipt.setFont("helvetica", "normal")
+                receipt.text(fit(branchCode || "-", 60), left + modeW + contentsW + 2, y + 13)
+
+                y += 34
+                const senderW = center - left
+                const recipientW = right - center
+                receipt.rect(left, y, senderW, 36)
+                receipt.rect(center, y, recipientW, 36)
+                receipt.setFont("helvetica", "bold")
+                receipt.setFontSize(9)
+                receipt.text("Sender's Name", left + 2, y + 5)
+                receipt.text("Recipient's Name", center + 2, y + 5)
+                receipt.setFont("helvetica", "normal")
+                receipt.setFontSize(11)
+                receipt.text(fit(sender, senderW - 5), left + 3, y + 12)
+                receipt.text(fit(receiver, recipientW - 5), center + 3, y + 12)
+                receipt.setFontSize(9)
+                receipt.text(`Mobile: ${billTo?.mobileNumber || "-"}`, left + 2, y + 24)
+                receipt.text(`GSTIN: ${billTo?.gstNumber || "-"}`, left + 2, y + 30)
+                receipt.text(`Mobile: ${shipTo?.mobileNumber || shipTo?.phone || "-"}`, center + 2, y + 24)
+
+                y += 36
+                receipt.rect(left, y, senderW, 20)
+                receipt.rect(center, y, recipientW, 20)
+                receipt.setFont("helvetica", "bold")
+                receipt.setFontSize(9)
+                receipt.text("Signature:", center + 2, y + 6)
+                receipt.text("Receiver's Full Name:", center + 2, y + 12)
+                receipt.text("Date: __________    Time: __________    Company Seal", center + 2, y + 18)
+                receipt.setFont("helvetica", "normal")
+                receipt.setFontSize(7)
+                receipt.text("I/We hereby declare that this booking does not contain any gems, jewellery, currency, liquid, share certificate or passport.", left + 2, y + 5, { maxWidth: senderW - 4 })
+                receipt.text("Terms & Conditions: The consignment is subject to the terms and conditions of the courier company.", left + 2, y + 11, { maxWidth: senderW - 4 })
+                receipt.setFont("helvetica", "bold")
+                receipt.setFontSize(8)
+                receipt.text("Sender's Signature", left + senderW - 29, y + 18, { align: "right" })
+                receipt.setFontSize(7)
+                receipt.text("H.O.: 173A, GNT, VGP Victory House, Anna Salai, Mount Road, Chennai - 600 002.   www.truecargos.com", w / 2, h - 7, { align: "center" })
+                const receiptUrl = receipt.output("bloburl")
+                window.open(receiptUrl, "_blank", "noopener,noreferrer")
+                toast.success("LR receipt generated")
+                return
+            }
+
             const pdfUrl = doc.output("bloburl")
             window.open(pdfUrl, "_blank", "noopener,noreferrer")
             toast.success("Invoice generated")
@@ -487,6 +619,7 @@ if (vehicleType || vehicleCapacity) {
                     bookingCustomerName: item.bookingCustomer?.name || "",
                     bookingMobileNumber: item.bookingCustomer?.mobileNumber || "",
                     bookingCustomerAddress: item.bookingCustomer?.address || "",
+                    invoiceReceiptNumber: item.invoiceReceiptNumber || "",
                     pickupAddress: item.pickupAddress || "",
                     deliveryAddress: item.deliveryAddress || "",
                     paymentType:
@@ -1343,6 +1476,9 @@ if (vehicleType || vehicleCapacity) {
                                                     <div className="flex items-center justify-center gap-2">
                                                         <button onClick={() => handleGenerateInvoice(parcel.id)} className="p-1.5 text-gray-600 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400" title="Generate Invoice" disabled={isGeneratingInvoice === parcel.orderId}>
                                                             <HiDocumentDownload className="h-5 w-5" />
+                                                        </button>
+                                                        <button onClick={() => handleGenerateInvoice(parcel.id, "lr")} className="p-1.5 text-gray-600 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400" title="Generate LR Receipt" disabled={isGeneratingInvoice === parcel.orderId}>
+                                                            <HiDocument className="h-5 w-5" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleLabel(parcel.id)}
