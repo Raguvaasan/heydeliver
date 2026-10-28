@@ -204,7 +204,7 @@ const ParcelManagementPage: FC = () => {
             const contentWidth = pageWidth - margin * 2
 
             try {
-                const logoImg = await loadImage("https://truecargos.com/admin/images/logo.png")
+                const logoImg = await loadImage(`${import.meta.env.BASE_URL}images/logo.png`)
                 const logoW = 40
                 const logoH = (logoImg.height / logoImg.width) * logoW
                 doc.addImage(logoImg, "PNG", margin, margin, logoW, logoH)
@@ -416,11 +416,12 @@ if (vehicleType || vehicleCapacity) {
                 receipt.setDrawColor(75)
                 receipt.setLineWidth(0.35)
                 receipt.roundedRect(left, pad, w - pad * 2, h - pad * 2, 3, 3)
-                // Use the same local brand asset as the invoice and label.
+                // Load the bundled logo from the app base path to avoid a
+                // cross-origin image failure when generating the production PDF.
                 try {
-                    const logo = await loadImage("/images/logo.png")
+                    const logo = await loadImage(`${import.meta.env.BASE_URL}images/logo.png`)
                     const logoWidth = 42
-                    const logoHeight = Math.min(logoWidth * logo.height / logo.width, 25)
+                    const logoHeight = (logo.height / logo.width) * logoWidth
                     receipt.addImage(logo, "PNG", left + 5, 12, logoWidth, logoHeight)
                 } catch {
                     receipt.setFont("helvetica", "bold")
