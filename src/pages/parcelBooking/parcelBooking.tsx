@@ -522,22 +522,32 @@ if (vehicleType || vehicleCapacity) {
                 receipt.text(`Mobile: ${shipTo?.mobileNumber || shipTo?.phone || "-"}`, center + 2, y + 32)
 
                 y += 36
-                receipt.rect(left, y, senderW, 20)
-                receipt.rect(center, y, recipientW, 20)
+                const declarationW = 65
+                const senderSignatureW = 55
+                const recipientDetailsW = right - left - declarationW - senderSignatureW
+                const senderSignatureX = left + declarationW
+                const recipientDetailsX = senderSignatureX + senderSignatureW
+                receipt.rect(left, y, declarationW, 20)
+                receipt.rect(senderSignatureX, y, senderSignatureW, 20)
+                receipt.rect(recipientDetailsX, y, recipientDetailsW, 20)
                 receipt.setFont("helvetica", "bold")
-                receipt.setFontSize(9)
-                receipt.text("Signature:", center + 2, y + 6)
-                receipt.text("Receiver's Full Name:", center + 2, y + 12)
-                receipt.text("Date: __________    Time: __________", center + 2, y + 18)
-                receipt.addImage(companySeal, "PNG", right - 24, y + 2, 18, 18 * companySeal.height / companySeal.width)
-                receipt.text("Company Seal", right - 15, y + 18, { align: "center" })
+                receipt.setFontSize(7)
+                receipt.text("Sender's Signature", senderSignatureX + 2, y + 18)
+                const sealW = 20
+                const sealH = sealW * companySeal.height / companySeal.width
+                receipt.addImage(companySeal, "PNG", senderSignatureX + 34, y + (20 - sealH) / 2, sealW, sealH)
+                receipt.setFontSize(8)
+                receipt.text("Signature:", recipientDetailsX + 2, y + 6)
+                receipt.text("Receiver's Full Name:", recipientDetailsX + 2, y + 12)
+                receipt.text("Date: ______    Time: ______", recipientDetailsX + 2, y + 18)
+                receipt.setFontSize(7)
+                receipt.text("Company Seal", right - 2, y + 18, { align: "right" })
                 receipt.setFont("helvetica", "normal")
                 receipt.setFontSize(7)
-                receipt.text("I/We hereby declare that this booking does not contain any gems, jewellery, currency, liquid, share certificate or passport.", left + 2, y + 5, { maxWidth: senderW - 4 })
-                receipt.text("Terms & Conditions: The consignment is subject to the terms and conditions of the courier company.", left + 2, y + 11, { maxWidth: senderW - 4 })
-                receipt.setFont("helvetica", "bold")
-                receipt.setFontSize(8)
-                receipt.text("Sender's Signature", left + senderW - 29, y + 18, { align: "right" })
+                const declarationLines = fit("I/We hereby declare that this booking does not contain any gems, jewellery, currency, liquid, share certificate or passport.", declarationW - 4)
+                const termsLines = fit("Terms & Conditions: The consignment is subject to the terms and conditions of the courier company.", declarationW - 4)
+                receipt.text(declarationLines, left + 2, y + 4)
+                receipt.text(termsLines, left + 2, y + 4 + declarationLines.length * 2.7 + 1)
                 receipt.setFontSize(5.5)
                 receipt.text("H.O: Ground, 1st and 2nd Floor,Door NO, SP-7A, Guindy Industrial Estate, SIDCO Industrial Estate, Guindy, Chennai, Tamil Nadu 600032 | Ph: 7339603266", w / 2, h - 7, { align: "center" })
                 const receiptUrl = receipt.output("bloburl")
