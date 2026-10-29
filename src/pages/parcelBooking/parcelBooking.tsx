@@ -381,10 +381,13 @@ if (vehicleType || vehicleCapacity) {
                 const left = pad
                 const right = w - pad
                 const center = w * 0.47
+                const companySeal = await loadImage(`${import.meta.env.BASE_URL}images/company-seal.png`)
                 const date = dateStr
                 const consignee = String(order?.orderNumber || invoiceData?.orderNumber || orderId)
                 const sender = String(billTo?.name || "-")
                 const receiver = String(shipTo?.name || "-")
+                const senderAddress = String(pickupAddress || [billTo?.address, billTo?.city, billTo?.state, billTo?.pincode].filter(Boolean).join(", ") || "-")
+                const receiverAddress = String(deliveryAddressFull || [shipTo?.address, shipTo?.city, shipTo?.state, shipTo?.pincode].filter(Boolean).join(", ") || "-")
                 const pieces = String(parcelDetails?.numberOfParcels ?? "-")
                 const weight = String(parcelDetails?.weight ?? order?.weight ?? "")
                 const content = String(parcelDetails?.article || "")
@@ -410,7 +413,7 @@ if (vehicleType || vehicleCapacity) {
                             : item)
                         .map((item: unknown) => String(item || "").trim())
                         .filter(Boolean)
-                    return numbers.length ? numbers.join(", ") : "-"
+                    return numbers.length ? numbers.slice(0, 2).join(", ") : "-"
                 }
 
                 receipt.setDrawColor(75)
@@ -429,9 +432,12 @@ if (vehicleType || vehicleCapacity) {
                     receipt.setTextColor(35, 45, 65)
                     receipt.text("TRUECARGO", left + 5, 20)
                 }
+                receipt.setFont("helvetica", "bold")
+                receipt.setFontSize(8)
+                receipt.text("TRUECARGO PRIVATE LIMITED", left + 5, 30)
                 receipt.setFont("helvetica", "normal")
                 receipt.setFontSize(8)
-                receipt.text("L: ____    B: ____    H: ____", left + 5, 35)
+                receipt.text("GST/Transporter: 33AAGCF6731L1ZH", left + 5, 35)
 
                 const infoX = 68
                 const infoY = 8
@@ -504,13 +510,16 @@ if (vehicleType || vehicleCapacity) {
                 receipt.text("Sender's Name", left + 2, y + 5)
                 receipt.text("Recipient's Name", center + 2, y + 5)
                 receipt.setFont("helvetica", "normal")
-                receipt.setFontSize(11)
+                receipt.setFontSize(10)
                 receipt.text(fit(sender, senderW - 5), left + 3, y + 12)
                 receipt.text(fit(receiver, recipientW - 5), center + 3, y + 12)
-                receipt.setFontSize(9)
-                receipt.text(`Mobile: ${billTo?.mobileNumber || "-"}`, left + 2, y + 24)
-                receipt.text(`GSTIN: ${billTo?.gstNumber || "-"}`, left + 2, y + 30)
-                receipt.text(`Mobile: ${shipTo?.mobileNumber || shipTo?.phone || "-"}`, center + 2, y + 24)
+                receipt.setFontSize(8)
+                receipt.text(fit(senderAddress, senderW - 5).slice(0, 2), left + 3, y + 18)
+                receipt.text(fit(receiverAddress, recipientW - 5).slice(0, 2), center + 3, y + 18)
+                receipt.setFontSize(8)
+                receipt.text(`Mobile: ${billTo?.mobileNumber || "-"}`, left + 2, y + 29)
+                receipt.text(`GSTIN: ${billTo?.gstNumber || "-"}`, left + 2, y + 34)
+                receipt.text(`Mobile: ${shipTo?.mobileNumber || shipTo?.phone || "-"}`, center + 2, y + 32)
 
                 y += 36
                 receipt.rect(left, y, senderW, 20)
@@ -519,7 +528,9 @@ if (vehicleType || vehicleCapacity) {
                 receipt.setFontSize(9)
                 receipt.text("Signature:", center + 2, y + 6)
                 receipt.text("Receiver's Full Name:", center + 2, y + 12)
-                receipt.text("Date: __________    Time: __________    Company Seal", center + 2, y + 18)
+                receipt.text("Date: __________    Time: __________", center + 2, y + 18)
+                receipt.addImage(companySeal, "PNG", right - 24, y + 2, 18, 18 * companySeal.height / companySeal.width)
+                receipt.text("Company Seal", right - 15, y + 18, { align: "center" })
                 receipt.setFont("helvetica", "normal")
                 receipt.setFontSize(7)
                 receipt.text("I/We hereby declare that this booking does not contain any gems, jewellery, currency, liquid, share certificate or passport.", left + 2, y + 5, { maxWidth: senderW - 4 })
@@ -527,8 +538,8 @@ if (vehicleType || vehicleCapacity) {
                 receipt.setFont("helvetica", "bold")
                 receipt.setFontSize(8)
                 receipt.text("Sender's Signature", left + senderW - 29, y + 18, { align: "right" })
-                receipt.setFontSize(7)
-                receipt.text("H.O.: 173A, GNT, VGP Victory House, Anna Salai, Mount Road, Chennai - 600 002.   www.truecargos.com", w / 2, h - 7, { align: "center" })
+                receipt.setFontSize(5.5)
+                receipt.text("H.O: Ground, 1st and 2nd Floor,Door NO, SP-7A, Guindy Industrial Estate, SIDCO Industrial Estate, Guindy, Chennai, Tamil Nadu 600032 | Ph: 7339603266", w / 2, h - 7, { align: "center" })
                 const receiptUrl = receipt.output("bloburl")
                 window.open(receiptUrl, "_blank", "noopener,noreferrer")
                 toast.success("LR receipt generated")
