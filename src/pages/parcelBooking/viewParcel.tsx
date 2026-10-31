@@ -104,9 +104,9 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
   const pickupAddress = resolveValue((parcel as any).pickupAddress)
   const deliveryAddress = resolveValue((parcel as any).deliveryAddress)
   const deliveryAgency = resolveValue(parcel.deliveryBranch)
-  const vehicleType = resolveValue(parcel.vehicleType)
-  const vehicleCapacity = resolveValue(parcel.vehicleCapacity)
   const waybill = resolveValue(parcel.waybill)
+  const invoiceReceiptNumber = resolveValue(parcel.invoiceReceiptNumber)
+  const packageWeight = resolveValue(parcel.packageWeight)
   const loadingCharge = (parcel as any).loadingCharge ?? (parcel as any).charges?.loadingCharge ?? 0
   const miscellaneousCharge = (parcel as any).miscellaneousCharge ?? (parcel as any).charges?.miscellaneousCharge ?? 0
   const totalAmount = (parcel as any).totalAmount ?? (parcel as any).charges?.totalAmount ?? 0
@@ -171,8 +171,6 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
                 <Field label="Mobile Number" value={parcel.deliveryCustomerMobileNumber} />
                 <Field label="Address" value={deliveryCustomerAddress} />
                 {deliveryAgency && <Field label="Delivery Agency" value={deliveryAgency} />}
-                {vehicleType && <Field label="Vehicle Type" value={vehicleType} />}
-                {vehicleCapacity && <Field label="Vehicle Capacity" value={vehicleCapacity} />}
                 {waybill && <Field label="Waybill" value={waybill} />}
               </div>
             </section>
@@ -183,9 +181,7 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
                 <Field label="Name" value={parcel.bookingCustomerName} />
                 <Field label="Mobile Number" value={parcel.bookingMobileNumber} />
                 <Field label="Address" value={bookingCustomerAddress} />
-                {/* {parcel.invoiceReceiptNumber && (
-                  <Field label="Invoice Receipt Number" value={parcel.invoiceReceiptNumber} />
-                )} */}
+                {invoiceReceiptNumber && <Field label="Invoice Receipt Number" value={invoiceReceiptNumber} />}
               </div>
               <div className="mt-2.5">
                 <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
@@ -205,6 +201,7 @@ const ViewParcelModal: FC<Props> = ({ isOpen, onClose, parcel }) => {
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                 <Field label="Article" value={parcel.article} />
                 <Field label="No. of Parcels" value={parcel.numberOfParcels} />
+                {packageWeight && <Field label="Package Weight" value={packageWeight} />}
                 <Field
                   label="Approx. Value"
                   value={parcel.approximateValue ? `₹${Number(parcel.approximateValue).toLocaleString("en-IN")}` : undefined}

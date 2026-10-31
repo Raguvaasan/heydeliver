@@ -11,6 +11,8 @@ import toast from "react-hot-toast"
 import { fetchAgencyDashboard } from "../../common/dashboardApi"
 
 export interface ParcelFormValues {
+    orderNumber?: string
+    createdAtInput?: string
     deliveryCustomerName: string
     deliveryCustomerMobileNumber: string
     deliveryCustomerAddress: string
@@ -18,13 +20,12 @@ export interface ParcelFormValues {
     deliveryCustomerGstNumber: string
     deliveryBranch: string
     waybill: string
-    vehicleType: string
-    vehicleCapacity: string
 
     bookingCustomerName: string
     bookingMobileNumber: string
     bookingCustomerAddress: string
     bookingCustomerGstNumber: string
+    invoiceReceiptNumber: string
     paymentType: "Paid" | "To Pay" | "Credit"
     pickupAddressEnabled: boolean
     deliveryAddressEnabled: boolean
@@ -34,6 +35,7 @@ export interface ParcelFormValues {
     article: string
     remarks: string
     numberOfParcels: string
+    packageWeight: string
     approximateValue: string
     transportationCharge: string
 
@@ -78,8 +80,6 @@ export interface Parcel extends ParcelFormValues {
         status?: string
     }
     waybill?: string
-    vehicleType?: string
-    vehicleCapacity?: string
     bookingCustomer?: {
         name?: string
         mobileNumber?: string
@@ -155,7 +155,15 @@ const FormRadioGroup: FC<{
     )
 }
 
-const buildFullSchema = (isOwnAgency: boolean) => Yup.object({
+const buildFullSchema = (isOwnAgency: boolean, isEdit: boolean) => Yup.object({
+    orderNumber: isEdit
+        ? Yup.string().trim().required("Order number is required").min(2).max(50)
+        : Yup.string().trim().notRequired(),
+    createdAtInput: isEdit
+        ? Yup.string()
+            .required("Created at is required")
+            .test("valid-date", "Enter a valid creation date", (value) => Boolean(value && !Number.isNaN(new Date(value).getTime())))
+        : Yup.string().notRequired(),
     deliveryCustomerName: Yup.string().trim().required("Delivery customer name is required").min(2).max(100),
     deliveryCustomerMobileNumber: Yup.string().trim().required("Delivery customer mobile number is required").matches(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number"),
     deliveryCustomerAddress: Yup.string().trim().required("Delivery customer address is required").min(5).max(250),
@@ -168,8 +176,6 @@ const buildFullSchema = (isOwnAgency: boolean) => Yup.object({
         ? Yup.string().trim().notRequired()
         : Yup.string().trim().required("Delivery branch is required").min(2),
     waybill: Yup.string().trim().required("Waybill is required").min(2).max(50),
-    vehicleType: Yup.string().trim().required("Vehicle type is required").min(2).max(50),
-    vehicleCapacity: Yup.string().trim().required("Vehicle capacity is required").min(1).max(50),
     bookingCustomerName: Yup.string().trim().required("Booking customer name is required").min(2).max(100),
     bookingMobileNumber: Yup.string().trim().required("Booking customer mobile number is required").matches(/^[6-9]\d{9}$/, "Enter a valid 10-digit mobile number"),
     bookingCustomerAddress: Yup.string().trim().required("Booking customer address is required").min(5).max(250),
@@ -178,6 +184,7 @@ const buildFullSchema = (isOwnAgency: boolean) => Yup.object({
         .optional()
         .transform((value) => (value ? value.toUpperCase() : ""))
         .matches(/^$|^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/, "Enter a valid GSTIN"),
+    invoiceReceiptNumber: Yup.string().trim().max(100).notRequired(),
     paymentType: Yup.string().oneOf(["Paid", "To Pay", "Credit"]).required("Payment type is required"),
     pickupAddressEnabled: Yup.boolean(),
     deliveryAddressEnabled: Yup.boolean(),
@@ -194,6 +201,7 @@ const buildFullSchema = (isOwnAgency: boolean) => Yup.object({
     article: Yup.string().trim().required("Article is required").min(2).max(100),
     remarks: Yup.string().trim().max(250),
     numberOfParcels: Yup.number().typeError("Must be a valid number").required().integer().positive().max(9999),
+    packageWeight: Yup.string().trim().max(50).notRequired(),
     approximateValue: Yup.number().typeError("Must be a valid number").required().positive().max(9999999),
     transportationCharge: Yup.number().typeError("Must be a valid number").min(0).required("Transportation charge is required"),
 })
@@ -204,18 +212,19 @@ const chargeSchema = Yup.object({
 })
 
 const emptyValues: ParcelFormValues = {
+    orderNumber: "",
+    createdAtInput: "",
     deliveryCustomerName: "",
     deliveryCustomerMobileNumber: "",
     deliveryCustomerAddress: "",
     deliveryCustomerGstNumber: "",
     deliveryBranch: "",
     waybill: "",
-    vehicleType: "",
-    vehicleCapacity: "",
     bookingCustomerName: "",
     bookingMobileNumber: "",
     bookingCustomerAddress: "",
     bookingCustomerGstNumber: "",
+    invoiceReceiptNumber: "",
     paymentType: "Paid",
     pickupAddressEnabled: false,
     deliveryAddressEnabled: false,
@@ -224,6 +233,7 @@ const emptyValues: ParcelFormValues = {
     article: "",
     remarks: "",
     numberOfParcels: "",
+    packageWeight: "",
     approximateValue: "",
     transportationCharge: "",
     status: "Order Created",
@@ -232,6 +242,29 @@ const emptyValues: ParcelFormValues = {
 const BRANCH_BASE = "/api/admin/branch/parcel-order"
 const ADMIN_BASE = "/api/admin/parcel-order"
 const DELIVERY_BRANCH_OPTIONS_BASE = "/api/admin/branch/parcel-order/options/delivery-branches"
+
+const toDateTimeLocalValue = (value: unknown): string => {
+    let date: Date
+
+    if (value instanceof Date || typeof value === "string" || typeof value === "number") {
+        date = new Date(value)
+    } else if (
+        value &&
+        typeof value === "object" &&
+        "seconds" in value &&
+        typeof value.seconds === "number"
+    ) {
+        date = new Date(value.seconds * 1000)
+    } else {
+        return ""
+    }
+
+    if (Number.isNaN(date.getTime())) return ""
+
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+        .toISOString()
+        .slice(0, 16)
+}
 
 const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, chargeOnly = false }) => {
     const isEdit = mode === "edit"
@@ -270,18 +303,19 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
 
     const initialValues: ParcelFormValues = isEdit && parcel
         ? {
+            orderNumber: parcel.orderId || "",
+            createdAtInput: toDateTimeLocalValue(parcel.createdAt || parcel.bookingDate),
             deliveryCustomerName: parcel.deliveryCustomerName || "",
             deliveryCustomerMobileNumber: parcel.deliveryCustomerMobileNumber || "",
             deliveryCustomerAddress: parcel.deliveryCustomerAddress || "",
             deliveryCustomerGstNumber: parcel.deliveryCustomerGstNumber || "",
             deliveryBranch: resolveDeliveryBranchValue(),
             waybill: parcel.waybill || "",
-            vehicleType: parcel.vehicleType || parcel.vehicle?.vehicleType || "",
-            vehicleCapacity: parcel.vehicleCapacity || parcel.vehicle?.capacity || "",
             bookingCustomerName: parcel.bookingCustomerName || "",
             bookingMobileNumber: parcel.bookingMobileNumber || "",
             bookingCustomerAddress: parcel.bookingCustomerAddress || "",
             bookingCustomerGstNumber: parcel.bookingCustomerGstNumber || "",
+            invoiceReceiptNumber: parcel.invoiceReceiptNumber || "",
             paymentType: parcel.paymentType || "Paid",
             pickupAddressEnabled: Boolean((parcel as any).pickupAddress),
             deliveryAddressEnabled: Boolean((parcel as any).deliveryAddress),
@@ -290,6 +324,7 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
             article: parcel.article || "",
             remarks: parcel.remarks || "",
             numberOfParcels: parcel.numberOfParcels || "",
+            packageWeight: String(parcel.packageWeight ?? ""),
             approximateValue: parcel.approximateValue || "",
             transportationCharge: parcel.transportationCharge || "",
             status: parcel.status || "Order Created",
@@ -405,6 +440,12 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
 
             // Create / Update Payload
             const payload = {
+                ...(isEdit
+                    ? {
+                        orderNumber: values.orderNumber?.trim() || "",
+                        createdAt: new Date(values.createdAtInput || "").toISOString(),
+                    }
+                    : {}),
                 bookingCustomer: {
                     name: values.bookingCustomerName.trim(),
                     mobileNumber: values.bookingMobileNumber.trim(),
@@ -430,6 +471,12 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                         }
                         : {}),
                 },
+                ...(values.invoiceReceiptNumber.trim()
+                    ? { invoiceReceiptNumber: values.invoiceReceiptNumber.trim() }
+                    : {}),
+                ...(String(values.packageWeight ?? "").trim()
+                    ? { packageWeight: String(values.packageWeight).trim() }
+                    : {}),
                 parcelDetails: {
                     article: values.article.trim(),
                     remarks: values.remarks.trim(),
@@ -440,8 +487,6 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                 ...(isOwnAgency
                     ? {
                         waybill: values.waybill.trim(),
-                        vehicleType: values.vehicleType.trim(),
-                        vehicleCapacity: values.vehicleCapacity.trim(),
                     }
                     : {
                         deliveryBranch: values.deliveryBranch.trim(),
@@ -536,14 +581,22 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                     <Formik
                         initialValues={initialValues}
                         enableReinitialize
-                        validationSchema={chargeOnly ? chargeSchema : buildFullSchema(isOwnAgency)}
+                        validationSchema={chargeOnly ? chargeSchema : buildFullSchema(isOwnAgency, isEdit)}
                         onSubmit={handleSubmit}
                     >
                         {({ isSubmitting, resetForm, values, setFieldValue }) => {
                             resetFormRef.current = resetForm
                             return (
                                 <Form className="space-y-6">
-                                    <FormSection title="Deliver Customer" description="Details of the customer receiving the parcel" icon={<HiOutlineUser className="w-5 h-5" />}>
+                                    {isEdit && (
+                                        <FormSection title="Booking Reference" description="Update the order number and booking creation date">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <FormInput name="orderNumber" label="Order Number" required disabled={fieldsDisabled} />
+                                                <FormInput name="createdAtInput" label="Created At" type="datetime-local" required disabled={fieldsDisabled} />
+                                            </div>
+                                        </FormSection>
+                                    )}
+                                    <FormSection title="Deliver Customer" description="Details of the customer receiving the parcel" icon={<HiOutlineUser className="w-5 h-5" />} >
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <FormInput name="deliveryCustomerName" label="Name" required disabled={fieldsDisabled} />
                                             <FormInput name="deliveryCustomerMobileNumber" label="Mobile Number" required disabled={fieldsDisabled} />
@@ -552,8 +605,6 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                             {isOwnAgency ? (
                                                 <>
                                                     <FormInput name="waybill" label="Waybill" required disabled={fieldsDisabled} />
-                                                    <FormInput name="vehicleType" label="Vehicle Type" required disabled={fieldsDisabled} />
-                                                    <FormInput name="vehicleCapacity" label="Vehicle Capacity" required disabled={fieldsDisabled} />
                                                 </>
                                             ) : (
                                                 <FormSelect
@@ -577,6 +628,7 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                             <FormInput name="bookingMobileNumber" label="Mobile Number" required disabled={fieldsDisabled} />
                                             <FormInput name="bookingCustomerAddress" label="Address" required disabled={fieldsDisabled} />
                                             <FormInput name="bookingCustomerGstNumber" label="GST Number" disabled={fieldsDisabled} helperText="Optional, must be a valid GSTIN if provided" />
+                                            <FormInput name="invoiceReceiptNumber" label="Invoice Receipt Number" disabled={fieldsDisabled} />
 
                                             <div className="md:col-span-2">
                                                 <FormRadioGroup
@@ -598,6 +650,7 @@ const AddEditParcel: FC<Props> = ({ isOpen, onClose, mode, parcel, onSuccess, ch
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <FormInput name="article" label="Article" required disabled={fieldsDisabled} />
                                             <FormInput name="numberOfParcels" label="Number of Parcels" type="number" required disabled={fieldsDisabled} />
+                                            <FormInput name="packageWeight" label="Package Weight" type="text" disabled={fieldsDisabled} />
                                             <FormInput name="approximateValue" label="Approximate Value" type="number" required disabled={fieldsDisabled} />
 
                                             <div>
