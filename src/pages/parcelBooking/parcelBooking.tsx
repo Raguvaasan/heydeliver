@@ -685,6 +685,7 @@ if (vehicleType || vehicleCapacity) {
                     article: item.parcelDetails?.article || "",
                     remarks: item.parcelDetails?.remarks || "",
                     numberOfParcels: String(item.parcelDetails?.numberOfParcels ?? ""),
+                    packageWeight: String(item.parcelDetails?.packageWeight ?? item.packageWeight ?? ""),
                     approximateValue: String(item.parcelDetails?.approximateValue ?? ""),
                     transportationCharge: String(item.transportationCharge ?? "0"),
                     loadingCharge,
@@ -707,8 +708,6 @@ if (vehicleType || vehicleCapacity) {
                     bookingCustomer: item.bookingCustomer && typeof item.bookingCustomer === "object" ? item.bookingCustomer : undefined,
                     deliveryCustomer: item.deliveryCustomer && typeof item.deliveryCustomer === "object" ? item.deliveryCustomer : undefined,
                     waybill: item.waybill,
-                    vehicleType: item.vehicleType,
-                    vehicleCapacity: item.vehicleCapacity,
                     driver: item.driver && typeof item.driver === "object" ? item.driver : undefined,
                     vehicle: item.vehicle && typeof item.vehicle === "object" ? item.vehicle : undefined,
                 }
